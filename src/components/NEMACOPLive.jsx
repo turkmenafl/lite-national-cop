@@ -822,31 +822,31 @@ const ScreenSituation = ({ live }) => {
                    const countryLabel = g.name.replace(/^..\s/, ''); // strip emoji
                    return (
                      <div key={g.code}>
-                       <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
-                         onMouseEnter={()=>setHoveredCountry(g.code)}
-                         onMouseLeave={()=>setHoveredCountry(null)}
-                         style={{
-                           padding:"6px 10px",
-                           borderRadius:isExpanded?"4px 4px 0 0":4,
-                           background:isExpanded?"rgba(255,255,255,0.04)":isHovered?"#1e2d45":"rgba(255,255,255,0.02)",
-                           border:`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
-                           borderLeft:`3px solid ${isHovered||isExpanded?airCol:airCol}`,
-                           cursor:"pointer",
-                           transition:"all 0.15s ease",
-                           borderBottom:isExpanded?"none":`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
-                           boxShadow:isHovered?"0 2px 8px rgba(0,0,0,0.2)":"none",
-                         }}>
-                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
-                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                             <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
-                             <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
-                             <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
-                           </div>
-                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                             <span style={{ fontSize:18, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
-                             <span style={{ fontSize:9, color:C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
-                           </div>
-                         </div>
+                        <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
+                          onMouseEnter={()=>setHoveredCountry(g.code)}
+                          onMouseLeave={()=>setHoveredCountry(null)}
+                          style={{
+                            padding:"12px 14px",
+                            borderRadius:isExpanded?"4px 4px 0 0":4,
+                            background:isExpanded?"rgba(255,255,255,0.04)":isHovered?"#1e2d45":"rgba(255,255,255,0.02)",
+                            border:`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
+                            borderLeft:`3px solid ${isHovered||isExpanded?airCol:airCol}`,
+                            cursor:"pointer",
+                            transition:"all 0.15s ease",
+                            borderBottom:isExpanded?"none":`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
+                            boxShadow:isHovered?"0 2px 8px rgba(0,0,0,0.2)":"none",
+                          }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:C.fg }}>{g.name}</span>
+                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
+                            </div>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <span style={{ fontSize:20, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
+                              <span style={{ fontSize:9, color:C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
+                            </div>
+                          </div>
                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                              <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
