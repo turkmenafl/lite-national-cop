@@ -967,7 +967,6 @@ const ScreenSituation = ({ live }) => {
               <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
               <div style={{ display:"flex", gap:5, alignItems:"center" }}>
                 <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
-                <FeedTag feed={live.ksaStrikes?.data ? "AI+WEB" : live.ksaStrikes?.loading ? "AI+WEB" : "STATIC"} loading={live.ksaStrikes?.loading} />
                 <div style={{ display:"flex", marginLeft:8, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
                   {[["LOG","KSA EVENT LOG"],["GCC","GCC THEATER"]].map(([k,label])=>(
                     <button key={k} onClick={()=>setTheaterView(k)} style={{
