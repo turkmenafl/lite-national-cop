@@ -1394,67 +1394,139 @@ const ScreenInfra = ({ live }) => {
 };
 
 // ─── SCREEN 4: DECISIONS ──────────────────────────────────────────────────────
-const ScreenDecisions = () => {
-  const sevOrder = { critical:0, high:1, medium:2 };
-  const allDecisions = CLUSTERS.flatMap(c=>c.decisions.map(d=>({...d,cluster:c.label,clusterIcon:c.icon,clusterColor:c.color})));
-  const sorted = [...allDecisions].sort((a,b)=>sevOrder[a.severity]-sevOrder[b.severity]);
+
+const DECISIONS_SEED = [
+  {
+    id:1, severity:'CRITICAL', domain:'ENERGY', window:'48H',
+    keyDev:'Brent settled at $92.69/bbl (+19.9% vs pre-conflict baseline of $77.24). Supply disruption estimated at 4–4.7 mb/d. Aramco Ras Tanura export terminal struck by drone 04 Mar. Trade disruption — not production — is the binding constraint.',
+    implication:'GCC faces revenue paradox — high prices but blocked export routes. Saudi/UAE spare capacity cannot reach markets. Hormuz closure forces reliance on Red Sea pipeline route (5M bbl/day capacity) currently underutilised.',
+    decision:'Accelerate Aramco Red Sea export route activation. Coordinate Saudi-UAE spare capacity via non-Hormuz routes. Ring-fence any windfall revenue — do not expand recurrent spending.',
+    sources:'OPA 07 Mar, EIA 02 Mar, Reuters 04 Mar',
+    liveKey:'ciStatus', liveField:'energy'
+  },
+  {
+    id:2, severity:'CRITICAL', domain:'LOGISTICS', window:'24H',
+    keyDev:'Strait of Hormuz paralysed — Day 7. 200+ ships stranded off Iraq, Saudi Arabia, Qatar. 8 vessels hit since conflict began. VLCC rates at all-time high $423,736/day (+94%). War risk insurance surged 5×. Major insurers dropped cover (Gard, Skuld, NorthStandard, London P&I, American Club). Maersk suspended cargo to 8 GCC countries.',
+    implication:'GCC export/import logistics frozen. Insurance withdrawal makes transit commercially unviable even if physically possible. Ports effectively cut off. Each closure day estimated at $4.2B global economic impact.',
+    decision:'Engage US Navy on escort proposal. Coordinate emergency berthing at Oman Sohar and Red Sea ports. Activate bilateral shipping agreements. Prepare for weeks-long logistics disruption — not days.',
+    sources:'Reuters 04 Mar, CNBC 03 Mar, UKMTO 003-26'
+  },
+  {
+    id:3, severity:'CRITICAL', domain:'DEFENCE', window:'24H',
+    keyDev:'Iran launched 1,000+ drones and missiles at Gulf states. 65 drones penetrated UAE air defences. Strikes hit AWS UAE data centres, Dubai International Airport, Aramco Ras Tanura. Iran drone production capacity: 10,000/month. Sea mine stockpile: 5,000–6,000. Economist: Gulf states may be running low on interceptors.',
+    implication:'GCC states are active targets with demonstrated air defence penetration. Critical infrastructure (ports, airports, data centres, energy terminals) directly vulnerable. Sea mine deployment could extend Hormuz closure by months beyond ceasefire.',
+    decision:'Coordinate joint GCC missile/drone defence allocation. Establish protected perimeters for Tier-1 CI. Engage US on extended air defence umbrella. Activate backup data centre failover to non-Gulf regions. Begin scenario planning for sea mine clearance operations.',
+    sources:'Reuters 04 Mar, CNBC 03 Mar, Economist 03 Mar',
+    liveKey:'gccStrikes'
+  },
+  {
+    id:4, severity:'HIGH', domain:'ECONOMIC', window:'72H',
+    keyDev:'Dubai stocks slumped most since 2022 on market reopen. Maersk suspended cargo to 8 GCC countries. Force majeure declarations by Asian LNG partners signal extended commercial disruption. FDI confidence damaged by physical attacks on GCC soil.',
+    implication:'GCC financial markets under severe pressure. Trade routes frozen across all modalities. Asian refiners cutting output. Economic disruption extends beyond conflict duration due to perception and insurance effects.',
+    decision:'Deploy central bank liquidity facilities without altering dollar peg. Establish strategic communications cell for investors and media. Host investor roadshow within 30 days of de-escalation. Prepare emergency trade corridor agreements with non-Gulf partners.',
+    sources:'Bloomberg 04 Mar, Reuters 04 Mar, CNBC 03 Mar'
+  },
+  {
+    id:5, severity:'HIGH', domain:'ENERGY', window:'72H',
+    keyDev:'Iran drone production at 10,000/month could sustain Hormuz disruption for months. Sea mine stockpile 5,000–6,000 could prolong disruption even after ceasefire. Conflict duration risk currently underpriced per Vitol senior executive and Rapidan Energy.',
+    implication:'GCC cannot assume rapid normalisation. Extended disruption (3+ months) would exhaust strategic reserves and expose domestic supply gaps. Current planning horizon likely too short.',
+    decision:'Begin scenario planning for extended (3+ month) Hormuz disruption. Accelerate non-Hormuz energy and trade infrastructure. Coordinate with CENTCOM on mine countermeasures readiness. Review bilateral security agreements with urgency.',
+    sources:'Reuters 04 Mar, Economist 03 Mar, Vitol/Rapidan 04 Mar'
+  },
+];
+
+const DOMAIN_COLORS = { ENERGY:C.warning, DEFENCE:C.critical, LOGISTICS:'#f97316', ECONOMIC:C.info, HEALTH:C.success };
+
+const DecisionTable = ({ live }) => {
+  const rows = DECISIONS_SEED.map(row => {
+    let keyDev = row.keyDev;
+    let sources = row.sources;
+    // Live overlay: ciStatus for energy row 1
+    if (row.liveKey === 'ciStatus' && live?.ciStatus?.value) {
+      try {
+        const ci = typeof live.ciStatus.value === 'string' ? JSON.parse(live.ciStatus.value) : live.ciStatus.value;
+        if (ci?.energy) {
+          const e = ci.energy;
+          const extra = e.note ? ` CI Status: Energy sector at ${e.pct || '—'}% — ${e.note}.` : '';
+          if (extra) { keyDev = keyDev + extra; sources = sources + ', AI+WEB'; }
+        }
+      } catch {}
+    }
+    // Live overlay: gccStrikes for defence row 3
+    if (row.liveKey === 'gccStrikes' && live?.gccStrikes?.value) {
+      try {
+        const gs = typeof live.gccStrikes.value === 'string' ? JSON.parse(live.gccStrikes.value) : live.gccStrikes.value;
+        if (gs) {
+          const ksaCount = gs.ksa?.total ?? gs.ksa_total ?? null;
+          const uaeCount = gs.uae?.total ?? gs.uae_total ?? null;
+          if (ksaCount !== null || uaeCount !== null) {
+            const extra = ` Live strike count: KSA ${ksaCount ?? '—'}, UAE ${uaeCount ?? '—'}.`;
+            keyDev = keyDev + extra;
+            sources = sources + ', AI+WEB';
+          }
+        }
+      } catch {}
+    }
+    return { ...row, keyDev, sources };
+  });
+
+  const windowColor = w => {
+    if (w.includes('24')) return C.critical;
+    if (w.includes('48') || w.includes('72')) return C.warning;
+    return C.muted;
+  };
+
+  const headers = ['#','SEV','DOMAIN','KEY DEVELOPMENT','GCC / EMA IMPLICATION','DECISION REQUIRED','WINDOW','SOURCES'];
+
+  return (
+    <div style={{ overflowX:'auto' }}>
+      <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'JetBrains Mono',monospace", fontSize:11 }}>
+        <thead>
+          <tr style={{ background:C.surface }}>
+            {headers.map(h => (
+              <th key={h} style={{ textAlign:'left', padding:'10px 10px', textTransform:'uppercase', letterSpacing:'0.08em', fontSize:10, color:C.dim, fontWeight:600, borderBottom:`1px solid ${C.surfBorder}`, whiteSpace:'nowrap' }}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => {
+            const isCrit = row.severity === 'CRITICAL';
+            const sevBg = isCrit ? 'rgba(239,68,68,0.18)' : 'rgba(245,158,11,0.18)';
+            const sevCol = isCrit ? '#fca5a5' : '#fcd34d';
+            const domCol = DOMAIN_COLORS[row.domain] || C.muted;
+            const wCol = windowColor(row.window);
+            return (
+              <tr key={row.id} style={{ borderBottom:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${isCrit ? C.critical : C.warning}` }}>
+                <td style={{ padding:'12px 10px', color:C.dim, textAlign:'center', width:28, verticalAlign:'top' }}>{row.id}</td>
+                <td style={{ padding:'12px 10px', width:70, verticalAlign:'top' }}>
+                  <span style={{ padding:'2px 6px', borderRadius:3, fontSize:10, fontWeight:600, background:sevBg, color:sevCol }}>{row.severity}</span>
+                </td>
+                <td style={{ padding:'12px 10px', width:80, verticalAlign:'top', color:domCol, fontWeight:600, fontSize:10, textTransform:'uppercase' }}>{row.domain}</td>
+                <td style={{ padding:'12px 10px', maxWidth:220, lineHeight:1.6, color:C.fg, verticalAlign:'top' }}>{row.keyDev}</td>
+                <td style={{ padding:'12px 10px', maxWidth:210, lineHeight:1.6, color:C.muted, verticalAlign:'top' }}>{row.implication}</td>
+                <td style={{ padding:'12px 10px', maxWidth:200, lineHeight:1.6, color:'#e2e8f0', fontWeight:600, verticalAlign:'top' }}>{row.decision}</td>
+                <td style={{ padding:'12px 10px', width:60, verticalAlign:'top' }}>
+                  <span style={{ padding:'2px 6px', borderRadius:3, fontSize:10, fontWeight:600, background:`${wCol}22`, color:wCol }}>{row.window}</span>
+                </td>
+                <td style={{ padding:'12px 10px', width:100, verticalAlign:'top', fontSize:10, color:C.dim, lineHeight:1.5 }}>{row.sources}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div style={{ marginTop:10, fontSize:9, color:C.dim, lineHeight:1.5 }}>
+        SOURCES REFERENCED: OPA (Mar 07) · EIA (Mar 02) · Reuters (Mar 04) · CNBC (Mar 03) · Bloomberg (Mar 04) · The Economist (Mar 03) · UKMTO Advisory 003-26
+      </div>
+    </div>
+  );
+};
+
+const ScreenDecisions = ({ live }) => {
   return (
     <div>
-      {/* Summary bar */}
-      <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-        {[
-          { l:"DECISIONS PENDING", v:sorted.length, c:C.critical },
-          { l:"≤24H WINDOW",  v:sorted.filter(d=>d.window.includes("6h")||d.window.includes("12h")||d.window.includes("24h")).length, c:C.critical },
-          { l:"≤48H WINDOW",  v:sorted.filter(d=>d.window.includes("48h")).length, c:C.warning },
-          { l:"≤72H WINDOW",  v:sorted.filter(d=>d.window.includes("72h")).length, c:C.info },
-        ].map((item,i)=>(
-          <div key={i} style={{ flex:1, padding:"10px 12px", background:C.surface, border:`1px solid ${item.c}22`, borderRadius:4, textAlign:"center" }}>
-            <div style={{ fontSize:10, color:C.muted, letterSpacing:"0.05em" }}>{item.l}</div>
-            <div style={{ fontSize:26, fontWeight:"bold", color:item.c, margin:"4px 0" }}>{item.v}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ fontSize:12, color:C.dim, marginBottom:10 }}>Sorted by urgency · STATIC — scenario-generated decision matrix</div>
-
-      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-        {sorted.map((d,i)=>{
-          const sc = d.severity==="critical"?C.critical:d.severity==="high"?C.warning:C.info;
-          return (
-            <div key={i} style={{ padding:"12px 14px", borderRadius:"0 4px 4px 0", background:`${sc}06`, border:`1px solid ${sc}22`, borderLeft:`3px solid ${sc}` }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-                <span style={{ fontSize:14, fontWeight:"600", color:C.fg, flex:1, marginRight:8 }}>{d.title}</span>
-                <span style={{ fontSize:13, fontWeight:"bold", padding:"3px 12px", borderRadius:3, background:`${sc}22`, color:sc, whiteSpace:"nowrap" }}>⏱ {d.window}</span>
-              </div>
-              <div style={{ display:"flex", gap:6 }}>
-                <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${d.clusterColor}22`, color:d.clusterColor }}>{d.clusterIcon} {d.cluster}</span>
-                <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${sc}22`, color:sc }}>{d.severity.toUpperCase()}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Readiness snapshot */}
-      <div style={{ marginTop:16 }}>
-        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>AGENCY READINESS SNAPSHOT</div>
-        <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-          {[
-            { m:"Civil Defence", v:"ACTIVATED",    c:C.success, src:"SPA" },
-            { m:"MoD EOC",       v:"ACTIVE",        c:C.success, src:"SPA" },
-            { m:"National EOC",  v:"ACTIVATED",     c:C.success, src:"NEMA" },
-            { m:"Provincial EOCs",v:"3 / 13 ACTIVE",c:C.warning, src:"NEMA" },
-            { m:"Hospital Surge",v:"PHASE 1",       c:C.warning, src:"MoH" },
-          ].map((r,i)=>(
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:3 }}>
-              <span style={{ flex:2, fontSize:12, color:C.fg }}>{r.m}</span>
-              <StatusBadge s={r.v.split(" ")[0]} />
-              <span style={{ fontSize:10, color:C.dim }}>{r.v}</span>
-              <span style={{ fontSize:10, color:C.dim, marginLeft:"auto" }}>SRC: {r.src} · STATIC</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <DecisionTable live={live} />
     </div>
   );
 };
@@ -1875,7 +1947,7 @@ export default function NEMACOPLive() {
     <ScreenSituation    live={live}/>,
     <ScreenRiskClusters live={live}/>,
     <ScreenInfra        live={live}/>,
-    <ScreenDecisions />,
+    <ScreenDecisions  live={live}/>,
     <ScreenEconomic     live={live}/>,
     <ScreenMedia        live={live}/>,
     <ScreenScenarios />,
