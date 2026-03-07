@@ -528,11 +528,11 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     if (gccGeoRef.current) {
       addPolygons(gccGeoRef.current);
     } else {
-      fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+      fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
         .then(r => r.json())
         .then(data => {
           gccGeoRef.current = data;
-          addPolygons(data);
+          if (mapRef.current) addPolygons(data);
         })
         .catch(() => {});
     }
