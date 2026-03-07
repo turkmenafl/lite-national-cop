@@ -361,7 +361,8 @@ async function fetchGdelt() {
   const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=Saudi+Arabia+Iran+attack+missile+drone&mode=artlist&maxrecords=25&format=json&timespan=24h`;
   const res = await fetch(url);
   const data = await res.json();
-  return (data.articles||[]).length;
+  const articles = (data.articles||[]).slice(0,10);
+  return { count: articles.length || (data.articles||[]).length, articles };
 }
 
 async function fetchIoda() {
@@ -1838,7 +1839,7 @@ export default function NEMACOPLive() {
   const [live, setLive] = useState({
     brent: { value:"$92.69", change:"+28.0% wk", source:"STATIC", loading:false },
     tasi:  { value:"10,290", change:"−3.9% wk",  source:"STATIC", loading:false },
-    gdelt: { value:20, source:"STATIC", loading:false },
+    gdelt: { value:20, articles:[], source:"STATIC", loading:false },
     ioda:  { value:null, source:"IODA", loading:false },
     gcc:   { data:null, loading:false, error:false },
     portwatch: { loading:false, error:null, data:null },
@@ -1903,7 +1904,7 @@ export default function NEMACOPLive() {
         n.tasi={value:Number(fin.tasi).toLocaleString(),change:fin.tasiChg||d.tasi.change,source:cacheSource,loading:false};
       } else { n.tasi={...d.tasi,source:"STATIC",loading:false}; }
 
-      n.gdelt = gdelt.status==="fulfilled"?{value:gdelt.value,source:"GDELT",loading:false}:{...d.gdelt,source:"STATIC",loading:false};
+      n.gdelt = gdelt.status==="fulfilled"?{value:gdelt.value.count,articles:gdelt.value.articles||[],source:"GDELT",loading:false}:{...d.gdelt,source:"STATIC",loading:false};
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
 
       const gccData = cache.gcc_strikes;
