@@ -4,6 +4,29 @@ import "leaflet/dist/leaflet.css";
 
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
 
+// Sequential AI request queue to avoid Anthropic rate limits
+const aiQueue = [];
+let aiQueueRunning = false;
+const AI_DELAY_MS = 3000; // 3s between AI calls
+
+function enqueueAICall(fn) {
+  return new Promise((resolve, reject) => {
+    aiQueue.push({ fn, resolve, reject });
+    processAIQueue();
+  });
+}
+
+async function processAIQueue() {
+  if (aiQueueRunning) return;
+  aiQueueRunning = true;
+  while (aiQueue.length > 0) {
+    const { fn, resolve, reject } = aiQueue.shift();
+    try { resolve(await fn()); } catch (e) { reject(e); }
+    if (aiQueue.length > 0) await new Promise(r => setTimeout(r, AI_DELAY_MS));
+  }
+  aiQueueRunning = false;
+}
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1770,9 +1793,14 @@ export default function NEMACOPLive() {
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
     }));
-    const [eia, opa, fin, gdelt, ioda, gcc, pw, ukmtoRes, ksaStr, ciStat] = await Promise.allSettled([
-      fetchEIABrent(), fetchOPABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes(),
-      fetchPortWatch(), fetchUKMTO(), fetchKSAStrikes(), fetchCIStatus()
+    // Non-AI calls run in parallel; AI calls are queued sequentially to avoid rate limits
+    const [eia, opa, gdelt, ioda, pw, fin, gcc, ukmtoRes, ksaStr, ciStat] = await Promise.allSettled([
+      fetchEIABrent(), fetchOPABrent(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
+      enqueueAICall(fetchFinancial),
+      enqueueAICall(fetchGCCStrikes),
+      enqueueAICall(fetchUKMTO),
+      enqueueAICall(fetchKSAStrikes),
+      enqueueAICall(fetchCIStatus),
     ]);
     setLive(d=>{
       const n={...d};
