@@ -1099,13 +1099,13 @@ const ScreenDecisions = () => {
           { l:"≤72H WINDOW",  v:sorted.filter(d=>d.window.includes("72h")).length, c:C.info },
         ].map((item,i)=>(
           <div key={i} style={{ flex:1, padding:"10px 12px", background:C.surface, border:`1px solid ${item.c}22`, borderRadius:4, textAlign:"center" }}>
-            <div style={{ fontSize:7, color:C.muted, letterSpacing:"0.05em" }}>{item.l}</div>
-            <div style={{ fontSize:22, fontWeight:"bold", color:item.c, margin:"4px 0" }}>{item.v}</div>
+            <div style={{ fontSize:10, color:C.muted, letterSpacing:"0.05em" }}>{item.l}</div>
+            <div style={{ fontSize:26, fontWeight:"bold", color:item.c, margin:"4px 0" }}>{item.v}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ fontSize:9, color:C.dim, marginBottom:10 }}>Sorted by urgency · STATIC — scenario-generated decision matrix</div>
+      <div style={{ fontSize:12, color:C.dim, marginBottom:10 }}>Sorted by urgency · STATIC — scenario-generated decision matrix</div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
         {sorted.map((d,i)=>{
@@ -1113,12 +1113,12 @@ const ScreenDecisions = () => {
           return (
             <div key={i} style={{ padding:"12px 14px", borderRadius:"0 4px 4px 0", background:`${sc}06`, border:`1px solid ${sc}22`, borderLeft:`3px solid ${sc}` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-                <span style={{ fontSize:11, fontWeight:"600", color:C.fg, flex:1, marginRight:8 }}>{d.title}</span>
-                <span style={{ fontSize:10, fontWeight:"bold", padding:"2px 10px", borderRadius:3, background:`${sc}22`, color:sc, whiteSpace:"nowrap" }}>⏱ {d.window}</span>
+                <span style={{ fontSize:14, fontWeight:"600", color:C.fg, flex:1, marginRight:8 }}>{d.title}</span>
+                <span style={{ fontSize:13, fontWeight:"bold", padding:"3px 12px", borderRadius:3, background:`${sc}22`, color:sc, whiteSpace:"nowrap" }}>⏱ {d.window}</span>
               </div>
               <div style={{ display:"flex", gap:6 }}>
-                <span style={{ fontSize:7, padding:"1px 7px", borderRadius:3, background:`${d.clusterColor}22`, color:d.clusterColor }}>{d.clusterIcon} {d.cluster}</span>
-                <span style={{ fontSize:7, padding:"1px 7px", borderRadius:3, background:`${sc}22`, color:sc }}>{d.severity.toUpperCase()}</span>
+                <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${d.clusterColor}22`, color:d.clusterColor }}>{d.clusterIcon} {d.cluster}</span>
+                <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${sc}22`, color:sc }}>{d.severity.toUpperCase()}</span>
               </div>
             </div>
           );
@@ -1127,7 +1127,7 @@ const ScreenDecisions = () => {
 
       {/* Readiness snapshot */}
       <div style={{ marginTop:16 }}>
-        <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>AGENCY READINESS SNAPSHOT</div>
+        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>AGENCY READINESS SNAPSHOT</div>
         <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
           {[
             { m:"Civil Defence", v:"ACTIVATED",    c:C.success, src:"SPA" },
@@ -1137,10 +1137,10 @@ const ScreenDecisions = () => {
             { m:"Hospital Surge",v:"PHASE 1",       c:C.warning, src:"MoH" },
           ].map((r,i)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:3 }}>
-              <span style={{ flex:2, fontSize:9, color:C.fg }}>{r.m}</span>
+              <span style={{ flex:2, fontSize:12, color:C.fg }}>{r.m}</span>
               <StatusBadge s={r.v.split(" ")[0]} />
-              <span style={{ fontSize:7, color:C.dim }}>{r.v}</span>
-              <span style={{ fontSize:7, color:C.dim, marginLeft:"auto" }}>SRC: {r.src} · STATIC</span>
+              <span style={{ fontSize:10, color:C.dim }}>{r.v}</span>
+              <span style={{ fontSize:10, color:C.dim, marginLeft:"auto" }}>SRC: {r.src} · STATIC</span>
             </div>
           ))}
         </div>
@@ -1164,30 +1164,30 @@ const ScreenEconomic = ({ live }) => (
     {/* Strategic Reserves */}
     <div style={{ marginBottom:12 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-        <span style={{ fontSize:10, fontWeight:"bold", color:C.fg }}>STRATEGIC RESERVES</span>
-        <span style={{ fontSize:7, color:C.dim }}>STATIC · OSINT estimates + SAGO/MoH baselines</span>
+        <span style={{ fontSize:13, fontWeight:"bold", color:C.fg }}>STRATEGIC RESERVES</span>
+        <span style={{ fontSize:10, color:C.dim }}>STATIC · OSINT estimates + SAGO/MoH baselines</span>
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
         {RESERVES.map((r,i)=>(
           <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4 }}>
-            <div style={{ flex:2, fontSize:9, color:C.fg }}>{r.name}</div>
+            <div style={{ flex:2, fontSize:12, color:C.fg }}>{r.name}</div>
             <div style={{ flex:1 }}>
               {r.pct>0
                 ? <div style={{ width:"100%", height:4, background:C.surfBorder, borderRadius:2 }}><div style={{ height:"100%", borderRadius:2, width:`${r.pct}%`, background:r.color }}/></div>
-                : <div style={{ fontSize:8, color:C.dim }}>No data</div>}
+                : <div style={{ fontSize:11, color:C.dim }}>No data</div>}
             </div>
-            <span style={{ width:40, textAlign:"right", fontSize:13, fontWeight:"bold", color:r.color }}>{r.days!==null?`${r.days}d`:"—"}</span>
-            <span style={{ fontSize:6, padding:"1px 4px", borderRadius:3, background:C.surface, border:`1px solid ${C.surfBorder}`, color:C.dim }}>±{r.conf}</span>
+            <span style={{ width:40, textAlign:"right", fontSize:16, fontWeight:"bold", color:r.color }}>{r.days!==null?`${r.days}d`:"—"}</span>
+            <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:C.surface, border:`1px solid ${C.surfBorder}`, color:C.dim }}>±{r.conf}</span>
             <StatusBadge s={r.status} />
           </div>
         ))}
       </div>
-      <div style={{ marginTop:6, fontSize:7, color:C.dim }}>Confidence: 90-100 = verified · 70-89 = agency baseline · 50-69 = OSINT estimated · &lt;50 = unverified</div>
+      <div style={{ marginTop:6, fontSize:10, color:C.dim }}>Confidence: 90-100 = verified · 70-89 = agency baseline · 50-69 = OSINT estimated · &lt;50 = unverified</div>
     </div>
 
     {/* Scenario comparison */}
     <div>
-      <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>ECONOMIC SCENARIO COMPARISON</div>
+      <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>ECONOMIC SCENARIO COMPARISON</div>
       <div style={{ display:"flex", gap:6 }}>
         {[
           { sc:"Hormuz reopens 7d",    brent:"$82",   food:"-5%",  medical:"Adequate",           c:C.success },
@@ -1195,14 +1195,14 @@ const ScreenEconomic = ({ live }) => (
           { sc:"Closed + Abqaiq hit",  brent:"$150+", food:"+60%", medical:"Multiple critical",   c:C.critical },
         ].map((s,i)=>(
           <div key={i} style={{ flex:1, padding:12, borderRadius:4, background:`${s.c}06`, border:`1px solid ${s.c}22` }}>
-            <div style={{ fontSize:9, fontWeight:"bold", color:s.c, marginBottom:8 }}>{s.sc}</div>
-            <div style={{ fontSize:8, color:C.muted }}>Brent: <span style={{ color:C.fg }}>{s.brent}</span></div>
-            <div style={{ fontSize:8, color:C.muted }}>Food price: <span style={{ color:C.fg }}>{s.food}</span></div>
-            <div style={{ fontSize:8, color:C.muted }}>Medical: <span style={{ color:C.fg }}>{s.medical}</span></div>
+            <div style={{ fontSize:12, fontWeight:"bold", color:s.c, marginBottom:8 }}>{s.sc}</div>
+            <div style={{ fontSize:11, color:C.muted }}>Brent: <span style={{ color:C.fg }}>{s.brent}</span></div>
+            <div style={{ fontSize:11, color:C.muted }}>Food price: <span style={{ color:C.fg }}>{s.food}</span></div>
+            <div style={{ fontSize:11, color:C.muted }}>Medical: <span style={{ color:C.fg }}>{s.medical}</span></div>
           </div>
         ))}
       </div>
-      <div style={{ marginTop:6, fontSize:7, color:C.dim }}>SOURCES: AI scenario modeling · Yahoo Finance · PortWatch · STATIC</div>
+      <div style={{ marginTop:6, fontSize:10, color:C.dim }}>SOURCES: AI scenario modeling · Yahoo Finance · PortWatch · STATIC</div>
     </div>
   </div>
 );
@@ -1284,12 +1284,12 @@ const ScreenScenarios = () => {
       {/* Severity level */}
       <div style={{ display:"flex", alignItems:"center", gap:16, padding:12, borderRadius:6, marginBottom:12, background:`${severityColor}08`, border:`1px solid ${severityColor}22` }}>
         <div>
-          <div style={{ fontSize:8, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL SEVERITY LEVEL</div>
+          <div style={{ fontSize:11, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL SEVERITY LEVEL</div>
           <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-            <span style={{ fontSize:32, fontWeight:"bold", color:severityColor }}>{severityLevel}</span>
-            <span style={{ fontSize:13, color:C.muted }}>{severityLabel[severityLevel]}</span>
+            <span style={{ fontSize:38, fontWeight:"bold", color:severityColor }}>{severityLevel}</span>
+            <span style={{ fontSize:16, color:C.muted }}>{severityLabel[severityLevel]}</span>
           </div>
-          <div style={{ fontSize:8, color:C.dim }}>{severityScore}/100 · Auto-calculated composite</div>
+          <div style={{ fontSize:11, color:C.dim }}>{severityScore}/100 · Auto-calculated composite</div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, flex:1 }}>
           {Object.entries(SEVERITY_FACTORS).map(([k,f])=>{
@@ -1298,8 +1298,8 @@ const ScreenScenarios = () => {
             return (
               <div key={k} style={{ padding:"5px 8px", borderRadius:3, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                  <span style={{ fontSize:7, color:C.fg }}>{f.label}</span>
-                  <span style={{ fontSize:7, fontWeight:"bold", color:col }}>{f.value}/{f.max}</span>
+                  <span style={{ fontSize:10, color:C.fg }}>{f.label}</span>
+                  <span style={{ fontSize:10, fontWeight:"bold", color:col }}>{f.value}/{f.max}</span>
                 </div>
                 <div style={{ height:2, background:C.surfBorder, borderRadius:1 }}>
                   <div style={{ height:"100%", width:`${pct}%`, background:col, borderRadius:1 }}/>
@@ -1312,15 +1312,15 @@ const ScreenScenarios = () => {
 
       {/* Scenario probability cards */}
       <div style={{ marginBottom:12 }}>
-        <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>SCENARIO PROBABILITIES — Day 7</div>
+        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>SCENARIO PROBABILITIES — Day 7</div>
         <div style={{ display:"flex", gap:8 }}>
           {SCENARIOS.map((s,i)=>(
             <div key={i} style={{ flex:1, padding:12, borderRadius:"0 0 4px 4px", background:`${s.color}06`, border:`1px solid ${s.color}22`, borderTop:`3px solid ${s.color}` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                <span style={{ fontSize:9, fontWeight:"bold", color:s.color }}>{s.name}</span>
-                <span style={{ fontSize:20, fontWeight:"bold", color:s.color }}>{s.prob}</span>
+                <span style={{ fontSize:12, fontWeight:"bold", color:s.color }}>{s.name}</span>
+                <span style={{ fontSize:24, fontWeight:"bold", color:s.color }}>{s.prob}</span>
               </div>
-              <div style={{ fontSize:8, color:C.muted, lineHeight:1.5 }}>{s.desc}</div>
+              <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>{s.desc}</div>
               {/* Probability bar */}
               <div style={{ marginTop:8, height:3, background:C.surfBorder, borderRadius:2 }}>
                 <div style={{ height:"100%", width:s.prob, background:s.color, borderRadius:2 }}/>
@@ -1328,22 +1328,22 @@ const ScreenScenarios = () => {
             </div>
           ))}
         </div>
-        <div style={{ marginTop:6, fontSize:7, color:C.dim }}>SOURCES: INSS · Alma Center · AI modeling · STATIC</div>
+        <div style={{ marginTop:6, fontSize:10, color:C.dim }}>SOURCES: INSS · Alma Center · AI modeling · STATIC</div>
       </div>
 
       {/* FAQ / What-If */}
       <div>
-        <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>WHAT-IF ANALYSIS</div>
+        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>WHAT-IF ANALYSIS</div>
         {FAQS.map((faq,i)=>(
           <div key={i} style={{ marginBottom:4, borderRadius:3, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
             <div onClick={()=>setExpandedFAQ(expandedFAQ===i?null:i)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", cursor:"pointer", background:expandedFAQ===i?"rgba(59,130,246,0.08)":C.surface }}>
-              <span style={{ fontSize:9, color:expandedFAQ===i?C.info:C.fg }}>{faq.q}</span>
-              <span style={{ fontSize:9, color:C.dim }}>{expandedFAQ===i?"▾":"▸"}</span>
+              <span style={{ fontSize:12, color:expandedFAQ===i?C.info:C.fg }}>{faq.q}</span>
+              <span style={{ fontSize:12, color:C.dim }}>{expandedFAQ===i?"▾":"▸"}</span>
             </div>
             {expandedFAQ===i && (
-              <div style={{ padding:"8px 12px", background:"rgba(255,255,255,0.01)", fontSize:9, color:C.muted, lineHeight:1.7 }}>
+              <div style={{ padding:"8px 12px", background:"rgba(255,255,255,0.01)", fontSize:12, color:C.muted, lineHeight:1.7 }}>
                 {faq.a}
-                <div style={{ marginTop:6, fontSize:7, color:C.dim }}>STATIC · INSS / Alma / OSINT synthesis</div>
+                <div style={{ marginTop:6, fontSize:10, color:C.dim }}>STATIC · INSS / Alma / OSINT synthesis</div>
               </div>
             )}
           </div>
@@ -1401,46 +1401,46 @@ const ScreenAIBrief = ({ live }) => {
     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>▣ EXECUTIVE SITUATION BRIEF</span>
+          <span style={{ fontSize:12, fontWeight:"bold", color:C.fg }}>▣ EXECUTIVE SITUATION BRIEF</span>
           <FeedTag feed="LIVE" />
         </div>
-        <div style={{ fontSize:8, color:C.dim, marginBottom:8 }}>Brent {live.brent.value} · TASI {live.tasi.value} · GDELT {live.gdelt.value}/24h · Day 7 injected live</div>
-        {!brief&&!loading&&<button onClick={generateBrief} style={{ padding:"8px 16px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:C.info, fontSize:9, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>▣ GENERATE BRIEF</button>}
-        {loading&&<div style={{ fontSize:9, color:C.muted }}><span className="cop-pulse">●</span> Generating from live data…</div>}
+        <div style={{ fontSize:11, color:C.dim, marginBottom:8 }}>Brent {live.brent.value} · TASI {live.tasi.value} · GDELT {live.gdelt.value}/24h · Day 7 injected live</div>
+        {!brief&&!loading&&<button onClick={generateBrief} style={{ padding:"8px 16px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:C.info, fontSize:12, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>▣ GENERATE BRIEF</button>}
+        {loading&&<div style={{ fontSize:12, color:C.muted }}><span className="cop-pulse">●</span> Generating from live data…</div>}
         {brief&&<div>
-          <div style={{ fontSize:9, color:C.fg, lineHeight:1.8, whiteSpace:"pre-line", padding:"10px 12px", background:"rgba(255,255,255,0.02)", borderRadius:3, border:`1px solid ${C.surfBorder}` }}>{brief}</div>
-          <button onClick={generateBrief} style={{ marginTop:8, padding:"4px 10px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.2)", borderRadius:3, color:C.info, fontSize:8, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>↻ REGENERATE</button>
+          <div style={{ fontSize:12, color:C.fg, lineHeight:1.8, whiteSpace:"pre-line", padding:"10px 12px", background:"rgba(255,255,255,0.02)", borderRadius:3, border:`1px solid ${C.surfBorder}` }}>{brief}</div>
+          <button onClick={generateBrief} style={{ marginTop:8, padding:"4px 10px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.2)", borderRadius:3, color:C.info, fontSize:11, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>↻ REGENERATE</button>
         </div>}
       </div>
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-          <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>💬 MINISTER QUERY — NEMA AI</span>
+          <span style={{ fontSize:12, fontWeight:"bold", color:C.fg }}>💬 MINISTER QUERY — NEMA AI</span>
           <FeedTag feed="LIVE" />
         </div>
         {msgs.length===0&&<div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
           {["What if Abqaiq is hit?","When will food run out?","Economic cost so far?","Oman mediation options?","Worst-case 30 days?"].map(q=>(
-            <button key={q} onClick={()=>setInput(q)} style={{ fontSize:7, padding:"3px 8px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.18)", borderRadius:3, color:C.info, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>{q}</button>
+            <button key={q} onClick={()=>setInput(q)} style={{ fontSize:10, padding:"4px 10px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.18)", borderRadius:3, color:C.info, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>{q}</button>
           ))}
         </div>}
         <div ref={chatRef} style={{ maxHeight:220, overflowY:"auto", marginBottom:8, display:"flex", flexDirection:"column", gap:6 }}>
           {msgs.map((m,i)=>(
             <div key={i} style={{ padding:"6px 8px", borderRadius:3, background:m.role==="user"?"rgba(59,130,246,0.08)":"rgba(255,255,255,0.02)", borderLeft:`2px solid ${m.role==="user"?C.info:C.muted}` }}>
-              <div style={{ fontSize:7, color:C.dim, marginBottom:2 }}>{m.role==="user"?"MINISTER":"NEMA AI"}</div>
-              <div style={{ fontSize:9, color:C.fg, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.content}</div>
+              <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>{m.role==="user"?"MINISTER":"NEMA AI"}</div>
+              <div style={{ fontSize:12, color:C.fg, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.content}</div>
             </div>
           ))}
           {chatLoading&&<div style={{ padding:"6px 8px", borderRadius:3, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${C.muted}` }}>
-            <div style={{ fontSize:7, color:C.dim, marginBottom:2 }}>NEMA AI</div>
-            <span className="cop-pulse" style={{ fontSize:9, color:C.muted }}>●●●</span>
+            <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>NEMA AI</div>
+            <span className="cop-pulse" style={{ fontSize:12, color:C.muted }}>●●●</span>
           </div>}
         </div>
         <div style={{ display:"flex", gap:6 }}>
           <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()}
             placeholder="Ask anything about the situation…"
-            style={{ flex:1, padding:"6px 8px", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.surfBorder}`, borderRadius:3, color:C.fg, fontSize:8, fontFamily:"JetBrains Mono,monospace" }}
+            style={{ flex:1, padding:"8px 10px", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.surfBorder}`, borderRadius:3, color:C.fg, fontSize:11, fontFamily:"JetBrains Mono,monospace" }}
           />
           <button onClick={sendChat} disabled={chatLoading}
-            style={{ padding:"6px 12px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:chatLoading?C.muted:C.info, fontSize:8, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>
+            style={{ padding:"6px 12px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:chatLoading?C.muted:C.info, fontSize:11, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>
             {chatLoading?"…":"SEND"}
           </button>
         </div>
@@ -1523,29 +1523,29 @@ export default function NEMACOPLive() {
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:38,height:38,borderRadius:6,background:"linear-gradient(135deg,#1e40af,#1e3a8a)",border:"1px solid #3b82f644",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 20px rgba(59,130,246,0.15)"}}>⬡</div>
             <div>
-              <div style={{fontSize:14,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>NEMA MINISTER COP</div>
-              <div style={{fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>NATIONAL EMERGENCY MANAGEMENT AUTHORITY · LIVE DEMO</div>
+              <div style={{fontSize:16,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>NEMA MINISTER COP</div>
+              <div style={{fontSize:10,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>NATIONAL EMERGENCY MANAGEMENT AUTHORITY · LIVE DEMO</div>
             </div>
           </div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
             {[["HORMUZ","CLOSED D7",C.critical],["KSA AIRSPACE","RESTRICTED",C.warning],["CIVIL DEFENSE","ACTIVATED",C.success],["THREAT","CRITICAL",C.critical]].map(([l,v,c])=>(
               <div key={l} style={{textAlign:"center"}}>
-                <div style={{fontSize:7,color:C.dim,letterSpacing:"0.06em",marginBottom:3}}>{l}</div>
-                <span style={{fontSize:8,padding:"3px 8px",borderRadius:4,background:`${c}14`,color:c,border:`1px solid ${c}28`,fontWeight:600}}>{v}</span>
+                <div style={{fontSize:10,color:C.dim,letterSpacing:"0.06em",marginBottom:3}}>{l}</div>
+                <span style={{fontSize:11,padding:"3px 10px",borderRadius:4,background:`${c}14`,color:c,border:`1px solid ${c}28`,fontWeight:600}}>{v}</span>
               </div>
             ))}
           </div>
-          <div style={{fontSize:8,color:C.dim,textAlign:"right"}}>
+          <div style={{fontSize:11,color:C.dim,textAlign:"right"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
               <span style={{color:C.success,fontWeight:600}}>● Day 7 · 07 MAR 2026</span>
-              <button onClick={refresh} disabled={refreshing} style={{padding:"4px 10px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:4,color:refreshing?C.dim:C.success,fontSize:7,cursor:"pointer",fontFamily:"JetBrains Mono,monospace",fontWeight:600}}>
+              <button onClick={refresh} disabled={refreshing} style={{padding:"4px 10px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:4,color:refreshing?C.dim:C.success,fontSize:10,cursor:"pointer",fontFamily:"JetBrains Mono,monospace",fontWeight:600}}>
                 {refreshing?<span className="cop-pulse">↻ FETCHING…</span>:"↻ REFRESH LIVE"}
               </button>
             </div>
-            <div style={{fontSize:7,color:C.dim}}>Last fetch: {fmt(lastRefresh)}</div>
+            <div style={{fontSize:10,color:C.dim}}>Last fetch: {fmt(lastRefresh)}</div>
             <div style={{marginTop:4,display:"flex",gap:5}}>
               {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
-                <span key={l} style={{fontSize:6,padding:"2px 5px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
+                <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
               ))}
             </div>
           </div>
@@ -1553,7 +1553,7 @@ export default function NEMACOPLive() {
 
         {/* LIVE STATUS BAR */}
         <div style={{background:"#0a1220",borderBottom:`1px solid ${C.surfBorder}`,padding:"6px 20px",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-          <span style={{fontSize:7,color:C.dim,fontWeight:600,letterSpacing:"0.08em"}}>LIVE:</span>
+          <span style={{fontSize:10,color:C.dim,fontWeight:600,letterSpacing:"0.08em"}}>LIVE:</span>
           {[
             {l:"BRENT", src:live.brent.source, loading:live.brent.loading, v:live.brent.value},
             {l:"TASI",  src:live.tasi.source,  loading:live.tasi.loading,  v:live.tasi.value},
@@ -1562,12 +1562,12 @@ export default function NEMACOPLive() {
             {l:"GCC",   src:live.gcc.data?"AI+WEB":"STATIC", loading:live.gcc.loading, v:live.gcc.error?"⚠ failed":live.gcc.data?"✓ sourced":"seed"},
           ].map(f=>(
             <div key={f.l} style={{display:"flex",alignItems:"center",gap:5}}>
-              <span style={{fontSize:7,color:C.dim,fontWeight:500}}>{f.l}:</span>
-              {f.loading?<span className="cop-pulse" style={{fontSize:7,color:C.info}}>●</span>:<span style={{fontSize:7,color:f.src==="STATIC"?C.dim:C.success,fontWeight:500}}>{f.v}</span>}
+              <span style={{fontSize:10,color:C.dim,fontWeight:500}}>{f.l}:</span>
+              {f.loading?<span className="cop-pulse" style={{fontSize:10,color:C.info}}>●</span>:<span style={{fontSize:10,color:f.src==="STATIC"?C.dim:C.success,fontWeight:500}}>{f.v}</span>}
               <FeedTag feed={f.src} loading={f.loading}/>
             </div>
           ))}
-          <span style={{marginLeft:"auto",fontSize:7,color:C.dim}}>CORS-blocked: Yahoo Finance direct · NASA FIRMS · PortWatch (use server-side proxy in repo)</span>
+          <span style={{marginLeft:"auto",fontSize:10,color:C.dim}}>CORS-blocked: Yahoo Finance direct · NASA FIRMS · PortWatch (use server-side proxy in repo)</span>
         </div>
 
         {/* TAB BAR */}
@@ -1577,7 +1577,7 @@ export default function NEMACOPLive() {
               padding:"10px 16px", background:tab===i?"#192233":"transparent",
               border:"none", borderBottom:tab===i?`2px solid ${C.info}`:"2px solid transparent",
               cursor:"pointer", color:tab===i?C.fg:C.muted,
-              fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontFamily:"'JetBrains Mono',monospace", fontSize:11,
               fontWeight:tab===i?700:500, letterSpacing:"0.08em",
               whiteSpace:"nowrap", transition:"all 0.15s ease",
             }}>
@@ -1590,7 +1590,7 @@ export default function NEMACOPLive() {
         <main style={{flex:1,overflowY:"auto",padding:"18px 20px"}}>{screens[tab]}</main>
 
         {/* FOOTER */}
-        <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:7,color:C.dim,flexWrap:"wrap",gap:6}}>
+        <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:10,color:C.dim,flexWrap:"wrap",gap:6}}>
           <span>BRENT · TASI · GCC STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
           <span style={{color:"#f97316"}}>PENDING SERVER-SIDE: Yahoo Finance direct · NASA FIRMS · OpenWeatherMap · PortWatch · ACLED</span>
         </footer>
