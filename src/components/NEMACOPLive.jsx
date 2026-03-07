@@ -302,11 +302,11 @@ const GCCTheater = ({ gcc }) => {
   });
   const maxStrikes = Math.max(...states.map(s=>s.strikes));
   return (
-    <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:10, marginBottom:10 }}>
-      <div onClick={()=>setExpanded(!expanded)} style={{ display:"flex", justifyContent:"space-between", cursor:"pointer", marginBottom:expanded?8:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>GCC THEATER</span>
-          <span style={{ fontSize:7, color:C.dim }}>projectiles by state</span>
+    <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
+      <div onClick={()=>setExpanded(!expanded)} style={{ display:"flex", justifyContent:"space-between", cursor:"pointer", marginBottom:expanded?10:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.1em" }}>GCC THEATER</span>
+          <span style={{ fontSize:7, color:C.dim, letterSpacing:"0.04em" }}>projectiles by state</span>
           {gcc.loading && <span className="cop-pulse" style={{ fontSize:7, color:C.info }}>● fetching…</span>}
           {gcc.error   && <span style={{ fontSize:7, color:C.warning }}>⚠ search failed — seed shown</span>}
         </div>
@@ -364,7 +364,7 @@ const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   return (
     <div>
-      <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
         <KpiCard label="STRIKES KSA"  value="19"     change="+3/24h"                color={C.critical} feed="CONFIRMED" />
         <KpiCard label="INTERCEPTS"   value="96%"    note="Patriot/THAAD"           color={C.success}  feed="CONFIRMED" />
         <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} />
@@ -373,10 +373,10 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
         <KpiCard label="KSA INTERNET" value={live.ioda.value!==null?`${live.ioda.value}%`:"—"} note="vs baseline" color={live.ioda.value!==null&&live.ioda.value<80?C.critical:C.success} feed="IODA" loading={live.ioda.loading} />
       </div>
-      <div style={{ display:"flex", gap:10, marginBottom:12 }}>
-        <div style={{ flex:2, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:10 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-            <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>THEATER MAP</span>
+      <div style={{ display:"flex", gap:12, marginBottom:14 }}>
+        <div style={{ flex:2, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP</span>
             <FeedTag feed="STATIC" />
           </div>
           <svg viewBox="0 0 360 200" style={{ width:"100%", background:"#060b17", borderRadius:3 }}>
@@ -392,12 +392,12 @@ const ScreenSituation = ({ live }) => {
             })}
           </svg>
         </div>
-        <div style={{ flex:1, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:10 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-            <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>KSA EVENT LOG</span>
+        <div style={{ flex:1, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
             <FeedTag feed="STATIC" />
           </div>
-          <div style={{ maxHeight:210, overflowY:"auto", display:"flex", flexDirection:"column", gap:2 }}>
+          <div style={{ maxHeight:210, overflowY:"auto", display:"flex", flexDirection:"column", gap:3 }}>
             {STRIKES_KSA.map(e=>{
               const col=e.sev==="critical"?C.critical:C.warning;
               return (
