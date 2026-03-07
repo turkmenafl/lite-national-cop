@@ -983,7 +983,7 @@ const ScreenSituation = ({ live }) => {
         </div>
 
         {/* Map + Right Panel */}
-        <div style={{ display:"flex", gap:0, alignItems:"stretch", height:520 }}>
+        <div style={{ display:"flex", gap:0, alignItems:"stretch" }}>
           {/* Left: Theater Map */}
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
