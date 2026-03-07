@@ -33,13 +33,35 @@ const C = {
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const GCC_SEED = [
-  { code:"SA", name:"🇸🇦 KSA",     airspace:"RESTRICTED", strikes:19,   interceptPct:96, confidence:"CONFIRMED", source:"Saudi MoD spokesman",     note:"96% intercept. Ras Tanura degraded. Abqaiq near-miss Mar 4." },
-  { code:"AE", name:"🇦🇪 UAE",     airspace:"RESTRICTED", strikes:1276, interceptPct:92, confidence:"CONFIRMED", source:"UAE MoD press conference",  note:"Jebel Ali + Dubai T3 + French base hit." },
-  { code:"QA", name:"🇶🇦 Qatar",   airspace:"CLOSED",     strikes:115,  interceptPct:90, confidence:"EST",       source:"CTP-ISW / LWJ",             note:"Al Udeid 2 BM impacts. LNG suspended." },
-  { code:"KW", name:"🇰🇼 Kuwait",  airspace:"RESTRICTED", strikes:484,  interceptPct:88, confidence:"EST",       source:"KUNA / US DoD",             note:"Ali Al Salem struck. US Embassy hit." },
-  { code:"BH", name:"🇧🇭 Bahrain", airspace:"RESTRICTED", strikes:198,  interceptPct:85, confidence:"EST",       source:"NAVCENT / Alma Research",   note:"5th Fleet HQ struck. Bapco refinery hit." },
-  { code:"OM", name:"🇴🇲 Oman",    airspace:"OPEN",       strikes:4,    interceptPct:50, confidence:"EST",       source:"ONA / Reuters",             note:"Duqm Port drone. Mediator status." },
+  { code:"SA", name:"🇸🇦 KSA",     airspace:"RESTRICTED", strikes:19,   interceptPct:96, confidence:"CONFIRMED", source:"Saudi MoD spokesman",     note:"96% intercept. Ras Tanura degraded. Abqaiq near-miss Mar 4.", daily:[3,2,1,2,3,3,5] },
+  { code:"AE", name:"🇦🇪 UAE",     airspace:"RESTRICTED", strikes:1276, interceptPct:92, confidence:"CONFIRMED", source:"UAE MoD press conference",  note:"Jebel Ali + Dubai T3 + French base hit.", daily:[120,145,160,185,200,220,246] },
+  { code:"QA", name:"🇶🇦 Qatar",   airspace:"CLOSED",     strikes:115,  interceptPct:90, confidence:"EST",       source:"CTP-ISW / LWJ",             note:"Al Udeid 2 BM impacts. LNG suspended.", daily:[8,10,14,18,20,22,23] },
+  { code:"KW", name:"🇰🇼 Kuwait",  airspace:"RESTRICTED", strikes:484,  interceptPct:88, confidence:"EST",       source:"KUNA / US DoD",             note:"Ali Al Salem struck. US Embassy hit.", daily:[45,55,62,70,78,85,89] },
+  { code:"BH", name:"🇧🇭 Bahrain", airspace:"RESTRICTED", strikes:198,  interceptPct:85, confidence:"EST",       source:"NAVCENT / Alma Research",   note:"5th Fleet HQ struck. Bapco refinery hit.", daily:[18,22,25,28,32,35,38] },
+  { code:"OM", name:"🇴🇲 Oman",    airspace:"OPEN",       strikes:4,    interceptPct:50, confidence:"EST",       source:"ONA / Reuters",             note:"Duqm Port drone. Mediator status.", daily:[0,0,0,1,1,1,1] },
 ];
+
+function makeSparklineSvg(daily, color) {
+  const w = 240, h = 36, pad = 2;
+  const max = Math.max(...daily, 1);
+  const pts = daily.map((v, i) => {
+    const x = pad + (i / (daily.length - 1)) * (w - pad * 2);
+    const y = h - pad - (v / max) * (h - pad * 2);
+    return `${x},${y}`;
+  });
+  const fillPts = [pts[0].split(",")[0] + "," + (h - pad), ...pts, pts[pts.length - 1].split(",")[0] + "," + (h - pad)].join(" ");
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;margin:6px 0 2px 0">
+    <polygon points="${fillPts}" fill="${color}15" />
+    <polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${daily.map((v, i) => {
+      const x = pad + (i / (daily.length - 1)) * (w - pad * 2);
+      const y = h - pad - (v / max) * (h - pad * 2);
+      return i === daily.length - 1 ? `<circle cx="${x}" cy="${y}" r="2.5" fill="${color}"/>` : "";
+    }).join("")}
+    <text x="${pad}" y="${h - 1}" fill="#526175" font-size="6" font-family="JetBrains Mono">Feb 28</text>
+    <text x="${w - pad}" y="${h - 1}" fill="#526175" font-size="6" font-family="JetBrains Mono" text-anchor="end">Mar 07</text>
+  </svg>`
+}
 
 const STRIKES_KSA = [
   { id:1,  time:"Mar 07 09:30", type:"Ballistic Missile", loc:"Abqaiq vicinity — 2nd attempt",       status:"Intercepted",               sev:"critical", day:"Mar 07", wep:"Ballistic", lat:25.94, lng:49.68 },
@@ -507,8 +529,10 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
                       <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(34,197,94,0.14);color:#22c55e;font-weight:600">✓ ${seed.interceptPct}%</span>
                       ${confChip}
                     </div>
-                    <div style="font-size:8px;color:#a0b4c8;line-height:1.7;margin-bottom:6px;border-top:1px solid #27324860;padding-top:6px">${seed.note}</div>
-                    <div style="font-size:7px;color:#526175;text-align:right">${seed.source}</div>
+                    <div style="font-size:8px;color:#a0b4c8;line-height:1.7;margin-bottom:4px;border-top:1px solid #27324860;padding-top:6px">${seed.note}</div>
+                    <div style="font-size:7px;color:#526175;margin-bottom:2px">DAILY STRIKES (7d)</div>
+                    ${makeSparklineSvg(seed.daily, airCol)}
+                    <div style="font-size:7px;color:#526175;text-align:right;margin-top:2px">${seed.source}</div>
                   </div>
                 `)
                 .openOn(mapRef.current);
