@@ -1476,7 +1476,7 @@ const DecisionTable = ({ live }) => {
     return C.muted;
   };
 
-  const headers = ['#','SEV','DOMAIN','KEY DEVELOPMENT','GCC / EMA IMPLICATION','DECISION REQUIRED','WINDOW','SOURCES'];
+  const headers = ['#','SEV','DOMAIN','KEY DEVELOPMENT','IMPLICATIONS','DECISION REQUIRED','WINDOW','SOURCES'];
 
   return (
     <div style={{ overflowX:'auto' }}>
