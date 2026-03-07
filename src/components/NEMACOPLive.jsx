@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
