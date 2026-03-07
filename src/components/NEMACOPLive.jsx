@@ -11,6 +11,10 @@ const CSS = `
   .strike-ping { position:absolute; border-radius:50%; animation: strike-pulse 2s ease-out infinite; }
   .leaflet-container { background: #060b17 !important; }
   .leaflet-control-attribution { display: none !important; }
+  .cop-popup .leaflet-popup-tip-container { display: none !important; }
+  .cop-popup .leaflet-popup-content-wrapper { background: #0d1a2e; border: 1px solid #273248; border-radius: 6px; padding: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .cop-popup .leaflet-popup-content { margin: 0; padding: 12px; font-family: 'JetBrains Mono', monospace; color: #d8e6f5; font-size: 9px; max-width: 280px; }
+  .cop-popup .leaflet-popup-close-button { color: #7d8fa3 !important; font-size: 16px !important; top: 6px !important; right: 8px !important; }
   .cop-pulse { animation: cop-pulse 1.5s ease-in-out infinite; }
   @keyframes cop-fade-in { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
   .cop-fade-in { animation: cop-fade-in 0.25s ease-out; }
@@ -313,6 +317,8 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
+  const gccPolygonsRef = useRef([]);
+  const gccGeoRef = useRef(null); // cached GeoJSON data
 
   // Initialize map once
   useEffect(() => {
@@ -441,6 +447,96 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       }
     }
   }, [filteredStrikes, getMarkers, theaterView, gccMarkers]);
+
+  // GCC country polygons with hover/click — only in GCC view
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    // Remove old polygons
+    gccPolygonsRef.current.forEach(l => map.removeLayer(l));
+    gccPolygonsRef.current = [];
+    if (theaterView !== "GCC") return;
+
+    const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
+    const GCC_ISO_A2 = ["SA","AE","QA","KW","BH","OM"];
+
+    const addPolygons = (geojson) => {
+      if (!mapRef.current) return;
+      const gccFeatures = geojson.features.filter(f => {
+        const iso3 = f.properties?.ISO_A3 || f.properties?.iso_a3 || f.properties?.ISO3 || "";
+        const iso2 = f.properties?.ISO_A2 || f.properties?.iso_a2 || f.properties?.ISO2 || f.id || "";
+        return GCC_ISO[iso3] || GCC_ISO_A2.includes(iso2);
+      });
+
+      gccFeatures.forEach(feature => {
+        const iso3 = feature.properties?.ISO_A3 || feature.properties?.iso_a3 || feature.properties?.ISO3 || "";
+        const iso2 = GCC_ISO[iso3] || feature.properties?.ISO_A2 || feature.properties?.iso_a2 || feature.id || "";
+        const seed = GCC_SEED.find(g => g.code === iso2);
+        if (!seed) return;
+        const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
+        const airCol = seed.airspace==="CLOSED"?C.critical:seed.airspace==="RESTRICTED"?C.warning:C.success;
+        const confCol = seed.confidence==="CONFIRMED"?C.success:"#f97316";
+
+        const layer = L.geoJSON(feature, {
+          style: {
+            fillColor: airCol,
+            fillOpacity: 0.15,
+            color: airCol,
+            opacity: 0.3,
+            weight: 1,
+          },
+          onEachFeature: (f, lyr) => {
+            lyr.on('mouseover', () => {
+              lyr.setStyle({ fillOpacity: 0.4, color: "#ffffff", opacity: 0.6, weight: 1.5 });
+            });
+            lyr.on('mouseout', () => {
+              lyr.setStyle({ fillOpacity: 0.15, color: airCol, opacity: 0.3, weight: 1 });
+            });
+            lyr.on('click', () => {
+              const center = GCC_CAPITALS[iso2] || lyr.getBounds().getCenter();
+              const airChip = `<span style="font-size:7px;padding:2px 6px;border-radius:3px;background:${airCol}22;color:${airCol};font-weight:600">${seed.airspace}</span>`;
+              const confChip = `<span style="font-size:7px;padding:2px 5px;border-radius:3px;background:${confCol}18;color:${confCol};font-weight:500">${seed.confidence}</span>`;
+              const popup = L.popup({ className: "cop-popup", maxWidth: 280, closeButton: true })
+                .setLatLng(center)
+                .setContent(`
+                  <div>
+                    <div style="font-size:11px;font-weight:700;color:#d8e6f5;margin-bottom:6px">${seed.name}</div>
+                    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">${airChip}</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                      <span style="font-size:16px;font-weight:800;color:${airCol}">${gccData.strikes.toLocaleString()}</span>
+                      <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(34,197,94,0.14);color:#22c55e;font-weight:600">✓ ${seed.interceptPct}%</span>
+                      ${confChip}
+                    </div>
+                    <div style="font-size:8px;color:#a0b4c8;line-height:1.7;margin-bottom:6px;border-top:1px solid #27324860;padding-top:6px">${seed.note}</div>
+                    <div style="font-size:7px;color:#526175;text-align:right">${seed.source}</div>
+                  </div>
+                `)
+                .openOn(mapRef.current);
+            });
+          },
+        }).addTo(mapRef.current);
+        gccPolygonsRef.current.push(layer);
+
+        // Add cursor pointer style
+        layer.eachLayer(l => {
+          const el = l.getElement?.();
+          if (el) el.style.cursor = "pointer";
+        });
+      });
+    };
+
+    if (gccGeoRef.current) {
+      addPolygons(gccGeoRef.current);
+    } else {
+      fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+        .then(r => r.json())
+        .then(data => {
+          gccGeoRef.current = data;
+          addPolygons(data);
+        })
+        .catch(() => {});
+    }
+  }, [theaterView, gccMarkers]);
 
   return (
     <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520 }}>
