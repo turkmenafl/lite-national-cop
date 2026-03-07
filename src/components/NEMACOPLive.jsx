@@ -4,10 +4,11 @@ import "leaflet/dist/leaflet.css";
 
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
 
-// Sequential AI request queue to avoid Anthropic rate limits
+// Sequential AI request queue with retry to avoid Anthropic rate limits
 const aiQueue = [];
 let aiQueueRunning = false;
-const AI_DELAY_MS = 3000; // 3s between AI calls
+const AI_DELAY_MS = 8000; // 8s between AI calls (30k tokens/min limit)
+const AI_MAX_RETRIES = 2;
 
 function enqueueAICall(fn) {
   return new Promise((resolve, reject) => {
@@ -21,7 +22,19 @@ async function processAIQueue() {
   aiQueueRunning = true;
   while (aiQueue.length > 0) {
     const { fn, resolve, reject } = aiQueue.shift();
-    try { resolve(await fn()); } catch (e) { reject(e); }
+    let lastErr;
+    for (let attempt = 0; attempt <= AI_MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) await new Promise(r => setTimeout(r, AI_DELAY_MS * (attempt + 1)));
+        resolve(await fn());
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (!e?.message?.includes("429")) { break; } // only retry rate limits
+      }
+    }
+    if (lastErr) reject(lastErr);
     if (aiQueue.length > 0) await new Promise(r => setTimeout(r, AI_DELAY_MS));
   }
   aiQueueRunning = false;
