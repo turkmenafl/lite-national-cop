@@ -304,7 +304,12 @@ Reply ONLY with valid JSON:
 }
 
 // ─── LEAFLET THEATER MAP (plain Leaflet, no react-leaflet) ───────────────────
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers }) => {
+const GCC_CAPITALS = {
+  SA: [24.69, 46.63], AE: [24.47, 54.37], QA: [25.28, 51.53],
+  KW: [29.37, 47.98], BH: [26.22, 50.59], OM: [23.61, 58.59],
+};
+
+const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
@@ -373,38 +378,69 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers }) => {
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Update strike markers when data changes
+  // Update strike markers when data or view changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     // Remove old dynamic layers
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
-    const markers = getMarkers();
-    markers.forEach(p => {
-      const col = p.s === "critical" ? C.critical : C.warning;
-      const m = L.marker([p.lat, p.lng], {
-        icon: L.divIcon({
-          className: "",
-          html: p.s === "critical"
-            ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-            : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
-          iconSize: [14, 14], iconAnchor: [7, 7],
-        }),
-      }).addTo(map);
-      layersRef.current.push(m);
-    });
-    if (filteredStrikes.length === 0) {
-      const m = L.marker([24, 46], {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
-          iconSize: [0, 0], iconAnchor: [-10, 5],
-        }),
-      }).addTo(map);
-      layersRef.current.push(m);
+
+    if (theaterView === "GCC") {
+      // Show all GCC country markers
+      (gccMarkers || []).forEach(g => {
+        const coords = GCC_CAPITALS[g.code];
+        if (!coords) return;
+        const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
+        const isCritical = g.strikes > 100;
+        const m = L.marker(coords, {
+          icon: L.divIcon({
+            className: "",
+            html: isCritical
+              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+            iconSize: [14, 14], iconAnchor: [7, 7],
+          }),
+        }).addTo(map);
+        layersRef.current.push(m);
+        // Country label
+        const lbl = L.marker(coords, {
+          icon: L.divIcon({
+            className: "",
+            html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap">${g.code} ${g.strikes.toLocaleString()}</div>`,
+            iconSize: [0, 0], iconAnchor: [-10, 4],
+          }),
+        }).addTo(map);
+        layersRef.current.push(lbl);
+      });
+    } else {
+      // KSA EVENT LOG — only KSA markers
+      const markers = getMarkers();
+      markers.forEach(p => {
+        const col = p.s === "critical" ? C.critical : C.warning;
+        const m = L.marker([p.lat, p.lng], {
+          icon: L.divIcon({
+            className: "",
+            html: p.s === "critical"
+              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+            iconSize: [14, 14], iconAnchor: [7, 7],
+          }),
+        }).addTo(map);
+        layersRef.current.push(m);
+      });
+      if (filteredStrikes.length === 0) {
+        const m = L.marker([24, 46], {
+          icon: L.divIcon({
+            className: "",
+            html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
+            iconSize: [0, 0], iconAnchor: [-10, 5],
+          }),
+        }).addTo(map);
+        layersRef.current.push(m);
+      }
     }
-  }, [filteredStrikes, getMarkers]);
+  }, [filteredStrikes, getMarkers, theaterView, gccMarkers]);
 
   return (
     <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520 }}>
