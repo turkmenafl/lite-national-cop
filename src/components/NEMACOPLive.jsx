@@ -365,6 +365,7 @@ async function fetchFinancial() {
       messages:[{ role:"user", content:"Find current Brent crude price and Saudi TASI index today. Reply ONLY: BRENT:XX.XX BRENTCHG:+X.X% TASI:XXXXX TASICHG:-X.X%" }]
     })
   });
+  if (!res.ok) throw new Error(`API ${res.status}`);
   const data = await res.json();
   const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("") || "";
   return {
