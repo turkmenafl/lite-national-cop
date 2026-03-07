@@ -130,6 +130,22 @@ async function callAnthropic(apiKey: string, prompt: string, maxTokens: number):
     .map((b: { text: string }) => b.text).join("") || "";
 }
 
+const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+async function callWithRetry(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await callAnthropic(apiKey, prompt, maxTokens);
+    } catch (e) {
+      if (attempt < MAX_RETRIES && e instanceof Error && e.message.includes("429")) {
+        console.warn(`Rate limited, retrying in ${AI_GAP_MS * 2 / 1000}s...`);
+        await delay(AI_GAP_MS * 2);
+      } else { throw e; }
+    }
+  }
+  throw new Error("Unreachable");
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
