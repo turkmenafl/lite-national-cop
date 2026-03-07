@@ -274,6 +274,32 @@ const KpiCard = ({ label, value, change, color, note, feed, loading }) => (
 );
 
 // ─── FETCHERS ─────────────────────────────────────────────────────────────────
+async function fetchEIABrent() {
+  const EIA_KEY = "XvGcVy2EN7a827x0Jl7XUzGTQ290vJrws545UZZ6";
+  const params = new URLSearchParams({
+    api_key: EIA_KEY,
+    frequency: "daily",
+    "data[0]": "value",
+    "facets[series][]": "RBRTE",
+    "sort[0][column]": "period",
+    "sort[0][direction]": "desc",
+    length: "5",
+  });
+  const res = await fetch(`https://api.eia.gov/v2/petroleum/pri/spt/data/?${params}`);
+  const json = await res.json();
+  const data = json?.response?.data ?? [];
+  if (!data.length) throw new Error("EIA no data");
+  const price = parseFloat(data[0].value);
+  const prev  = data[1] ? parseFloat(data[1].value) : price;
+  const chg   = +(price - prev).toFixed(2);
+  const chgPct = +(((chg) / prev) * 100).toFixed(1);
+  return {
+    price,
+    date: data[0].period,
+    change: `${chg >= 0 ? "+" : ""}${chgPct}% vs prev`,
+  };
+}
+
 async function fetchFinancial() {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST", headers:{"Content-Type":"application/json"},
@@ -1469,15 +1495,17 @@ export default function NEMACOPLive() {
       gdelt:{...d.gdelt,loading:true}, ioda:{...d.ioda,loading:true},
       gcc:{...d.gcc,loading:true,error:false},
     }));
-    const [fin, gdelt, ioda, gcc] = await Promise.allSettled([
-      fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes()
+    const [eia, fin, gdelt, ioda, gcc] = await Promise.allSettled([
+      fetchEIABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes()
     ]);
     setLive(d=>{
       const n={...d};
-      if (fin.status==="fulfilled"&&fin.value.brent) {
-        n.brent={value:`$${fin.value.brent.toFixed(2)}`,change:fin.value.brentChg||d.brent.change,source:"AI+WEB",loading:false};
-        n.tasi={value:fin.value.tasi?Number(fin.value.tasi).toLocaleString():d.tasi.value,change:fin.value.tasiChg||d.tasi.change,source:"AI+WEB",loading:false};
-      } else { n.brent={...d.brent,source:"STATIC",loading:false}; n.tasi={...d.tasi,source:"STATIC",loading:false}; }
+      if (eia.status==="fulfilled") {
+        n.brent={value:`$${eia.value.price.toFixed(2)}`,change:eia.value.change,source:"EIA",loading:false};
+      } else { n.brent={...d.brent,source:"STATIC",loading:false}; }
+      if (fin.status==="fulfilled"&&fin.value.tasi) {
+        n.tasi={value:Number(fin.value.tasi).toLocaleString(),change:fin.value.tasiChg||d.tasi.change,source:"AI+WEB",loading:false};
+      } else { n.tasi={...d.tasi,source:"STATIC",loading:false}; }
       n.gdelt = gdelt.status==="fulfilled"?{value:gdelt.value,source:"GDELT",loading:false}:{...d.gdelt,source:"STATIC",loading:false};
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
       n.gcc   = gcc.status==="fulfilled"&&gcc.value?{data:gcc.value,loading:false,error:false}:{data:d.gcc.data,loading:false,error:true};
