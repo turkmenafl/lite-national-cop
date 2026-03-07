@@ -11,6 +11,10 @@ const CSS = `
   .strike-ping { position:absolute; border-radius:50%; animation: strike-pulse 2s ease-out infinite; }
   .leaflet-container { background: #060b17 !important; }
   .leaflet-control-attribution { display: none !important; }
+  .cop-popup .leaflet-popup-tip-container { display: none !important; }
+  .cop-popup .leaflet-popup-content-wrapper { background: #0d1a2e; border: 1px solid #273248; border-radius: 6px; padding: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .cop-popup .leaflet-popup-content { margin: 0; padding: 12px; font-family: 'JetBrains Mono', monospace; color: #d8e6f5; font-size: 9px; max-width: 280px; }
+  .cop-popup .leaflet-popup-close-button { color: #7d8fa3 !important; font-size: 16px !important; top: 6px !important; right: 8px !important; }
   .cop-pulse { animation: cop-pulse 1.5s ease-in-out infinite; }
   @keyframes cop-fade-in { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
   .cop-fade-in { animation: cop-fade-in 0.25s ease-out; }
