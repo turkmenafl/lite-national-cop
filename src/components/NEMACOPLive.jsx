@@ -1370,7 +1370,8 @@ const ScreenInfra = ({ live }) => {
       );
     })}
   </div>
-);
+  );
+};
 
 // ─── SCREEN 4: DECISIONS ──────────────────────────────────────────────────────
 const ScreenDecisions = () => {
