@@ -718,7 +718,7 @@ const ScreenSituation = ({ live }) => {
                             <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
                           </div>
                         </div>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:5 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
                           <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
                           <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
                         </div>
