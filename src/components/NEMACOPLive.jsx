@@ -564,6 +564,16 @@ const ScreenSituation = ({ live }) => {
               <div style={{ display:"flex", gap:5, alignItems:"center" }}>
                 <span style={{ fontSize:8, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
                 <FeedTag feed="STATIC" />
+                <div style={{ display:"flex", marginLeft:8, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
+                  {[["LOG","KSA EVENT LOG"],["GCC","GCC THEATER"]].map(([k,label])=>(
+                    <button key={k} onClick={()=>setTheaterView(k)} style={{
+                      padding:"3px 8px", border:"none", cursor:"pointer",
+                      background:theaterView===k?C.info+"22":"transparent",
+                      color:theaterView===k?C.info:C.dim, fontSize:7, fontWeight:theaterView===k?700:500,
+                      fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
+                    }}>{label}</button>
+                  ))}
+                </div>
               </div>
             </div>
             <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} />
