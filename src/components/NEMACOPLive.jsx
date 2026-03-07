@@ -5,10 +5,11 @@ import "leaflet/dist/leaflet.css";
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
 
 // Helper: call an async fn with retry on 429
-async function withRetry(fn, maxRetries = 2, baseDelay = 10000) {
+async function withRetry(fn, maxRetries = 2, baseDelay = 15000) {
   for (let i = 0; i <= maxRetries; i++) {
     try { return await fn(); } catch (e) {
       if (i < maxRetries && e?.message?.includes("429")) {
+        console.warn(`[AI] 429 rate limit, retry ${i+1} in ${baseDelay*(i+1)/1000}s`);
         await new Promise(r => setTimeout(r, baseDelay * (i + 1)));
       } else { throw e; }
     }
@@ -16,7 +17,8 @@ async function withRetry(fn, maxRetries = 2, baseDelay = 10000) {
 }
 // Delay helper
 const delay = ms => new Promise(r => setTimeout(r, ms));
-const AI_GAP = 12000; // 12s gap between AI calls to stay under 30k tokens/min
+const AI_GAP = 15000; // 15s gap between AI calls to stay under 30k tokens/min
+let _refreshLock = false; // module-level lock to prevent concurrent refreshes
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
