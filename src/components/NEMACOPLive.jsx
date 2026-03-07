@@ -1652,15 +1652,15 @@ const getContentType = (title) => {
   if (t.includes("live")) return "LIVE BLOG";
   return "NEWS REPORT";
 };
-const timeAgo = (dateStr) => {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/, "$1-$2-$3T$4:$5:$6Z"));
-    const mins = Math.round((Date.now()-d.getTime())/60000);
-    if (mins<60) return `${mins}M AGO`;
-    if (mins<1440) return `${Math.round(mins/60)}H AGO`;
-    return `${Math.round(mins/1440)}D AGO`;
-  } catch { return ""; }
+const timeAgo = (seendate) => {
+  if (!seendate) return '';
+  const s = String(seendate);
+  const d = new Date(`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(8,10)}:${s.slice(10,12)}:${s.slice(12,14)}Z`);
+  if (isNaN(d.getTime())) return '';
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 60) return `${mins}M AGO`;
+  if (mins < 1440) return `${Math.floor(mins/60)}H AGO`;
+  return `${Math.floor(mins/1440)}D AGO`;
 };
 
 const MediaSourceWatch = ({ live }) => {
