@@ -1500,10 +1500,12 @@ export default function NEMACOPLive() {
     ]);
     setLive(d=>{
       const n={...d};
-      if (fin.status==="fulfilled"&&fin.value.brent) {
-        n.brent={value:`$${fin.value.brent.toFixed(2)}`,change:fin.value.brentChg||d.brent.change,source:"AI+WEB",loading:false};
-        n.tasi={value:fin.value.tasi?Number(fin.value.tasi).toLocaleString():d.tasi.value,change:fin.value.tasiChg||d.tasi.change,source:"AI+WEB",loading:false};
-      } else { n.brent={...d.brent,source:"STATIC",loading:false}; n.tasi={...d.tasi,source:"STATIC",loading:false}; }
+      if (eia.status==="fulfilled") {
+        n.brent={value:`$${eia.value.price.toFixed(2)}`,change:eia.value.change,source:"EIA",loading:false};
+      } else { n.brent={...d.brent,source:"STATIC",loading:false}; }
+      if (fin.status==="fulfilled"&&fin.value.tasi) {
+        n.tasi={value:Number(fin.value.tasi).toLocaleString(),change:fin.value.tasiChg||d.tasi.change,source:"AI+WEB",loading:false};
+      } else { n.tasi={...d.tasi,source:"STATIC",loading:false}; }
       n.gdelt = gdelt.status==="fulfilled"?{value:gdelt.value,source:"GDELT",loading:false}:{...d.gdelt,source:"STATIC",loading:false};
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
       n.gcc   = gcc.status==="fulfilled"&&gcc.value?{data:gcc.value,loading:false,error:false}:{data:d.gcc.data,loading:false,error:true};
