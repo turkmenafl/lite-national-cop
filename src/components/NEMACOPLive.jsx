@@ -630,8 +630,8 @@ const ScreenSituation = ({ live }) => {
             <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} />
           </div>
 
-          {/* Right: Scrollable column */}
-          <div style={{ flex:1, maxHeight:380, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+          {/* Right column */}
+          <div style={{ flex:1, maxHeight: theaterView === "GCC" ? undefined : 380, overflowY: theaterView === "GCC" ? "hidden" : "auto", display:"flex", flexDirection:"column" }}>
             {theaterView === "LOG" ? (
               <>
                 {/* KSA Event Log */}
