@@ -172,7 +172,7 @@ serve(async (req) => {
       
       try {
         console.log(`[${key}] Calling Anthropic...`);
-        const text = await callAnthropic(ANTHROPIC_API_KEY, config.prompt, config.max_tokens);
+        const text = await callWithRetry(ANTHROPIC_API_KEY, config.prompt, config.max_tokens);
         const parsed = config.parse(text);
 
         if (parsed) {
