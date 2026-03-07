@@ -838,25 +838,25 @@ const ScreenSituation = ({ live }) => {
                           }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
-                              <span style={{ fontSize:11, fontWeight:700, color:C.fg }}>{g.name}</span>
-                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
+                              <span style={{ fontSize:8, color:isHovered?"#ffffff":C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:isHovered?"#ffffff":C.fg }}>{g.name}</span>
+                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?`${airCol}80`:`${airCol}22`, color:isHovered?"#ffffff":airCol, fontWeight:600 }}>{g.airspace}</span>
                             </div>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:20, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
-                              <span style={{ fontSize:9, color:C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
+                              <span style={{ fontSize:20, fontWeight:800, color:isHovered?"#ffffff":airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
+                              <span style={{ fontSize:9, color:isHovered?"#ffffff":C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
                             </div>
                           </div>
-                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                             <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
-                             <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
-                           </div>
-                         </div>
-                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
-                           <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
-                           <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
-                         </div>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":` ${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
+                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)"`:`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
+                            </div>
+                          </div>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
+                            <span style={{ fontSize:8, color:isHovered?"#ffffff":C.muted, flex:1 }}>{g.note}</span>
+                            <span style={{ fontSize:7, color:isHovered?"#ffffff":C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
+                          </div>
                        </div>
                        {/* Expandable commentary panel */}
                        <div style={{
