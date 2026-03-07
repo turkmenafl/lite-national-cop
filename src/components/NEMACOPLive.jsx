@@ -1793,9 +1793,14 @@ export default function NEMACOPLive() {
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
     }));
-    const [eia, opa, fin, gdelt, ioda, gcc, pw, ukmtoRes, ksaStr, ciStat] = await Promise.allSettled([
-      fetchEIABrent(), fetchOPABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes(),
-      fetchPortWatch(), fetchUKMTO(), fetchKSAStrikes(), fetchCIStatus()
+    // Non-AI calls run in parallel; AI calls are queued sequentially to avoid rate limits
+    const [eia, opa, gdelt, ioda, pw, fin, gcc, ukmtoRes, ksaStr, ciStat] = await Promise.allSettled([
+      fetchEIABrent(), fetchOPABrent(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
+      enqueueAICall(fetchFinancial),
+      enqueueAICall(fetchGCCStrikes),
+      enqueueAICall(fetchUKMTO),
+      enqueueAICall(fetchKSAStrikes),
+      enqueueAICall(fetchCIStatus),
     ]);
     setLive(d=>{
       const n={...d};
