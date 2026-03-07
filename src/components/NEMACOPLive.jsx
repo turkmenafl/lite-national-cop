@@ -581,61 +581,95 @@ const ScreenSituation = ({ live }) => {
 
           {/* Right: Scrollable column */}
           <div style={{ flex:1, maxHeight:380, overflowY:"auto", display:"flex", flexDirection:"column" }}>
-            {/* KSA Event Log */}
-            <div style={{ padding:14, borderBottom:`1px solid ${C.surfBorder}` }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
-                <span style={{ fontSize:7, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
-              </div>
-              {filteredStrikes.length === 0 ? (
-                <div style={{ padding:"12px 0", fontSize:8, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
-              ) : (
-                <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                  {filteredStrikes.map(e => {
-                    const col = e.sev==="critical"?C.critical:C.warning;
-                    return (
-                      <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
-                        style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:8, fontWeight:700, color:col }}>{e.type}</span>
-                          <span style={{ fontSize:7, color:C.dim }}>{e.time}</span>
-                        </div>
-                        <div style={{ fontSize:8, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                        {selEvent===e.id && <div style={{ fontSize:8, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
-                      </div>
-                    );
-                  })}
+            {theaterView === "LOG" ? (
+              <>
+                {/* KSA Event Log */}
+                <div style={{ padding:14, borderBottom:`1px solid ${C.surfBorder}` }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
+                    <span style={{ fontSize:7, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
+                  </div>
+                  {filteredStrikes.length === 0 ? (
+                    <div style={{ padding:"12px 0", fontSize:8, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
+                  ) : (
+                    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                      {filteredStrikes.map(e => {
+                        const col = e.sev==="critical"?C.critical:C.warning;
+                        return (
+                          <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
+                            style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
+                            <div style={{ display:"flex", justifyContent:"space-between" }}>
+                              <span style={{ fontSize:8, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:7, color:C.dim }}>{e.time}</span>
+                            </div>
+                            <div style={{ fontSize:8, color:C.fg, marginTop:2 }}>{e.loc}</div>
+                            {selEvent===e.id && <div style={{ fontSize:8, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Divider label */}
-            <div style={{ padding:"6px 14px", background:"#0a1628", borderBottom:`1px solid ${C.surfBorder}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:8, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
-              <FeedTag feed="STATIC" />
-            </div>
+                {/* Divider label */}
+                <div style={{ padding:"6px 14px", background:"#0a1628", borderBottom:`1px solid ${C.surfBorder}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontSize:8, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
+                  <FeedTag feed="STATIC" />
+                </div>
 
-            {/* GCC Country Rows */}
-            <div style={{ padding:14 }}>
-              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                {getGCCForDay().map(g => {
-                  const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
+                {/* GCC Country Rows */}
+                <div style={{ padding:14 }}>
+                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                    {getGCCForDay().map(g => {
+                      const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
+                      return (
+                        <div key={g.code} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 9px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
+                          <span style={{ fontSize:9, fontWeight:600, color:C.fg, width:72, flexShrink:0 }}>{g.name}</span>
+                          <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ fontSize:12, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
+                            <span style={{ fontSize:7, color:C.dim }}>{isCumulative?"total":"today"}</span>
+                          </div>
+                          <span style={{ fontSize:7, padding:"2px 5px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop:8, fontSize:7, color:C.dim, lineHeight:1.5 }}>
+                    {getGCCForDay().filter(g=>g.strikes>0).slice(0,2).map(g=>g.note).join(" ")}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* GCC THEATER view */
+              <div style={{ padding:14, display:"flex", flexDirection:"column", gap:6 }}>
+                {GCC_SEED.map(g => {
+                  const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
+                  const confCol = g.confidence==="CONFIRMED"?C.success:"#f97316";
                   return (
-                    <div key={g.code} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 9px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
-                      <span style={{ fontSize:9, fontWeight:600, color:C.fg, width:72, flexShrink:0 }}>{g.name}</span>
-                      <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
-                        <span style={{ fontSize:7, color:C.dim }}>{isCumulative?"total":"today"}</span>
+                    <div key={g.code} style={{ padding:"10px 12px", borderRadius:4, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
+                          <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
+                          <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
+                        </div>
+                        <span style={{ fontSize:18, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
                       </div>
-                      <span style={{ fontSize:7, padding:"2px 5px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
+                          <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
+                        </div>
+                      </div>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:5 }}>
+                        <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
+                        <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              <div style={{ marginTop:8, fontSize:7, color:C.dim, lineHeight:1.5 }}>
-                {getGCCForDay().filter(g=>g.strikes>0).slice(0,2).map(g=>g.note).join(" ")}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
