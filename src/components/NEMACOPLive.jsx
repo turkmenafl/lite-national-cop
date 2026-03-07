@@ -453,25 +453,46 @@ const ScreenSituation = ({ live }) => {
             <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden" }}>
               <ComposableMap
                 projection="geoMercator"
-                projectionConfig={{ center:[49,25], scale:2800 }}
+                projectionConfig={{ center:[50,24], scale:1800 }}
                 style={{ width:"100%", height:"auto" }}
-                width={460} height={300}
+                width={500} height={340}
               >
+                {/* GCC + neighbors at country level (excluding Saudi Arabia) */}
                 <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
                   {({ geographies }) => {
-                    const SHOW = ["Saudi Arabia","United Arab Emirates","Qatar","Kuwait","Bahrain","Oman","Iran","Iraq","Yemen"];
+                    const SHOW_COUNTRIES = ["United Arab Emirates","Qatar","Kuwait","Bahrain","Oman","Iran","Iraq","Yemen"];
                     return geographies.map(geo => {
                       const name = geo.properties.name;
-                      if (!SHOW.includes(name)) return null;
+                      if (name === "Saudi Arabia") return null; // rendered via provinces
+                      if (!SHOW_COUNTRIES.includes(name)) return null;
                       const isIran = name === "Iran";
                       return (
                         <Geography
                           key={geo.rsmKey}
                           geography={geo}
-                          fill={isIran ? "#3d0f0f" : "#0d1f3c"}
+                          fill={isIran ? "rgba(239,68,68,0.06)" : "#0d1f3c"}
+                          stroke={isIran ? "rgba(239,68,68,0.35)" : "#2d5a8e"}
+                          strokeWidth={isIran ? 0.8 : 0.5}
+                          style={{ default:{outline:"none"}, hover:{outline:"none"}, pressed:{outline:"none"} }}
+                        />
+                      );
+                    });
+                  }}
+                </Geographies>
+                {/* Saudi Arabia provinces */}
+                <Geographies geography="/data/sa-provinces.geojson">
+                  {({ geographies }) => {
+                    return geographies.map(geo => {
+                      const name = geo.properties.name_en || geo.properties.name || geo.properties.NAME_EN || "";
+                      const isEastern = name.toLowerCase().includes("eastern");
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          fill={isEastern ? "rgba(239,68,68,0.08)" : "rgba(30,58,95,0.6)"}
                           stroke="#2d5a8e"
-                          strokeWidth={0.6}
-                          style={{ default:{outline:"none"}, hover:{outline:"none", fill:isIran?"#4d1515":"#132d52"}, pressed:{outline:"none"} }}
+                          strokeWidth={0.4}
+                          style={{ default:{outline:"none"}, hover:{outline:"none", fill:isEastern?"rgba(239,68,68,0.14)":"rgba(30,58,95,0.75)"}, pressed:{outline:"none"} }}
                         />
                       );
                     });
