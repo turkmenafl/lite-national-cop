@@ -304,7 +304,12 @@ Reply ONLY with valid JSON:
 }
 
 // ─── LEAFLET THEATER MAP (plain Leaflet, no react-leaflet) ───────────────────
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers }) => {
+const GCC_CAPITALS = {
+  SA: [24.69, 46.63], AE: [24.47, 54.37], QA: [25.28, 51.53],
+  KW: [29.37, 47.98], BH: [26.22, 50.59], OM: [23.61, 58.59],
+};
+
+const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
@@ -373,38 +378,69 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers }) => {
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Update strike markers when data changes
+  // Update strike markers when data or view changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     // Remove old dynamic layers
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
-    const markers = getMarkers();
-    markers.forEach(p => {
-      const col = p.s === "critical" ? C.critical : C.warning;
-      const m = L.marker([p.lat, p.lng], {
-        icon: L.divIcon({
-          className: "",
-          html: p.s === "critical"
-            ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-            : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
-          iconSize: [14, 14], iconAnchor: [7, 7],
-        }),
-      }).addTo(map);
-      layersRef.current.push(m);
-    });
-    if (filteredStrikes.length === 0) {
-      const m = L.marker([24, 46], {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
-          iconSize: [0, 0], iconAnchor: [-10, 5],
-        }),
-      }).addTo(map);
-      layersRef.current.push(m);
+
+    if (theaterView === "GCC") {
+      // Show all GCC country markers
+      (gccMarkers || []).forEach(g => {
+        const coords = GCC_CAPITALS[g.code];
+        if (!coords) return;
+        const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
+        const isCritical = g.strikes > 100;
+        const m = L.marker(coords, {
+          icon: L.divIcon({
+            className: "",
+            html: isCritical
+              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+            iconSize: [14, 14], iconAnchor: [7, 7],
+          }),
+        }).addTo(map);
+        layersRef.current.push(m);
+        // Country label
+        const lbl = L.marker(coords, {
+          icon: L.divIcon({
+            className: "",
+            html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap">${g.code} ${g.strikes.toLocaleString()}</div>`,
+            iconSize: [0, 0], iconAnchor: [-10, 4],
+          }),
+        }).addTo(map);
+        layersRef.current.push(lbl);
+      });
+    } else {
+      // KSA EVENT LOG — only KSA markers
+      const markers = getMarkers();
+      markers.forEach(p => {
+        const col = p.s === "critical" ? C.critical : C.warning;
+        const m = L.marker([p.lat, p.lng], {
+          icon: L.divIcon({
+            className: "",
+            html: p.s === "critical"
+              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+            iconSize: [14, 14], iconAnchor: [7, 7],
+          }),
+        }).addTo(map);
+        layersRef.current.push(m);
+      });
+      if (filteredStrikes.length === 0) {
+        const m = L.marker([24, 46], {
+          icon: L.divIcon({
+            className: "",
+            html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
+            iconSize: [0, 0], iconAnchor: [-10, 5],
+          }),
+        }).addTo(map);
+        layersRef.current.push(m);
+      }
     }
-  }, [filteredStrikes, getMarkers]);
+  }, [filteredStrikes, getMarkers, theaterView, gccMarkers]);
 
   return (
     <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520 }}>
@@ -502,6 +538,7 @@ const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("CUMULATIVE");
   const [theaterView, setTheaterView] = useState("LOG");
+  const [expandedCountry, setExpandedCountry] = useState(null);
 
   const isCumulative = activeDay === "CUMULATIVE";
   const filteredStrikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
@@ -509,6 +546,20 @@ const ScreenSituation = ({ live }) => {
   const getMarkers = () => {
     const strikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
     return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
+  };
+
+  // Build GCC theater data (all 6 countries) with per-day filtering
+  const getGCCTheaterData = () => {
+    const ksaDayCount = isCumulative ? STRIKES_KSA.length : STRIKES_KSA.filter(s=>s.day===activeDay).length;
+    const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
+    const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
+    Object.entries(GCC_DAILY).forEach(([code, data]) => {
+      const seed = GCC_SEED.find(g=>g.code===code);
+      if (!seed) return;
+      const dayCount = isCumulative ? data.total : (data.perDay[activeDay] || 0);
+      result.push({ ...seed, strikes: dayCount });
+    });
+    return result;
   };
 
   const getGCCForDay = () => {
@@ -576,7 +627,7 @@ const ScreenSituation = ({ live }) => {
                 </div>
               </div>
             </div>
-            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} />
+            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} />
           </div>
 
           {/* Right: Scrollable column */}
@@ -642,28 +693,65 @@ const ScreenSituation = ({ live }) => {
             ) : (
               /* GCC THEATER view */
               <div style={{ padding:14, display:"flex", flexDirection:"column", gap:6 }}>
-                {GCC_SEED.map(g => {
+                {getGCCTheaterData().map(g => {
                   const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
                   const confCol = g.confidence==="CONFIRMED"?C.success:"#f97316";
+                  const isExpanded = expandedCountry === g.code;
                   return (
-                    <div key={g.code} style={{ padding:"10px 12px", borderRadius:4, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}` }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
-                          <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
-                          <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
+                    <div key={g.code}>
+                      <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
+                        style={{ padding:"10px 12px", borderRadius:isExpanded?"4px 4px 0 0":4, background:isExpanded?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}`, cursor:"pointer", transition:"background 0.15s", borderBottom:isExpanded?"none":`1px solid ${C.surfBorder}` }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
+                            <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
+                            <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:18, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
+                            <span style={{ fontSize:9, color:C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
+                          </div>
                         </div>
-                        <span style={{ fontSize:18, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
-                      </div>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
-                          <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
+                            <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
+                          </div>
+                        </div>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:5 }}>
+                          <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
+                          <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
                         </div>
                       </div>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:5 }}>
-                        <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
-                        <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
+                      {/* Expandable commentary panel */}
+                      <div style={{
+                        maxHeight: isExpanded ? 200 : 0,
+                        overflow: "hidden",
+                        transition: "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
+                        opacity: isExpanded ? 1 : 0,
+                        background: "rgba(255,255,255,0.02)",
+                        borderLeft: `3px solid ${airCol}`,
+                        border: isExpanded ? `1px solid ${C.surfBorder}` : "none",
+                        borderTop: "none",
+                        borderRadius: "0 0 4px 4px",
+                        padding: isExpanded ? "10px 12px" : "0 12px",
+                      }}>
+                        <div style={{ fontSize:8, color:C.fg, marginBottom:6, lineHeight:1.6 }}>
+                          <span style={{ fontWeight:700, color:airCol }}>SITUATION: </span>
+                          {g.note} {g.airspace === "CLOSED" ? "All commercial flights suspended." : g.airspace === "RESTRICTED" ? "Military operations ongoing, limited civilian access." : "Airspace open with heightened monitoring."}
+                        </div>
+                        <div style={{ fontSize:8, color:C.muted, marginBottom:4 }}>
+                          <span style={{ fontWeight:600, color:C.fg }}>INTERCEPT RATE: </span>
+                          {g.interceptPct}% — {g.interceptPct >= 95 ? "Near-total defense effectiveness." : g.interceptPct >= 85 ? "High effectiveness, occasional penetration." : g.interceptPct >= 50 ? "Moderate effectiveness, significant leakage risk." : "Low intercept capability."}
+                        </div>
+                        <div style={{ fontSize:8, color:C.muted, marginBottom:4 }}>
+                          <span style={{ fontWeight:600, color:C.fg }}>AIRSPACE: </span>
+                          {g.airspace} — {g.code === "QA" ? "Al Udeid operations impacted. LNG exports halted." : g.code === "AE" ? "Dubai/Abu Dhabi airports at reduced capacity. Jebel Ali port restricted." : g.code === "KW" ? "Ali Al Salem base struck. US military assets relocating." : g.code === "BH" ? "5th Fleet HQ damage assessed. Bapco refinery offline." : g.code === "OM" ? "Maintaining neutrality. Duqm port under watch." : "Eastern Province infrastructure primary target."}
+                        </div>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
+                          <span style={{ fontSize:7, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
+                          <span style={{ fontSize:7, color:C.dim }}>{g.source}</span>
+                        </div>
                       </div>
                     </div>
                   );
