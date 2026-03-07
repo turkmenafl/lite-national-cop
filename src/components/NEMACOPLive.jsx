@@ -1790,26 +1790,24 @@ export default function NEMACOPLive() {
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
     }));
-    // Non-AI calls run in parallel immediately
-    const [eia, opa, gdelt, ioda, pw] = await Promise.allSettled([
+
+    // Fetch non-AI feeds + AI cache in parallel
+    const [eia, opa, gdelt, ioda, pw, cacheRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOPABrent(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
+      supabase.from('ai_cache').select('key, data, updated_at'),
     ]);
 
-    // AI calls run sequentially with gaps to stay under Anthropic's 30k tokens/min
-    const fin = await Promise.resolve().then(() => withRetry(fetchFinancial)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
-    setLive(d=>({...d, tasi:{...d.tasi,loading:false,source:"loading..."}})); // progressive update
-    await delay(AI_GAP);
+    // Parse AI cache results
+    const cache = {};
+    if (cacheRes.status === "fulfilled" && cacheRes.value?.data) {
+      for (const row of cacheRes.value.data) {
+        cache[row.key] = row.data;
+      }
+    }
+    const cacheAge = cacheRes.status === "fulfilled" && cacheRes.value?.data?.length
+      ? cacheRes.value.data[0]?.updated_at : null;
+    const cacheSource = Object.keys(cache).length ? "CACHED" : "STATIC";
 
-    const gcc = await Promise.resolve().then(() => withRetry(fetchGCCStrikes)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
-    await delay(AI_GAP);
-
-    const ukmtoRes = await Promise.resolve().then(() => withRetry(fetchUKMTO)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
-    await delay(AI_GAP);
-
-    const ksaStr = await Promise.resolve().then(() => withRetry(fetchKSAStrikes)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
-    await delay(AI_GAP);
-
-    const ciStat = await Promise.resolve().then(() => withRetry(fetchCIStatus)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
     setLive(d=>{
       const n={...d};
       if (opa.status==="fulfilled"&&opa.value) {
@@ -1828,16 +1826,30 @@ export default function NEMACOPLive() {
       } else if (eia.status==="fulfilled") {
         n.brent={value:`$${eia.value.price.toFixed(2)}`,change:eia.value.change,source:"EIA",loading:false};
       } else { n.brent={...d.brent,source:"STATIC",loading:false}; }
-      if (fin.status==="fulfilled"&&fin.value.tasi) {
-        n.tasi={value:Number(fin.value.tasi).toLocaleString(),change:fin.value.tasiChg||d.tasi.change,source:"AI+WEB",loading:false};
+
+      // AI feeds from cache
+      const fin = cache.financial;
+      if (fin?.tasi) {
+        n.tasi={value:Number(fin.tasi).toLocaleString(),change:fin.tasiChg||d.tasi.change,source:cacheSource,loading:false};
       } else { n.tasi={...d.tasi,source:"STATIC",loading:false}; }
+
       n.gdelt = gdelt.status==="fulfilled"?{value:gdelt.value,source:"GDELT",loading:false}:{...d.gdelt,source:"STATIC",loading:false};
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
-      n.gcc   = gcc.status==="fulfilled"&&gcc.value?{data:gcc.value,loading:false,error:false}:{data:d.gcc.data,loading:false,error:true};
+
+      const gccData = cache.gcc_strikes;
+      n.gcc = gccData ? {data:gccData,loading:false,error:false} : {data:d.gcc.data,loading:false,error:!Object.keys(cache).length};
+
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
-      n.ukmto     = { loading:false, error:ukmtoRes.status==="rejected"?ukmtoRes.reason?.message:null, data:ukmtoRes.status==="fulfilled"?ukmtoRes.value:null };
-      n.ksaStrikes = { loading:false, error:ksaStr.status==="rejected"?ksaStr.reason?.message:null, data:ksaStr.status==="fulfilled"?ksaStr.value:null };
-      n.ciStatus = { loading:false, error:ciStat.status==="rejected"?ciStat.reason?.message:null, data:ciStat.status==="fulfilled"?ciStat.value:null };
+
+      const ukmtoData = cache.ukmto;
+      n.ukmto = { loading:false, error:null, data:ukmtoData||null };
+
+      const ksaData = cache.ksa_strikes;
+      n.ksaStrikes = { loading:false, error:null, data:ksaData||null };
+
+      const ciData = cache.ci_status;
+      n.ciStatus = { loading:false, error:null, data:ciData||null };
+
       return n;
     });
     setLastRefresh(new Date());
