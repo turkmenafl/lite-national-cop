@@ -849,8 +849,8 @@ const ScreenSituation = ({ live }) => {
                           </div>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":` ${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
-                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)"`:`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
+                              <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":`${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
+                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)":`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
                             </div>
                           </div>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
