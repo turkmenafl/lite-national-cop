@@ -416,10 +416,10 @@ const ScreenSituation = ({ live }) => {
         </div>
       </div>
       <GCCTheater gcc={live.gcc} />
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:10 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-            <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>AIRSPACE</span>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+        <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>AIRSPACE</span>
             <FeedTag feed="STATIC" />
           </div>
           {[{l:"KSA",s:"RESTRICTED"},{l:"Qatar",s:"CLOSED"},{l:"UAE",s:"RESTRICTED"},{l:"Kuwait",s:"RESTRICTED"},{l:"Bahrain",s:"RESTRICTED"},{l:"Oman",s:"OPEN"}].map(a=>(
@@ -428,9 +428,9 @@ const ScreenSituation = ({ live }) => {
             </div>
           ))}
         </div>
-        <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:10 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-            <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>MARITIME CHOKEPOINTS</span>
+        <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MARITIME CHOKEPOINTS</span>
             <FeedTag feed="STATIC" />
           </div>
           {[{l:"Strait of Hormuz",s:"CLOSED",n:"0/35 transits. ~91 tankers holding."},{l:"Bab al-Mandeb",s:"RESTRICTED",n:"28/35 transits. Houthi quiet."},{l:"Suez Canal",s:"OPERATIONAL",n:"No disruption."}].map(m=>(
@@ -574,12 +574,12 @@ const ScreenRiskClusters = ({ live }) => {
 
 // ─── SCREEN 3: INFRASTRUCTURE ─────────────────────────────────────────────────
 const ScreenInfra = ({ live }) => (
-  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
     {CI_SECTORS.map(s=>{
       const col=s.status==="DEGRADED"||s.status==="CRITICAL"?C.critical:s.status==="DISRUPTED"?"#f97316":s.status==="RESTRICTED"||s.status==="ELEVATED"?C.warning:C.success;
       const note = s.feed==="IODA"&&live.ioda.value!==null?`Connectivity: ${live.ioda.value}% of baseline`:s.note;
       return (
-        <div key={s.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:4, padding:"10px 12px" }}>
+        <div key={s.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:6, padding:"12px 14px", boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ fontSize:14 }}>{s.icon}</span>
