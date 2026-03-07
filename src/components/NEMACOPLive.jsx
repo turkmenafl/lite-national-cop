@@ -247,27 +247,27 @@ const severityColor = severityScore<=40?"#22c55e":severityScore<=60?"#f59e0b":"#
 
 // ─── UI ATOMS ─────────────────────────────────────────────────────────────────
 const FeedTag = ({ feed, loading }) => {
-  if (loading) return <span style={{ fontSize:7, padding:"2px 6px", borderRadius:4, background:"rgba(59,130,246,0.15)", color:C.info, letterSpacing:"0.04em" }} className="cop-pulse">●</span>;
+  if (loading) return <span style={{ fontSize:10, padding:"3px 8px", borderRadius:4, background:"rgba(59,130,246,0.15)", color:C.info, letterSpacing:"0.04em" }} className="cop-pulse">●</span>;
   const map = { "AI+WEB":[C.success,"AI+WEB"], LIVE:[C.success,"LIVE"], CONFIRMED:[C.success,"CONFIRMED"], EST:["#f97316","EST"], GDELT:[C.warning,"GDELT"], STATIC:[C.dim,"STATIC"], IODA:[C.info,"IODA"] };
   const [col, lbl] = map[feed] || [C.muted, feed];
-  return <span style={{ fontSize:7, padding:"2px 6px", borderRadius:4, background:`${col}18`, color:col, letterSpacing:"0.04em", fontWeight:500 }}>{lbl}</span>;
+  return <span style={{ fontSize:10, padding:"3px 8px", borderRadius:4, background:`${col}18`, color:col, letterSpacing:"0.04em", fontWeight:500 }}>{lbl}</span>;
 };
 
 const StatusBadge = ({ s }) => {
   const map = { DEGRADED:C.critical, RESTRICTED:C.warning, DISRUPTED:"#f97316", ELEVATED:C.warning, OPERATIONAL:C.success, CRITICAL:C.critical, CLOSED:C.critical, OPEN:C.success, CLEAR:C.success, ATTENTION:"#f59e0b", ADEQUATE:C.success, UNKNOWN:"#64748b" };
   const col = map[s] || C.muted;
-  return <span style={{ fontSize:8, padding:"2px 8px", borderRadius:4, background:`${col}14`, color:col, border:`1px solid ${col}28`, fontWeight:600, letterSpacing:"0.05em" }}>{s}</span>;
+  return <span style={{ fontSize:11, padding:"3px 10px", borderRadius:4, background:`${col}14`, color:col, border:`1px solid ${col}28`, fontWeight:600, letterSpacing:"0.05em" }}>{s}</span>;
 };
 
 const KpiCard = ({ label, value, change, color, note, feed, loading }) => (
-  <div style={{ flex:1, padding:"10px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, textAlign:"center", minWidth:90, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
-    <div style={{ fontSize:7, color:C.muted, letterSpacing:"0.08em", marginBottom:4, textTransform:"uppercase", fontWeight:500 }}>{label}</div>
+  <div style={{ flex:1, padding:"12px 14px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, textAlign:"center", minWidth:100, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
+    <div style={{ fontSize:10, color:C.muted, letterSpacing:"0.08em", marginBottom:4, textTransform:"uppercase", fontWeight:500 }}>{label}</div>
     {loading
-      ? <div style={{ fontSize:16, fontWeight:700, color:C.info, marginBottom:4 }} className="cop-pulse">…</div>
-      : <div style={{ fontSize:17, fontWeight:700, color:color||C.fg, marginBottom:4, lineHeight:1.1 }}>{value}</div>
+      ? <div style={{ fontSize:20, fontWeight:700, color:C.info, marginBottom:4 }} className="cop-pulse">…</div>
+      : <div style={{ fontSize:22, fontWeight:700, color:color||C.fg, marginBottom:4, lineHeight:1.1 }}>{value}</div>
     }
     <div style={{ display:"flex", justifyContent:"center", gap:5, alignItems:"center", flexWrap:"wrap" }}>
-      {(change||note) && <span style={{ fontSize:7, color:C.dim }}>{change||note}</span>}
+      {(change||note) && <span style={{ fontSize:10, color:C.dim }}>{change||note}</span>}
       <FeedTag feed={feed} loading={loading} />
     </div>
   </div>
@@ -716,12 +716,12 @@ const ScreenSituation = ({ live }) => {
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
                 background:isActive?"#192233":"transparent",
                 borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
-                color:isActive?C.fg:C.muted, fontSize:7, fontWeight:isActive?700:500,
+                color:isActive?C.fg:C.muted, fontSize:10, fontWeight:isActive?700:500,
                 fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
                 display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
               }}>
                 {t==="CUMULATIVE"?"⊞ ":""}{t}
-                {dayStrikes > 0 && <span style={{ fontSize:6, padding:"1px 4px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
+                {dayStrikes > 0 && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
               </button>
             );
           })}
@@ -732,16 +732,16 @@ const ScreenSituation = ({ live }) => {
           {/* Left: Theater Map */}
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
+              <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
               <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                <span style={{ fontSize:8, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
+                <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
                 <FeedTag feed="STATIC" />
                 <div style={{ display:"flex", marginLeft:8, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
                   {[["LOG","KSA EVENT LOG"],["GCC","GCC THEATER"]].map(([k,label])=>(
                     <button key={k} onClick={()=>setTheaterView(k)} style={{
-                      padding:"3px 8px", border:"none", cursor:"pointer",
+                      padding:"4px 10px", border:"none", cursor:"pointer",
                       background:theaterView===k?C.info+"22":"transparent",
-                      color:theaterView===k?C.info:C.dim, fontSize:7, fontWeight:theaterView===k?700:500,
+                      color:theaterView===k?C.info:C.dim, fontSize:10, fontWeight:theaterView===k?700:500,
                       fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
                     }}>{label}</button>
                   ))}
@@ -758,11 +758,11 @@ const ScreenSituation = ({ live }) => {
                 {/* KSA Event Log */}
                 <div style={{ padding:14, borderBottom:`1px solid ${C.surfBorder}` }}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
-                    <span style={{ fontSize:7, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
                   </div>
                   {filteredStrikes.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:8, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                       {filteredStrikes.map(e => {
@@ -771,11 +771,11 @@ const ScreenSituation = ({ live }) => {
                           <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:8, fontWeight:700, color:col }}>{e.type}</span>
-                              <span style={{ fontSize:7, color:C.dim }}>{e.time}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
-                            <div style={{ fontSize:8, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                            {selEvent===e.id && <div style={{ fontSize:8, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
+                            {selEvent===e.id && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
                           </div>
                         );
                       })}
@@ -785,7 +785,7 @@ const ScreenSituation = ({ live }) => {
 
                 {/* Divider label */}
                 <div style={{ padding:"6px 14px", background:"#0a1628", borderBottom:`1px solid ${C.surfBorder}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <span style={{ fontSize:8, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
                   <FeedTag feed="STATIC" />
                 </div>
 
@@ -796,17 +796,17 @@ const ScreenSituation = ({ live }) => {
                       const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
                       return (
                         <div key={g.code} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 9px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
-                          <span style={{ fontSize:9, fontWeight:600, color:C.fg, width:72, flexShrink:0 }}>{g.name}</span>
+                          <span style={{ fontSize:12, fontWeight:600, color:C.fg, width:85, flexShrink:0 }}>{g.name}</span>
                           <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ fontSize:12, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
-                            <span style={{ fontSize:7, color:C.dim }}>{isCumulative?"total":"today"}</span>
+                            <span style={{ fontSize:16, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
+                            <span style={{ fontSize:10, color:C.dim }}>{isCumulative?"total":"today"}</span>
                           </div>
-                          <span style={{ fontSize:7, padding:"2px 5px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
+                          <span style={{ fontSize:10, padding:"3px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
                         </div>
                       );
                     })}
                   </div>
-                  <div style={{ marginTop:8, fontSize:7, color:C.dim, lineHeight:1.5 }}>
+                  <div style={{ marginTop:8, fontSize:10, color:C.dim, lineHeight:1.5 }}>
                     {getGCCForDay().filter(g=>g.strikes>0).slice(0,2).map(g=>g.note).join(" ")}
                   </div>
                 </div>
@@ -838,24 +838,24 @@ const ScreenSituation = ({ live }) => {
                           }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:8, color:isHovered?"#ffffff":C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
-                              <span style={{ fontSize:11, fontWeight:700, color:isHovered?"#ffffff":C.fg }}>{g.name}</span>
-                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?`${airCol}80`:`${airCol}22`, color:isHovered?"#ffffff":airCol, fontWeight:600 }}>{g.airspace}</span>
+                              <span style={{ fontSize:11, color:isHovered?"#ffffff":C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
+                              <span style={{ fontSize:14, fontWeight:700, color:isHovered?"#ffffff":C.fg }}>{g.name}</span>
+                              <span style={{ fontSize:10, padding:"3px 8px", borderRadius:3, background:isHovered?`${airCol}80`:`${airCol}22`, color:isHovered?"#ffffff":airCol, fontWeight:600 }}>{g.airspace}</span>
                             </div>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:20, fontWeight:800, color:isHovered?"#ffffff":airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
-                              <span style={{ fontSize:9, color:isHovered?"#ffffff":C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
+                              <span style={{ fontSize:24, fontWeight:800, color:isHovered?"#ffffff":airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
+                              <span style={{ fontSize:12, color:isHovered?"#ffffff":C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
                             </div>
                           </div>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":`${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
-                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)":`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
+                              <span style={{ fontSize:11, padding:"3px 8px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":`${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
+                              <span style={{ fontSize:10, padding:"3px 8px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)":`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
                             </div>
                           </div>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
-                            <span style={{ fontSize:8, color:isHovered?"#ffffff":C.muted, flex:1 }}>{g.note}</span>
-                            <span style={{ fontSize:7, color:isHovered?"#ffffff":C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
+                            <span style={{ fontSize:11, color:isHovered?"#ffffff":C.muted, flex:1 }}>{g.note}</span>
+                            <span style={{ fontSize:10, color:isHovered?"#ffffff":C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
                           </div>
                        </div>
                        {/* Expandable commentary panel */}
@@ -873,20 +873,20 @@ const ScreenSituation = ({ live }) => {
                          padding: isExpanded ? "8px 10px" : "0 10px",
                        }}>
                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                           <span style={{ fontSize:9, fontWeight:700, color:airCol, letterSpacing:"0.04em" }}>{countryLabel} — Situation Summary</span>
-                           <span onClick={(e)=>{e.stopPropagation();setExpandedCountry(null);}} style={{ fontSize:11, color:C.dim, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>×</span>
-                         </div>
-                         <div style={{ fontSize:8, color:C.fg, lineHeight:1.7 }}>
+                            <span style={{ fontSize:12, fontWeight:700, color:airCol, letterSpacing:"0.04em" }}>{countryLabel} — Situation Summary</span>
+                            <span onClick={(e)=>{e.stopPropagation();setExpandedCountry(null);}} style={{ fontSize:14, color:C.dim, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>×</span>
+                          </div>
+                          <div style={{ fontSize:11, color:C.fg, lineHeight:1.7 }}>
                            {g.code === "SA" ? `${g.strikes} strikes recorded to date targeting Eastern Province oil infrastructure, Riyadh diplomatic quarter, and military airbases. Abqaiq processing facility near-miss on Mar 4. Ras Tanura terminal degraded to 85% capacity. ${g.interceptPct}% intercept rate via Patriot/THAAD demonstrates near-total defense coverage. Airspace remains ${g.airspace.toLowerCase()} with heightened alert across all sectors.`
                            : g.code === "AE" ? `${g.strikes.toLocaleString()} projectiles recorded — heaviest volume in theater. Key impacts at Jebel Ali port, Dubai Terminal 3, and French naval base. ${g.interceptPct}% intercept rate under extreme volume pressure. Dubai and Abu Dhabi airports operating at reduced capacity. Jebel Ali port restricted to military logistics only.`
                            : g.code === "QA" ? `${g.strikes} strikes including 2 ballistic missile impacts at Al Udeid Air Base — critical CENTCOM forward HQ. LNG exports suspended indefinitely, affecting ~25% of global supply. Airspace ${g.airspace.toLowerCase()} — all commercial flights halted. ${g.interceptPct}% intercept rate with notable gaps in coverage.`
                            : g.code === "KW" ? `${g.strikes} strikes targeting Ali Al Salem Air Base and US Embassy compound. US military assets in active relocation to secondary positions. Embassy sustained direct hit — fire damage, 0 KIA confirmed. ${g.interceptPct}% intercept rate. Kuwait requesting additional Patriot battery deployment.`
                            : g.code === "BH" ? `${g.strikes} strikes concentrated on NAVCENT 5th Fleet HQ and Bapco refinery. 5th Fleet operations temporarily relocated to sea-based command. Bapco refinery offline — domestic fuel reserves adequate for 14 days. ${g.interceptPct}% intercept rate — lowest among major GCC states.`
                            : `${g.strikes} strikes — minimal targeting reflecting Oman's mediator status. Duqm Port drone incursion detected. Maintaining diplomatic neutrality in conflict. ${g.interceptPct}% intercept rate with limited engagement. Airspace remains ${g.airspace.toLowerCase()} with heightened monitoring of maritime approaches.`}
-                         </div>
-                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, marginTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
-                           <span style={{ fontSize:7, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
-                           <span style={{ fontSize:7, color:C.dim }}>{g.source}</span>
+                          </div>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, marginTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
+                            <span style={{ fontSize:10, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
+                            <span style={{ fontSize:10, color:C.dim }}>{g.source}</span>
                          </div>
                        </div>
                      </div>
@@ -901,26 +901,26 @@ const ScreenSituation = ({ live }) => {
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>AIRSPACE</span>
+            <span style={{ fontSize:13, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>AIRSPACE</span>
             <FeedTag feed="STATIC" />
           </div>
           {[{l:"KSA",s:"RESTRICTED"},{l:"Qatar",s:"CLOSED"},{l:"UAE",s:"RESTRICTED"},{l:"Kuwait",s:"RESTRICTED"},{l:"Bahrain",s:"RESTRICTED"},{l:"Oman",s:"OPEN"}].map(a=>(
-            <div key={a.l} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
-              <span style={{ fontSize:9, color:C.fg }}>{a.l}</span><StatusBadge s={a.s}/>
+            <div key={a.l} style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
+              <span style={{ fontSize:12, color:C.fg }}>{a.l}</span><StatusBadge s={a.s}/>
             </div>
           ))}
         </div>
         <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MARITIME CHOKEPOINTS</span>
+            <span style={{ fontSize:13, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MARITIME CHOKEPOINTS</span>
             <FeedTag feed="STATIC" />
           </div>
           {[{l:"Strait of Hormuz",s:"CLOSED",n:"0/35 transits. ~91 tankers holding."},{l:"Bab al-Mandeb",s:"RESTRICTED",n:"28/35 transits. Houthi quiet."},{l:"Suez Canal",s:"OPERATIONAL",n:"No disruption."}].map(m=>(
             <div key={m.l} style={{ padding:"5px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                <span style={{ fontSize:9, color:C.fg, fontWeight:"bold" }}>{m.l}</span><StatusBadge s={m.s}/>
+                <span style={{ fontSize:12, color:C.fg, fontWeight:"bold" }}>{m.l}</span><StatusBadge s={m.s}/>
               </div>
-              <span style={{ fontSize:8, color:C.muted }}>{m.n}</span>
+              <span style={{ fontSize:11, color:C.muted }}>{m.n}</span>
             </div>
           ))}
         </div>
@@ -936,37 +936,37 @@ const ClusterRiskItem = ({ r, live }) => {
   const statIcon = (s) => s==="active"?"🔴":s==="elevated"?"🟡":s==="monitoring"?"🔵":"🟢";
   return (
     <div style={{ marginBottom:6, borderRadius:3, overflow:"hidden", border:`1px solid ${sevColor(r.severity)}22` }}>
-      <div onClick={()=>setOpen(!open)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 10px", cursor:"pointer", background:`${sevColor(r.severity)}06` }}>
+      <div onClick={()=>setOpen(!open)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", cursor:"pointer", background:`${sevColor(r.severity)}06` }}>
         <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-          <span style={{ fontSize:9, color:C.fg }}>{statIcon(r.status)} <strong>{r.id}</strong> — {r.name}</span>
+          <span style={{ fontSize:12, color:C.fg }}>{statIcon(r.status)} <strong>{r.id}</strong> — {r.name}</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:`${sevColor(r.severity)}22`, color:sevColor(r.severity) }}>{r.severity.toUpperCase()}</span>
+          <span style={{ fontSize:10, padding:"2px 6px", borderRadius:3, background:`${sevColor(r.severity)}22`, color:sevColor(r.severity) }}>{r.severity.toUpperCase()}</span>
           <FeedTag feed={r.badge} />
-          <span style={{ fontSize:9, color:C.dim }}>{open?"▾":"▸"}</span>
+          <span style={{ fontSize:12, color:C.dim }}>{open?"▾":"▸"}</span>
         </div>
       </div>
       {open && (
-        <div style={{ padding:"8px 10px", background:"rgba(255,255,255,0.01)" }}>
-          <div style={{ fontSize:9, color:C.muted, marginBottom:6, lineHeight:1.5 }}>{r.detail}</div>
+        <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.01)" }}>
+          <div style={{ fontSize:12, color:C.muted, marginBottom:6, lineHeight:1.5 }}>{r.detail}</div>
           {/* Live signals */}
           {r.liveSignals && r.liveSignals.length > 0 && (
             <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:6 }}>
               {r.liveSignals.map((sig, i) => (
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:4, padding:"3px 7px", borderRadius:3, background:"rgba(34,197,94,0.06)", border:"1px solid rgba(34,197,94,0.15)" }}>
-                  <span className="cop-pulse" style={{ fontSize:6, color:C.success }}>●</span>
-                  <span style={{ fontSize:7, color:C.dim }}>{sig.label}:</span>
-                  <span style={{ fontSize:8, fontWeight:"bold", color:sig.color(live) }}>{sig.render(live)}</span>
+                  <span className="cop-pulse" style={{ fontSize:9, color:C.success }}>●</span>
+                  <span style={{ fontSize:10, color:C.dim }}>{sig.label}:</span>
+                  <span style={{ fontSize:11, fontWeight:"bold", color:sig.color(live) }}>{sig.render(live)}</span>
                 </div>
               ))}
             </div>
           )}
           {r.liveSignals && r.liveSignals.length === 0 && (
             <div style={{ padding:"3px 7px", borderRadius:3, background:"rgba(82,97,117,0.15)", border:`1px solid ${C.surfBorder}`, marginBottom:6, display:"inline-block" }}>
-              <span style={{ fontSize:7, color:C.dim }}>STATIC — no API publishes this classification at required latency</span>
+              <span style={{ fontSize:10, color:C.dim }}>STATIC — no API publishes this classification at required latency</span>
             </div>
           )}
-          <div style={{ fontSize:7, color:C.dim }}>SOURCES: {r.sources.join(" · ")}</div>
+          <div style={{ fontSize:10, color:C.dim }}>SOURCES: {r.sources.join(" · ")}</div>
         </div>
       )}
     </div>
@@ -981,18 +981,18 @@ const ScreenRiskClusters = ({ live }) => {
       {/* NCS Score */}
       <div style={{ display:"flex", alignItems:"center", gap:16, padding:12, borderRadius:6, marginBottom:12, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)" }}>
         <div>
-          <div style={{ fontSize:8, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL CONSEQUENCE SCORE</div>
+          <div style={{ fontSize:11, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL CONSEQUENCE SCORE</div>
           <div style={{ display:"flex", alignItems:"baseline", gap:4 }}>
-            <span style={{ fontSize:30, fontWeight:"bold", color:C.critical }}>72</span>
-            <span style={{ fontSize:12, color:C.muted }}>/100 HIGH</span>
+            <span style={{ fontSize:36, fontWeight:"bold", color:C.critical }}>72</span>
+            <span style={{ fontSize:16, color:C.muted }}>/100 HIGH</span>
           </div>
-          <div style={{ fontSize:7, color:C.dim }}>Composite model · STATIC</div>
+          <div style={{ fontSize:10, color:C.dim }}>Composite model · STATIC</div>
         </div>
         <div style={{ display:"flex", gap:8 }}>
           {[{l:"POP",v:18,m:25},{l:"INFRA",v:20,m:25},{l:"ECON",v:18,m:25},{l:"SEC",v:22,m:25}].map((f,i)=>(
             <div key={i} style={{ textAlign:"center", padding:"6px 10px", background:C.surface, borderRadius:4 }}>
-              <div style={{ fontSize:7, color:C.muted }}>{f.l}</div>
-              <div style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{f.v}</div>
+              <div style={{ fontSize:10, color:C.muted }}>{f.l}</div>
+              <div style={{ fontSize:18, fontWeight:"bold", color:C.fg }}>{f.v}</div>
               <div style={{ width:32, height:2, background:C.surfBorder, borderRadius:1, margin:"4px auto 0" }}>
                 <div style={{ height:"100%", borderRadius:1, width:`${(f.v/f.m)*100}%`, background:f.v>20?C.critical:f.v>15?C.warning:C.success }}/>
               </div>
@@ -1010,16 +1010,16 @@ const ScreenRiskClusters = ({ live }) => {
             {/* Header row */}
             <div onClick={()=>toggle(c.id)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", cursor:"pointer", background:`${sc}08` }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontWeight:"bold", fontSize:11, color:C.fg }}>{c.icon} {c.label}</span>
-                <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:`${sc}22`, color:sc, fontWeight:"bold" }}>{c.status}</span>
-                <span style={{ fontSize:8, color:C.muted }}>{c.risks} risks</span>
+                <span style={{ fontWeight:"bold", fontSize:14, color:C.fg }}>{c.icon} {c.label}</span>
+                <span style={{ fontSize:10, padding:"2px 6px", borderRadius:3, background:`${sc}22`, color:sc, fontWeight:"bold" }}>{c.status}</span>
+                <span style={{ fontSize:11, color:C.muted }}>{c.risks} risks</span>
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ fontSize:8, color:C.muted }}>
+                <span style={{ fontSize:11, color:C.muted }}>
                   {c.active>0&&`${c.active}🔴`} {c.elevated>0&&`${c.elevated}🟡`}
                 </span>
-                {c.decisions.length>0 && <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:"rgba(239,68,68,0.12)", color:C.critical }}>{c.decisions.length} decision{c.decisions.length>1?"s":""}</span>}
-                <span style={{ fontSize:9, color:C.muted }}>{isOpen?"▾":"▸"}</span>
+                {c.decisions.length>0 && <span style={{ fontSize:10, padding:"2px 6px", borderRadius:3, background:"rgba(239,68,68,0.12)", color:C.critical }}>{c.decisions.length} decision{c.decisions.length>1?"s":""}</span>}
+                <span style={{ fontSize:12, color:C.muted }}>{isOpen?"▾":"▸"}</span>
               </div>
             </div>
             {/* Expanded body */}
@@ -1028,14 +1028,14 @@ const ScreenRiskClusters = ({ live }) => {
                 {c.riskItems.map((r,i) => <ClusterRiskItem key={i} r={r} live={live} />)}
                 {c.decisions.length > 0 && (
                   <div style={{ marginTop:8, padding:"8px 10px", borderRadius:3, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)" }}>
-                    <div style={{ fontSize:8, color:C.critical, fontWeight:"bold", marginBottom:5 }}>⚡ DECISIONS REQUIRED</div>
+                    <div style={{ fontSize:11, color:C.critical, fontWeight:"bold", marginBottom:5 }}>⚡ DECISIONS REQUIRED</div>
                     {c.decisions.map((d,i) => {
                       const dc = d.severity==="critical"?C.critical:d.severity==="high"?C.warning:C.info;
-                      return <div key={i} style={{ fontSize:9, color:C.fg, marginBottom:3 }}>▸ {d.title} <span style={{ color:dc }}>({d.window})</span></div>;
+                      return <div key={i} style={{ fontSize:12, color:C.fg, marginBottom:3 }}>▸ {d.title} <span style={{ color:dc }}>({d.window})</span></div>;
                     })}
                   </div>
                 )}
-                <div style={{ marginTop:8, fontSize:8, color:C.dim }}>
+                <div style={{ marginTop:8, fontSize:11, color:C.dim }}>
                   AGENCIES: {c.agencies.join(" · ")}
                 </div>
               </div>
@@ -1046,9 +1046,9 @@ const ScreenRiskClusters = ({ live }) => {
 
       {/* Dependency chain warning */}
       <div style={{ padding:12, borderRadius:4, marginTop:4, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.12)" }}>
-        <div style={{ fontSize:9, color:C.critical, fontWeight:"bold", marginBottom:4 }}>⚠ DEPENDENCY CHAIN</div>
-        <div style={{ fontSize:10, color:"#fca5a5" }}>Eastern Province Power Grid → Jubail + Ras Al-Khair Desal → Water for 3.9M people. Grid strike = water crisis 48h.</div>
-        <div style={{ fontSize:7, color:C.dim, marginTop:4 }}>SOURCES: SWCC · SEC annual reports · STATIC</div>
+        <div style={{ fontSize:12, color:C.critical, fontWeight:"bold", marginBottom:4 }}>⚠ DEPENDENCY CHAIN</div>
+        <div style={{ fontSize:13, color:"#fca5a5" }}>Eastern Province Power Grid → Jubail + Ras Al-Khair Desal → Water for 3.9M people. Grid strike = water crisis 48h.</div>
+        <div style={{ fontSize:10, color:C.dim, marginTop:4 }}>SOURCES: SWCC · SEC annual reports · STATIC</div>
       </div>
     </div>
   );
@@ -1064,19 +1064,19 @@ const ScreenInfra = ({ live }) => (
         <div key={s.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:6, padding:"12px 14px", boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:14 }}>{s.icon}</span>
-              <span style={{ fontSize:11, fontWeight:"bold", color:C.fg }}>{s.name}</span>
+              <span style={{ fontSize:18 }}>{s.icon}</span>
+              <span style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{s.name}</span>
               <StatusBadge s={s.status}/>
             </div>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              <span style={{ fontSize:9, color:col, fontWeight:"bold" }}>{s.pct}%</span>
+              <span style={{ fontSize:12, color:col, fontWeight:"bold" }}>{s.pct}%</span>
               <FeedTag feed={s.feed} loading={s.feed==="IODA"&&live.ioda.loading}/>
             </div>
           </div>
           <div style={{ height:4, background:C.surfBorder, borderRadius:2, marginBottom:6 }}>
             <div style={{ height:"100%", width:`${s.pct}%`, background:col, borderRadius:2 }}/>
           </div>
-          <div style={{ fontSize:8, color:C.muted }}>{note}</div>
+          <div style={{ fontSize:11, color:C.muted }}>{note}</div>
         </div>
       );
     })}
@@ -1099,13 +1099,13 @@ const ScreenDecisions = () => {
           { l:"≤72H WINDOW",  v:sorted.filter(d=>d.window.includes("72h")).length, c:C.info },
         ].map((item,i)=>(
           <div key={i} style={{ flex:1, padding:"10px 12px", background:C.surface, border:`1px solid ${item.c}22`, borderRadius:4, textAlign:"center" }}>
-            <div style={{ fontSize:7, color:C.muted, letterSpacing:"0.05em" }}>{item.l}</div>
-            <div style={{ fontSize:22, fontWeight:"bold", color:item.c, margin:"4px 0" }}>{item.v}</div>
+            <div style={{ fontSize:10, color:C.muted, letterSpacing:"0.05em" }}>{item.l}</div>
+            <div style={{ fontSize:26, fontWeight:"bold", color:item.c, margin:"4px 0" }}>{item.v}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ fontSize:9, color:C.dim, marginBottom:10 }}>Sorted by urgency · STATIC — scenario-generated decision matrix</div>
+      <div style={{ fontSize:12, color:C.dim, marginBottom:10 }}>Sorted by urgency · STATIC — scenario-generated decision matrix</div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
         {sorted.map((d,i)=>{
@@ -1113,12 +1113,12 @@ const ScreenDecisions = () => {
           return (
             <div key={i} style={{ padding:"12px 14px", borderRadius:"0 4px 4px 0", background:`${sc}06`, border:`1px solid ${sc}22`, borderLeft:`3px solid ${sc}` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-                <span style={{ fontSize:11, fontWeight:"600", color:C.fg, flex:1, marginRight:8 }}>{d.title}</span>
-                <span style={{ fontSize:10, fontWeight:"bold", padding:"2px 10px", borderRadius:3, background:`${sc}22`, color:sc, whiteSpace:"nowrap" }}>⏱ {d.window}</span>
+                <span style={{ fontSize:14, fontWeight:"600", color:C.fg, flex:1, marginRight:8 }}>{d.title}</span>
+                <span style={{ fontSize:13, fontWeight:"bold", padding:"3px 12px", borderRadius:3, background:`${sc}22`, color:sc, whiteSpace:"nowrap" }}>⏱ {d.window}</span>
               </div>
               <div style={{ display:"flex", gap:6 }}>
-                <span style={{ fontSize:7, padding:"1px 7px", borderRadius:3, background:`${d.clusterColor}22`, color:d.clusterColor }}>{d.clusterIcon} {d.cluster}</span>
-                <span style={{ fontSize:7, padding:"1px 7px", borderRadius:3, background:`${sc}22`, color:sc }}>{d.severity.toUpperCase()}</span>
+                <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${d.clusterColor}22`, color:d.clusterColor }}>{d.clusterIcon} {d.cluster}</span>
+                <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${sc}22`, color:sc }}>{d.severity.toUpperCase()}</span>
               </div>
             </div>
           );
@@ -1127,7 +1127,7 @@ const ScreenDecisions = () => {
 
       {/* Readiness snapshot */}
       <div style={{ marginTop:16 }}>
-        <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>AGENCY READINESS SNAPSHOT</div>
+        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>AGENCY READINESS SNAPSHOT</div>
         <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
           {[
             { m:"Civil Defence", v:"ACTIVATED",    c:C.success, src:"SPA" },
@@ -1137,10 +1137,10 @@ const ScreenDecisions = () => {
             { m:"Hospital Surge",v:"PHASE 1",       c:C.warning, src:"MoH" },
           ].map((r,i)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:3 }}>
-              <span style={{ flex:2, fontSize:9, color:C.fg }}>{r.m}</span>
+              <span style={{ flex:2, fontSize:12, color:C.fg }}>{r.m}</span>
               <StatusBadge s={r.v.split(" ")[0]} />
-              <span style={{ fontSize:7, color:C.dim }}>{r.v}</span>
-              <span style={{ fontSize:7, color:C.dim, marginLeft:"auto" }}>SRC: {r.src} · STATIC</span>
+              <span style={{ fontSize:10, color:C.dim }}>{r.v}</span>
+              <span style={{ fontSize:10, color:C.dim, marginLeft:"auto" }}>SRC: {r.src} · STATIC</span>
             </div>
           ))}
         </div>
@@ -1164,30 +1164,30 @@ const ScreenEconomic = ({ live }) => (
     {/* Strategic Reserves */}
     <div style={{ marginBottom:12 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-        <span style={{ fontSize:10, fontWeight:"bold", color:C.fg }}>STRATEGIC RESERVES</span>
-        <span style={{ fontSize:7, color:C.dim }}>STATIC · OSINT estimates + SAGO/MoH baselines</span>
+        <span style={{ fontSize:13, fontWeight:"bold", color:C.fg }}>STRATEGIC RESERVES</span>
+        <span style={{ fontSize:10, color:C.dim }}>STATIC · OSINT estimates + SAGO/MoH baselines</span>
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
         {RESERVES.map((r,i)=>(
           <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4 }}>
-            <div style={{ flex:2, fontSize:9, color:C.fg }}>{r.name}</div>
+            <div style={{ flex:2, fontSize:12, color:C.fg }}>{r.name}</div>
             <div style={{ flex:1 }}>
               {r.pct>0
                 ? <div style={{ width:"100%", height:4, background:C.surfBorder, borderRadius:2 }}><div style={{ height:"100%", borderRadius:2, width:`${r.pct}%`, background:r.color }}/></div>
-                : <div style={{ fontSize:8, color:C.dim }}>No data</div>}
+                : <div style={{ fontSize:11, color:C.dim }}>No data</div>}
             </div>
-            <span style={{ width:40, textAlign:"right", fontSize:13, fontWeight:"bold", color:r.color }}>{r.days!==null?`${r.days}d`:"—"}</span>
-            <span style={{ fontSize:6, padding:"1px 4px", borderRadius:3, background:C.surface, border:`1px solid ${C.surfBorder}`, color:C.dim }}>±{r.conf}</span>
+            <span style={{ width:40, textAlign:"right", fontSize:16, fontWeight:"bold", color:r.color }}>{r.days!==null?`${r.days}d`:"—"}</span>
+            <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:C.surface, border:`1px solid ${C.surfBorder}`, color:C.dim }}>±{r.conf}</span>
             <StatusBadge s={r.status} />
           </div>
         ))}
       </div>
-      <div style={{ marginTop:6, fontSize:7, color:C.dim }}>Confidence: 90-100 = verified · 70-89 = agency baseline · 50-69 = OSINT estimated · &lt;50 = unverified</div>
+      <div style={{ marginTop:6, fontSize:10, color:C.dim }}>Confidence: 90-100 = verified · 70-89 = agency baseline · 50-69 = OSINT estimated · &lt;50 = unverified</div>
     </div>
 
     {/* Scenario comparison */}
     <div>
-      <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>ECONOMIC SCENARIO COMPARISON</div>
+      <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>ECONOMIC SCENARIO COMPARISON</div>
       <div style={{ display:"flex", gap:6 }}>
         {[
           { sc:"Hormuz reopens 7d",    brent:"$82",   food:"-5%",  medical:"Adequate",           c:C.success },
@@ -1195,14 +1195,14 @@ const ScreenEconomic = ({ live }) => (
           { sc:"Closed + Abqaiq hit",  brent:"$150+", food:"+60%", medical:"Multiple critical",   c:C.critical },
         ].map((s,i)=>(
           <div key={i} style={{ flex:1, padding:12, borderRadius:4, background:`${s.c}06`, border:`1px solid ${s.c}22` }}>
-            <div style={{ fontSize:9, fontWeight:"bold", color:s.c, marginBottom:8 }}>{s.sc}</div>
-            <div style={{ fontSize:8, color:C.muted }}>Brent: <span style={{ color:C.fg }}>{s.brent}</span></div>
-            <div style={{ fontSize:8, color:C.muted }}>Food price: <span style={{ color:C.fg }}>{s.food}</span></div>
-            <div style={{ fontSize:8, color:C.muted }}>Medical: <span style={{ color:C.fg }}>{s.medical}</span></div>
+            <div style={{ fontSize:12, fontWeight:"bold", color:s.c, marginBottom:8 }}>{s.sc}</div>
+            <div style={{ fontSize:11, color:C.muted }}>Brent: <span style={{ color:C.fg }}>{s.brent}</span></div>
+            <div style={{ fontSize:11, color:C.muted }}>Food price: <span style={{ color:C.fg }}>{s.food}</span></div>
+            <div style={{ fontSize:11, color:C.muted }}>Medical: <span style={{ color:C.fg }}>{s.medical}</span></div>
           </div>
         ))}
       </div>
-      <div style={{ marginTop:6, fontSize:7, color:C.dim }}>SOURCES: AI scenario modeling · Yahoo Finance · PortWatch · STATIC</div>
+      <div style={{ marginTop:6, fontSize:10, color:C.dim }}>SOURCES: AI scenario modeling · Yahoo Finance · PortWatch · STATIC</div>
     </div>
   </div>
 );
@@ -1284,12 +1284,12 @@ const ScreenScenarios = () => {
       {/* Severity level */}
       <div style={{ display:"flex", alignItems:"center", gap:16, padding:12, borderRadius:6, marginBottom:12, background:`${severityColor}08`, border:`1px solid ${severityColor}22` }}>
         <div>
-          <div style={{ fontSize:8, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL SEVERITY LEVEL</div>
+          <div style={{ fontSize:11, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL SEVERITY LEVEL</div>
           <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-            <span style={{ fontSize:32, fontWeight:"bold", color:severityColor }}>{severityLevel}</span>
-            <span style={{ fontSize:13, color:C.muted }}>{severityLabel[severityLevel]}</span>
+            <span style={{ fontSize:38, fontWeight:"bold", color:severityColor }}>{severityLevel}</span>
+            <span style={{ fontSize:16, color:C.muted }}>{severityLabel[severityLevel]}</span>
           </div>
-          <div style={{ fontSize:8, color:C.dim }}>{severityScore}/100 · Auto-calculated composite</div>
+          <div style={{ fontSize:11, color:C.dim }}>{severityScore}/100 · Auto-calculated composite</div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, flex:1 }}>
           {Object.entries(SEVERITY_FACTORS).map(([k,f])=>{
@@ -1298,8 +1298,8 @@ const ScreenScenarios = () => {
             return (
               <div key={k} style={{ padding:"5px 8px", borderRadius:3, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                  <span style={{ fontSize:7, color:C.fg }}>{f.label}</span>
-                  <span style={{ fontSize:7, fontWeight:"bold", color:col }}>{f.value}/{f.max}</span>
+                  <span style={{ fontSize:10, color:C.fg }}>{f.label}</span>
+                  <span style={{ fontSize:10, fontWeight:"bold", color:col }}>{f.value}/{f.max}</span>
                 </div>
                 <div style={{ height:2, background:C.surfBorder, borderRadius:1 }}>
                   <div style={{ height:"100%", width:`${pct}%`, background:col, borderRadius:1 }}/>
@@ -1312,15 +1312,15 @@ const ScreenScenarios = () => {
 
       {/* Scenario probability cards */}
       <div style={{ marginBottom:12 }}>
-        <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>SCENARIO PROBABILITIES — Day 7</div>
+        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>SCENARIO PROBABILITIES — Day 7</div>
         <div style={{ display:"flex", gap:8 }}>
           {SCENARIOS.map((s,i)=>(
             <div key={i} style={{ flex:1, padding:12, borderRadius:"0 0 4px 4px", background:`${s.color}06`, border:`1px solid ${s.color}22`, borderTop:`3px solid ${s.color}` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                <span style={{ fontSize:9, fontWeight:"bold", color:s.color }}>{s.name}</span>
-                <span style={{ fontSize:20, fontWeight:"bold", color:s.color }}>{s.prob}</span>
+                <span style={{ fontSize:12, fontWeight:"bold", color:s.color }}>{s.name}</span>
+                <span style={{ fontSize:24, fontWeight:"bold", color:s.color }}>{s.prob}</span>
               </div>
-              <div style={{ fontSize:8, color:C.muted, lineHeight:1.5 }}>{s.desc}</div>
+              <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>{s.desc}</div>
               {/* Probability bar */}
               <div style={{ marginTop:8, height:3, background:C.surfBorder, borderRadius:2 }}>
                 <div style={{ height:"100%", width:s.prob, background:s.color, borderRadius:2 }}/>
@@ -1328,22 +1328,22 @@ const ScreenScenarios = () => {
             </div>
           ))}
         </div>
-        <div style={{ marginTop:6, fontSize:7, color:C.dim }}>SOURCES: INSS · Alma Center · AI modeling · STATIC</div>
+        <div style={{ marginTop:6, fontSize:10, color:C.dim }}>SOURCES: INSS · Alma Center · AI modeling · STATIC</div>
       </div>
 
       {/* FAQ / What-If */}
       <div>
-        <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>WHAT-IF ANALYSIS</div>
+        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>WHAT-IF ANALYSIS</div>
         {FAQS.map((faq,i)=>(
           <div key={i} style={{ marginBottom:4, borderRadius:3, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
             <div onClick={()=>setExpandedFAQ(expandedFAQ===i?null:i)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", cursor:"pointer", background:expandedFAQ===i?"rgba(59,130,246,0.08)":C.surface }}>
-              <span style={{ fontSize:9, color:expandedFAQ===i?C.info:C.fg }}>{faq.q}</span>
-              <span style={{ fontSize:9, color:C.dim }}>{expandedFAQ===i?"▾":"▸"}</span>
+              <span style={{ fontSize:12, color:expandedFAQ===i?C.info:C.fg }}>{faq.q}</span>
+              <span style={{ fontSize:12, color:C.dim }}>{expandedFAQ===i?"▾":"▸"}</span>
             </div>
             {expandedFAQ===i && (
-              <div style={{ padding:"8px 12px", background:"rgba(255,255,255,0.01)", fontSize:9, color:C.muted, lineHeight:1.7 }}>
+              <div style={{ padding:"8px 12px", background:"rgba(255,255,255,0.01)", fontSize:12, color:C.muted, lineHeight:1.7 }}>
                 {faq.a}
-                <div style={{ marginTop:6, fontSize:7, color:C.dim }}>STATIC · INSS / Alma / OSINT synthesis</div>
+                <div style={{ marginTop:6, fontSize:10, color:C.dim }}>STATIC · INSS / Alma / OSINT synthesis</div>
               </div>
             )}
           </div>
@@ -1401,46 +1401,46 @@ const ScreenAIBrief = ({ live }) => {
     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>▣ EXECUTIVE SITUATION BRIEF</span>
+          <span style={{ fontSize:12, fontWeight:"bold", color:C.fg }}>▣ EXECUTIVE SITUATION BRIEF</span>
           <FeedTag feed="LIVE" />
         </div>
-        <div style={{ fontSize:8, color:C.dim, marginBottom:8 }}>Brent {live.brent.value} · TASI {live.tasi.value} · GDELT {live.gdelt.value}/24h · Day 7 injected live</div>
-        {!brief&&!loading&&<button onClick={generateBrief} style={{ padding:"8px 16px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:C.info, fontSize:9, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>▣ GENERATE BRIEF</button>}
-        {loading&&<div style={{ fontSize:9, color:C.muted }}><span className="cop-pulse">●</span> Generating from live data…</div>}
+        <div style={{ fontSize:11, color:C.dim, marginBottom:8 }}>Brent {live.brent.value} · TASI {live.tasi.value} · GDELT {live.gdelt.value}/24h · Day 7 injected live</div>
+        {!brief&&!loading&&<button onClick={generateBrief} style={{ padding:"8px 16px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:C.info, fontSize:12, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>▣ GENERATE BRIEF</button>}
+        {loading&&<div style={{ fontSize:12, color:C.muted }}><span className="cop-pulse">●</span> Generating from live data…</div>}
         {brief&&<div>
-          <div style={{ fontSize:9, color:C.fg, lineHeight:1.8, whiteSpace:"pre-line", padding:"10px 12px", background:"rgba(255,255,255,0.02)", borderRadius:3, border:`1px solid ${C.surfBorder}` }}>{brief}</div>
-          <button onClick={generateBrief} style={{ marginTop:8, padding:"4px 10px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.2)", borderRadius:3, color:C.info, fontSize:8, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>↻ REGENERATE</button>
+          <div style={{ fontSize:12, color:C.fg, lineHeight:1.8, whiteSpace:"pre-line", padding:"10px 12px", background:"rgba(255,255,255,0.02)", borderRadius:3, border:`1px solid ${C.surfBorder}` }}>{brief}</div>
+          <button onClick={generateBrief} style={{ marginTop:8, padding:"4px 10px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.2)", borderRadius:3, color:C.info, fontSize:11, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>↻ REGENERATE</button>
         </div>}
       </div>
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-          <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>💬 MINISTER QUERY — NEMA AI</span>
+          <span style={{ fontSize:12, fontWeight:"bold", color:C.fg }}>💬 MINISTER QUERY — NEMA AI</span>
           <FeedTag feed="LIVE" />
         </div>
         {msgs.length===0&&<div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
           {["What if Abqaiq is hit?","When will food run out?","Economic cost so far?","Oman mediation options?","Worst-case 30 days?"].map(q=>(
-            <button key={q} onClick={()=>setInput(q)} style={{ fontSize:7, padding:"3px 8px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.18)", borderRadius:3, color:C.info, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>{q}</button>
+            <button key={q} onClick={()=>setInput(q)} style={{ fontSize:10, padding:"4px 10px", background:"rgba(59,130,246,0.08)", border:"1px solid rgba(59,130,246,0.18)", borderRadius:3, color:C.info, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>{q}</button>
           ))}
         </div>}
         <div ref={chatRef} style={{ maxHeight:220, overflowY:"auto", marginBottom:8, display:"flex", flexDirection:"column", gap:6 }}>
           {msgs.map((m,i)=>(
             <div key={i} style={{ padding:"6px 8px", borderRadius:3, background:m.role==="user"?"rgba(59,130,246,0.08)":"rgba(255,255,255,0.02)", borderLeft:`2px solid ${m.role==="user"?C.info:C.muted}` }}>
-              <div style={{ fontSize:7, color:C.dim, marginBottom:2 }}>{m.role==="user"?"MINISTER":"NEMA AI"}</div>
-              <div style={{ fontSize:9, color:C.fg, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.content}</div>
+              <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>{m.role==="user"?"MINISTER":"NEMA AI"}</div>
+              <div style={{ fontSize:12, color:C.fg, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.content}</div>
             </div>
           ))}
           {chatLoading&&<div style={{ padding:"6px 8px", borderRadius:3, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${C.muted}` }}>
-            <div style={{ fontSize:7, color:C.dim, marginBottom:2 }}>NEMA AI</div>
-            <span className="cop-pulse" style={{ fontSize:9, color:C.muted }}>●●●</span>
+            <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>NEMA AI</div>
+            <span className="cop-pulse" style={{ fontSize:12, color:C.muted }}>●●●</span>
           </div>}
         </div>
         <div style={{ display:"flex", gap:6 }}>
           <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()}
             placeholder="Ask anything about the situation…"
-            style={{ flex:1, padding:"6px 8px", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.surfBorder}`, borderRadius:3, color:C.fg, fontSize:8, fontFamily:"JetBrains Mono,monospace" }}
+            style={{ flex:1, padding:"8px 10px", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.surfBorder}`, borderRadius:3, color:C.fg, fontSize:11, fontFamily:"JetBrains Mono,monospace" }}
           />
           <button onClick={sendChat} disabled={chatLoading}
-            style={{ padding:"6px 12px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:chatLoading?C.muted:C.info, fontSize:8, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>
+            style={{ padding:"6px 12px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:chatLoading?C.muted:C.info, fontSize:11, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>
             {chatLoading?"…":"SEND"}
           </button>
         </div>
@@ -1523,29 +1523,29 @@ export default function NEMACOPLive() {
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:38,height:38,borderRadius:6,background:"linear-gradient(135deg,#1e40af,#1e3a8a)",border:"1px solid #3b82f644",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 20px rgba(59,130,246,0.15)"}}>⬡</div>
             <div>
-              <div style={{fontSize:14,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>NEMA MINISTER COP</div>
-              <div style={{fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>NATIONAL EMERGENCY MANAGEMENT AUTHORITY · LIVE DEMO</div>
+              <div style={{fontSize:16,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>NEMA MINISTER COP</div>
+              <div style={{fontSize:10,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>NATIONAL EMERGENCY MANAGEMENT AUTHORITY · LIVE DEMO</div>
             </div>
           </div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
             {[["HORMUZ","CLOSED D7",C.critical],["KSA AIRSPACE","RESTRICTED",C.warning],["CIVIL DEFENSE","ACTIVATED",C.success],["THREAT","CRITICAL",C.critical]].map(([l,v,c])=>(
               <div key={l} style={{textAlign:"center"}}>
-                <div style={{fontSize:7,color:C.dim,letterSpacing:"0.06em",marginBottom:3}}>{l}</div>
-                <span style={{fontSize:8,padding:"3px 8px",borderRadius:4,background:`${c}14`,color:c,border:`1px solid ${c}28`,fontWeight:600}}>{v}</span>
+                <div style={{fontSize:10,color:C.dim,letterSpacing:"0.06em",marginBottom:3}}>{l}</div>
+                <span style={{fontSize:11,padding:"3px 10px",borderRadius:4,background:`${c}14`,color:c,border:`1px solid ${c}28`,fontWeight:600}}>{v}</span>
               </div>
             ))}
           </div>
-          <div style={{fontSize:8,color:C.dim,textAlign:"right"}}>
+          <div style={{fontSize:11,color:C.dim,textAlign:"right"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
               <span style={{color:C.success,fontWeight:600}}>● Day 7 · 07 MAR 2026</span>
-              <button onClick={refresh} disabled={refreshing} style={{padding:"4px 10px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:4,color:refreshing?C.dim:C.success,fontSize:7,cursor:"pointer",fontFamily:"JetBrains Mono,monospace",fontWeight:600}}>
+              <button onClick={refresh} disabled={refreshing} style={{padding:"4px 10px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:4,color:refreshing?C.dim:C.success,fontSize:10,cursor:"pointer",fontFamily:"JetBrains Mono,monospace",fontWeight:600}}>
                 {refreshing?<span className="cop-pulse">↻ FETCHING…</span>:"↻ REFRESH LIVE"}
               </button>
             </div>
-            <div style={{fontSize:7,color:C.dim}}>Last fetch: {fmt(lastRefresh)}</div>
+            <div style={{fontSize:10,color:C.dim}}>Last fetch: {fmt(lastRefresh)}</div>
             <div style={{marginTop:4,display:"flex",gap:5}}>
               {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
-                <span key={l} style={{fontSize:6,padding:"2px 5px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
+                <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
               ))}
             </div>
           </div>
@@ -1553,7 +1553,7 @@ export default function NEMACOPLive() {
 
         {/* LIVE STATUS BAR */}
         <div style={{background:"#0a1220",borderBottom:`1px solid ${C.surfBorder}`,padding:"6px 20px",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-          <span style={{fontSize:7,color:C.dim,fontWeight:600,letterSpacing:"0.08em"}}>LIVE:</span>
+          <span style={{fontSize:10,color:C.dim,fontWeight:600,letterSpacing:"0.08em"}}>LIVE:</span>
           {[
             {l:"BRENT", src:live.brent.source, loading:live.brent.loading, v:live.brent.value},
             {l:"TASI",  src:live.tasi.source,  loading:live.tasi.loading,  v:live.tasi.value},
@@ -1562,12 +1562,12 @@ export default function NEMACOPLive() {
             {l:"GCC",   src:live.gcc.data?"AI+WEB":"STATIC", loading:live.gcc.loading, v:live.gcc.error?"⚠ failed":live.gcc.data?"✓ sourced":"seed"},
           ].map(f=>(
             <div key={f.l} style={{display:"flex",alignItems:"center",gap:5}}>
-              <span style={{fontSize:7,color:C.dim,fontWeight:500}}>{f.l}:</span>
-              {f.loading?<span className="cop-pulse" style={{fontSize:7,color:C.info}}>●</span>:<span style={{fontSize:7,color:f.src==="STATIC"?C.dim:C.success,fontWeight:500}}>{f.v}</span>}
+              <span style={{fontSize:10,color:C.dim,fontWeight:500}}>{f.l}:</span>
+              {f.loading?<span className="cop-pulse" style={{fontSize:10,color:C.info}}>●</span>:<span style={{fontSize:10,color:f.src==="STATIC"?C.dim:C.success,fontWeight:500}}>{f.v}</span>}
               <FeedTag feed={f.src} loading={f.loading}/>
             </div>
           ))}
-          <span style={{marginLeft:"auto",fontSize:7,color:C.dim}}>CORS-blocked: Yahoo Finance direct · NASA FIRMS · PortWatch (use server-side proxy in repo)</span>
+          <span style={{marginLeft:"auto",fontSize:10,color:C.dim}}>CORS-blocked: Yahoo Finance direct · NASA FIRMS · PortWatch (use server-side proxy in repo)</span>
         </div>
 
         {/* TAB BAR */}
@@ -1577,7 +1577,7 @@ export default function NEMACOPLive() {
               padding:"10px 16px", background:tab===i?"#192233":"transparent",
               border:"none", borderBottom:tab===i?`2px solid ${C.info}`:"2px solid transparent",
               cursor:"pointer", color:tab===i?C.fg:C.muted,
-              fontFamily:"'JetBrains Mono',monospace", fontSize:8,
+              fontFamily:"'JetBrains Mono',monospace", fontSize:11,
               fontWeight:tab===i?700:500, letterSpacing:"0.08em",
               whiteSpace:"nowrap", transition:"all 0.15s ease",
             }}>
@@ -1590,7 +1590,7 @@ export default function NEMACOPLive() {
         <main style={{flex:1,overflowY:"auto",padding:"18px 20px"}}>{screens[tab]}</main>
 
         {/* FOOTER */}
-        <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:7,color:C.dim,flexWrap:"wrap",gap:6}}>
+        <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:10,color:C.dim,flexWrap:"wrap",gap:6}}>
           <span>BRENT · TASI · GCC STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
           <span style={{color:"#f97316"}}>PENDING SERVER-SIDE: Yahoo Finance direct · NASA FIRMS · OpenWeatherMap · PortWatch · ACLED</span>
         </footer>
