@@ -981,18 +981,18 @@ const ScreenRiskClusters = ({ live }) => {
       {/* NCS Score */}
       <div style={{ display:"flex", alignItems:"center", gap:16, padding:12, borderRadius:6, marginBottom:12, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)" }}>
         <div>
-          <div style={{ fontSize:8, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL CONSEQUENCE SCORE</div>
+          <div style={{ fontSize:11, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL CONSEQUENCE SCORE</div>
           <div style={{ display:"flex", alignItems:"baseline", gap:4 }}>
-            <span style={{ fontSize:30, fontWeight:"bold", color:C.critical }}>72</span>
-            <span style={{ fontSize:12, color:C.muted }}>/100 HIGH</span>
+            <span style={{ fontSize:36, fontWeight:"bold", color:C.critical }}>72</span>
+            <span style={{ fontSize:16, color:C.muted }}>/100 HIGH</span>
           </div>
-          <div style={{ fontSize:7, color:C.dim }}>Composite model · STATIC</div>
+          <div style={{ fontSize:10, color:C.dim }}>Composite model · STATIC</div>
         </div>
         <div style={{ display:"flex", gap:8 }}>
           {[{l:"POP",v:18,m:25},{l:"INFRA",v:20,m:25},{l:"ECON",v:18,m:25},{l:"SEC",v:22,m:25}].map((f,i)=>(
             <div key={i} style={{ textAlign:"center", padding:"6px 10px", background:C.surface, borderRadius:4 }}>
-              <div style={{ fontSize:7, color:C.muted }}>{f.l}</div>
-              <div style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{f.v}</div>
+              <div style={{ fontSize:10, color:C.muted }}>{f.l}</div>
+              <div style={{ fontSize:18, fontWeight:"bold", color:C.fg }}>{f.v}</div>
               <div style={{ width:32, height:2, background:C.surfBorder, borderRadius:1, margin:"4px auto 0" }}>
                 <div style={{ height:"100%", borderRadius:1, width:`${(f.v/f.m)*100}%`, background:f.v>20?C.critical:f.v>15?C.warning:C.success }}/>
               </div>
@@ -1010,16 +1010,16 @@ const ScreenRiskClusters = ({ live }) => {
             {/* Header row */}
             <div onClick={()=>toggle(c.id)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", cursor:"pointer", background:`${sc}08` }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontWeight:"bold", fontSize:11, color:C.fg }}>{c.icon} {c.label}</span>
-                <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:`${sc}22`, color:sc, fontWeight:"bold" }}>{c.status}</span>
-                <span style={{ fontSize:8, color:C.muted }}>{c.risks} risks</span>
+                <span style={{ fontWeight:"bold", fontSize:14, color:C.fg }}>{c.icon} {c.label}</span>
+                <span style={{ fontSize:10, padding:"2px 6px", borderRadius:3, background:`${sc}22`, color:sc, fontWeight:"bold" }}>{c.status}</span>
+                <span style={{ fontSize:11, color:C.muted }}>{c.risks} risks</span>
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ fontSize:8, color:C.muted }}>
+                <span style={{ fontSize:11, color:C.muted }}>
                   {c.active>0&&`${c.active}🔴`} {c.elevated>0&&`${c.elevated}🟡`}
                 </span>
-                {c.decisions.length>0 && <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:"rgba(239,68,68,0.12)", color:C.critical }}>{c.decisions.length} decision{c.decisions.length>1?"s":""}</span>}
-                <span style={{ fontSize:9, color:C.muted }}>{isOpen?"▾":"▸"}</span>
+                {c.decisions.length>0 && <span style={{ fontSize:10, padding:"2px 6px", borderRadius:3, background:"rgba(239,68,68,0.12)", color:C.critical }}>{c.decisions.length} decision{c.decisions.length>1?"s":""}</span>}
+                <span style={{ fontSize:12, color:C.muted }}>{isOpen?"▾":"▸"}</span>
               </div>
             </div>
             {/* Expanded body */}
@@ -1028,14 +1028,14 @@ const ScreenRiskClusters = ({ live }) => {
                 {c.riskItems.map((r,i) => <ClusterRiskItem key={i} r={r} live={live} />)}
                 {c.decisions.length > 0 && (
                   <div style={{ marginTop:8, padding:"8px 10px", borderRadius:3, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)" }}>
-                    <div style={{ fontSize:8, color:C.critical, fontWeight:"bold", marginBottom:5 }}>⚡ DECISIONS REQUIRED</div>
+                    <div style={{ fontSize:11, color:C.critical, fontWeight:"bold", marginBottom:5 }}>⚡ DECISIONS REQUIRED</div>
                     {c.decisions.map((d,i) => {
                       const dc = d.severity==="critical"?C.critical:d.severity==="high"?C.warning:C.info;
-                      return <div key={i} style={{ fontSize:9, color:C.fg, marginBottom:3 }}>▸ {d.title} <span style={{ color:dc }}>({d.window})</span></div>;
+                      return <div key={i} style={{ fontSize:12, color:C.fg, marginBottom:3 }}>▸ {d.title} <span style={{ color:dc }}>({d.window})</span></div>;
                     })}
                   </div>
                 )}
-                <div style={{ marginTop:8, fontSize:8, color:C.dim }}>
+                <div style={{ marginTop:8, fontSize:11, color:C.dim }}>
                   AGENCIES: {c.agencies.join(" · ")}
                 </div>
               </div>
@@ -1046,9 +1046,9 @@ const ScreenRiskClusters = ({ live }) => {
 
       {/* Dependency chain warning */}
       <div style={{ padding:12, borderRadius:4, marginTop:4, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.12)" }}>
-        <div style={{ fontSize:9, color:C.critical, fontWeight:"bold", marginBottom:4 }}>⚠ DEPENDENCY CHAIN</div>
-        <div style={{ fontSize:10, color:"#fca5a5" }}>Eastern Province Power Grid → Jubail + Ras Al-Khair Desal → Water for 3.9M people. Grid strike = water crisis 48h.</div>
-        <div style={{ fontSize:7, color:C.dim, marginTop:4 }}>SOURCES: SWCC · SEC annual reports · STATIC</div>
+        <div style={{ fontSize:12, color:C.critical, fontWeight:"bold", marginBottom:4 }}>⚠ DEPENDENCY CHAIN</div>
+        <div style={{ fontSize:13, color:"#fca5a5" }}>Eastern Province Power Grid → Jubail + Ras Al-Khair Desal → Water for 3.9M people. Grid strike = water crisis 48h.</div>
+        <div style={{ fontSize:10, color:C.dim, marginTop:4 }}>SOURCES: SWCC · SEC annual reports · STATIC</div>
       </div>
     </div>
   );
