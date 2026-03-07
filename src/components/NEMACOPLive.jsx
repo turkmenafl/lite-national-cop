@@ -1483,46 +1483,40 @@ const DecisionTable = ({ live }) => {
   const headers = ['#','SEV','DOMAIN','KEY DEVELOPMENT','IMPLICATIONS','DECISION REQUIRED','WINDOW','SOURCES'];
 
   return (
-    <div style={{ overflowX:'auto' }}>
+    <div style={{ overflowX:'auto', background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4 }}>
       <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'JetBrains Mono',monospace", fontSize:11 }}>
         <thead>
-          <tr style={{ background:C.surface }}>
+          <tr>
             {headers.map(h => (
-              <th key={h} style={{ textAlign:'left', padding:'10px 10px', textTransform:'uppercase', letterSpacing:'0.08em', fontSize:10, color:C.dim, fontWeight:600, borderBottom:`1px solid ${C.surfBorder}`, whiteSpace:'nowrap' }}>
+              <th key={h} style={{ textAlign:'left', padding:'8px 10px', textTransform:'uppercase', letterSpacing:'0.1em', fontSize:10, color:C.dim, fontWeight:600, borderBottom:`1px solid ${C.surfBorder}`, whiteSpace:'nowrap' }}>
                 {h}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map(row => {
+          {rows.map((row, idx) => {
             const isCrit = row.severity === 'CRITICAL';
-            const sevBg = isCrit ? 'rgba(239,68,68,0.18)' : 'rgba(245,158,11,0.18)';
-            const sevCol = isCrit ? '#fca5a5' : '#fcd34d';
+            const isLast = idx === rows.length - 1;
             const domCol = DOMAIN_COLORS[row.domain] || C.muted;
             const wCol = windowColor(row.window);
             return (
-              <tr key={row.id} style={{ borderBottom:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${isCrit ? C.critical : C.warning}` }}>
-                <td style={{ padding:'12px 10px', color:C.dim, textAlign:'center', width:28, verticalAlign:'top' }}>{row.id}</td>
-                <td style={{ padding:'12px 10px', width:70, verticalAlign:'top' }}>
-                  <span style={{ padding:'2px 6px', borderRadius:3, fontSize:10, fontWeight:600, background:sevBg, color:sevCol }}>{row.severity}</span>
+              <tr key={row.id} style={{ borderBottom: isLast ? 'none' : `1px solid ${C.surfBorder}`, borderLeft:`3px solid ${isCrit ? C.critical : C.warning}` }}>
+                <td style={{ padding:'12px 10px', color:C.dim, textAlign:'center', width:'3ch', verticalAlign:'top' }}>{row.id}</td>
+                <td style={{ padding:'12px 10px', width:'9ch', verticalAlign:'top' }}>
+                  <span style={{ padding:'3px 7px', borderRadius:3, fontSize:10, fontWeight:700, background: isCrit ? C.critical : C.warning, color: isCrit ? '#ffffff' : '#0a0a0a' }}>{row.severity}</span>
                 </td>
-                <td style={{ padding:'12px 10px', width:80, verticalAlign:'top', color:domCol, fontWeight:600, fontSize:10, textTransform:'uppercase' }}>{row.domain}</td>
-                <td style={{ padding:'12px 10px', maxWidth:220, lineHeight:1.6, color:C.fg, verticalAlign:'top' }}>{row.keyDev}</td>
-                <td style={{ padding:'12px 10px', maxWidth:210, lineHeight:1.6, color:C.muted, verticalAlign:'top' }}>{row.implication}</td>
-                <td style={{ padding:'12px 10px', maxWidth:200, lineHeight:1.6, color:'#e2e8f0', fontWeight:600, verticalAlign:'top' }}>{row.decision}</td>
-                <td style={{ padding:'12px 10px', width:60, verticalAlign:'top' }}>
-                  <span style={{ padding:'2px 6px', borderRadius:3, fontSize:10, fontWeight:600, background:`${wCol}22`, color:wCol }}>{row.window}</span>
-                </td>
-                <td style={{ padding:'12px 10px', width:100, verticalAlign:'top', fontSize:10, color:C.dim, lineHeight:1.5 }}>{row.sources}</td>
+                <td style={{ padding:'12px 10px', width:'11ch', verticalAlign:'top', color:domCol, fontWeight:600, fontSize:10, textTransform:'uppercase' }}>{row.domain}</td>
+                <td style={{ padding:'12px 10px', width:'22%', lineHeight:1.6, color:C.fg, verticalAlign:'top' }}>{row.keyDev}</td>
+                <td style={{ padding:'12px 10px', width:'22%', lineHeight:1.6, color:C.muted, verticalAlign:'top' }}>{row.implication}</td>
+                <td style={{ padding:'12px 10px', width:'20%', lineHeight:1.6, color:'#e2e8f0', fontWeight:600, verticalAlign:'top' }}>{row.decision}</td>
+                <td style={{ padding:'12px 10px', width:'7ch', verticalAlign:'top', fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:wCol, fontWeight:600 }}>{row.window}</td>
+                <td style={{ padding:'12px 10px', width:'10%', verticalAlign:'top', fontSize:10, color:C.dim, lineHeight:1.3 }}>{row.sources}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      <div style={{ marginTop:10, fontSize:9, color:C.dim, lineHeight:1.5 }}>
-        SOURCES REFERENCED: OPA (Mar 07) · EIA (Mar 02) · Reuters (Mar 04) · CNBC (Mar 03) · Bloomberg (Mar 04) · The Economist (Mar 03) · UKMTO Advisory 003-26
-      </div>
     </div>
   );
 };
