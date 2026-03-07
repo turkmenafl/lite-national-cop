@@ -501,6 +501,7 @@ const GCC_DAILY = {
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("CUMULATIVE");
+  const [theaterView, setTheaterView] = useState("LOG");
 
   const isCumulative = activeDay === "CUMULATIVE";
   const filteredStrikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
