@@ -317,6 +317,8 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
+  const gccPolygonsRef = useRef([]);
+  const gccGeoRef = useRef(null); // cached GeoJSON data
 
   // Initialize map once
   useEffect(() => {
