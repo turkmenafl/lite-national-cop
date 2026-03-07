@@ -813,7 +813,7 @@ const ScreenSituation = ({ live }) => {
               </>
             ) : (
               /* GCC THEATER view */
-              <div style={{ padding:"8px 10px", display:"flex", flexDirection:"column", gap:3, flex:1, justifyContent:"space-between", overflowY: expandedCountry ? "auto" : "hidden" }}>
+              <div style={{ padding:"10px 8px", display:"flex", flexDirection:"column", gap:0, flex:1, justifyContent:"space-between", overflowY: expandedCountry ? "auto" : "hidden" }}>
                 {getGCCTheaterData().map(g => {
                   const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
                   const confCol = g.confidence==="CONFIRMED"?C.success:"#f97316";
