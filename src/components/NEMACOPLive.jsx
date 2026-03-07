@@ -1947,7 +1947,7 @@ export default function NEMACOPLive() {
     <ScreenSituation    live={live}/>,
     <ScreenRiskClusters live={live}/>,
     <ScreenInfra        live={live}/>,
-    <ScreenDecisions />,
+    <ScreenDecisions  live={live}/>,
     <ScreenEconomic     live={live}/>,
     <ScreenMedia        live={live}/>,
     <ScreenScenarios />,
