@@ -677,7 +677,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       });
     } else {
       // KSA EVENT LOG — only KSA markers
-      const markers = getMarkers();
+      const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
       markers.forEach(p => {
         const col = p.s === "critical" ? C.critical : C.warning;
         const m = L.marker([p.lat, p.lng], {
