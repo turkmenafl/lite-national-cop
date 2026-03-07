@@ -274,6 +274,32 @@ const KpiCard = ({ label, value, change, color, note, feed, loading }) => (
 );
 
 // ─── FETCHERS ─────────────────────────────────────────────────────────────────
+async function fetchEIABrent() {
+  const EIA_KEY = "XvGcVy2EN7a827x0Jl7XUzGTQ290vJrws545UZZ6";
+  const params = new URLSearchParams({
+    api_key: EIA_KEY,
+    frequency: "daily",
+    "data[0]": "value",
+    "facets[series][]": "RBRTE",
+    "sort[0][column]": "period",
+    "sort[0][direction]": "desc",
+    length: "5",
+  });
+  const res = await fetch(`https://api.eia.gov/v2/petroleum/pri/spt/data/?${params}`);
+  const json = await res.json();
+  const data = json?.response?.data ?? [];
+  if (!data.length) throw new Error("EIA no data");
+  const price = parseFloat(data[0].value);
+  const prev  = data[1] ? parseFloat(data[1].value) : price;
+  const chg   = +(price - prev).toFixed(2);
+  const chgPct = +(((chg) / prev) * 100).toFixed(1);
+  return {
+    price,
+    date: data[0].period,
+    change: `${chg >= 0 ? "+" : ""}${chgPct}% vs prev`,
+  };
+}
+
 async function fetchFinancial() {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST", headers:{"Content-Type":"application/json"},
