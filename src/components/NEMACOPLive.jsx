@@ -998,15 +998,18 @@ const ScreenSituation = ({ live }) => {
           </div>
 
           {/* Right column */}
-          <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0 }}>
             {theaterView === "LOG" ? (
               <>
-                {/* KSA Event Log */}
-                <div style={{ padding:14, borderBottom:`1px solid ${C.surfBorder}` }}>
+                {/* KSA Event Log header */}
+                <div style={{ padding:"14px 14px 6px 14px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
                     <span style={{ fontSize:10, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
                   </div>
+                </div>
+                {/* Scrollable event list */}
+                <div style={{ flex:1, overflowY:"auto", minHeight:0, padding:"0 14px 14px 14px" }}>
                   {filteredStrikes.length === 0 ? (
                     <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {dayToTabLabel(activeDay)}</div>
                   ) : (
@@ -1027,34 +1030,6 @@ const ScreenSituation = ({ live }) => {
                       })}
                     </div>
                   )}
-                </div>
-
-                {/* Divider label */}
-                <div style={{ padding:"6px 14px", background:"#0a1628", borderBottom:`1px solid ${C.surfBorder}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
-                  <FeedTag feed="STATIC" />
-                </div>
-
-                {/* GCC Country Rows */}
-                <div style={{ padding:14 }}>
-                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    {getGCCForDay().map(g => {
-                      const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
-                      return (
-                        <div key={g.code} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 9px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
-                          <span style={{ fontSize:12, fontWeight:600, color:C.fg, width:85, flexShrink:0 }}>{g.name}</span>
-                          <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ fontSize:16, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
-                            <span style={{ fontSize:10, color:C.dim }}>{isCumulative?"total":"today"}</span>
-                          </div>
-                          <span style={{ fontSize:10, padding:"3px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{ marginTop:8, fontSize:10, color:C.dim, lineHeight:1.5 }}>
-                    {getGCCForDay().filter(g=>g.strikes>0).slice(0,2).map(g=>g.note).join(" ")}
-                  </div>
                 </div>
               </>
             ) : (
