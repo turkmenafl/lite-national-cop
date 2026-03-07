@@ -1064,19 +1064,19 @@ const ScreenInfra = ({ live }) => (
         <div key={s.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:6, padding:"12px 14px", boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:14 }}>{s.icon}</span>
-              <span style={{ fontSize:11, fontWeight:"bold", color:C.fg }}>{s.name}</span>
+              <span style={{ fontSize:18 }}>{s.icon}</span>
+              <span style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{s.name}</span>
               <StatusBadge s={s.status}/>
             </div>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              <span style={{ fontSize:9, color:col, fontWeight:"bold" }}>{s.pct}%</span>
+              <span style={{ fontSize:12, color:col, fontWeight:"bold" }}>{s.pct}%</span>
               <FeedTag feed={s.feed} loading={s.feed==="IODA"&&live.ioda.loading}/>
             </div>
           </div>
           <div style={{ height:4, background:C.surfBorder, borderRadius:2, marginBottom:6 }}>
             <div style={{ height:"100%", width:`${s.pct}%`, background:col, borderRadius:2 }}/>
           </div>
-          <div style={{ fontSize:8, color:C.muted }}>{note}</div>
+          <div style={{ fontSize:11, color:C.muted }}>{note}</div>
         </div>
       );
     })}
