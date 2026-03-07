@@ -876,6 +876,20 @@ const getUniqueDays = () => {
 };
 const STRIKE_DAYS = getUniqueDays();
 
+// Format "Mar 07" → "03/07"
+const dayToTabLabel = (day) => {
+  if (day === "CUMULATIVE") return "CUMULATIVE";
+  const d = new Date(`2026 ${day}`);
+  if (isNaN(d.getTime())) return day;
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+};
+// Reverse lookup: tab label back to day key
+const tabLabelToDay = {};
+STRIKE_DAYS.forEach(d => { tabLabelToDay[dayToTabLabel(d)] = d; });
+tabLabelToDay["CUMULATIVE"] = "CUMULATIVE";
+// Add Mar 08 tab
+const DATE_TAB_ENTRIES = [...STRIKE_DAYS.map(d => ({ label: dayToTabLabel(d), dayKey: d })), { label: "03/08", dayKey: "Mar 08" }];
+
 // GCC per-day seed data (static estimates distributed across days)
 const GCC_DAILY = {
   "AE": { total:1276, interceptPct:92, perDay:{ "Feb 28":182, "Mar 01":195, "Mar 02":178, "Mar 03":190, "Mar 04":201, "Mar 05":112, "Mar 06":108, "Mar 07":110 }, note:"Jebel Ali + Dubai T3 + French base hit." },
@@ -923,7 +937,7 @@ const ScreenSituation = ({ live }) => {
     });
   };
 
-  const dateTabs = ["CUMULATIVE", ...STRIKE_DAYS];
+  const dateTabs = [{ label: "CUMULATIVE", dayKey: "CUMULATIVE" }, ...DATE_TAB_ENTRIES];
 
   return (
     <div>
@@ -942,10 +956,10 @@ const ScreenSituation = ({ live }) => {
         {/* Date tabs */}
         <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           {dateTabs.map(t => {
-            const isActive = activeDay === t;
-            const dayStrikes = t==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>s.day===t).length;
+            const isActive = activeDay === t.dayKey;
+            const dayStrikes = t.dayKey==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>s.day===t.dayKey).length;
             return (
-              <button key={t} onClick={()=>{setActiveDay(t);setSelEvent(null);}} style={{
+              <button key={t.dayKey} onClick={()=>{setActiveDay(t.dayKey);setSelEvent(null);}} style={{
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
                 background:isActive?"#192233":"transparent",
                 borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
@@ -953,7 +967,7 @@ const ScreenSituation = ({ live }) => {
                 fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
                 display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
               }}>
-                {t==="CUMULATIVE"?"⊞ ":""}{t}
+                {t.dayKey==="CUMULATIVE"?"⊞ ":""}{t.label}
                 {dayStrikes > 0 && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
               </button>
             );
@@ -961,7 +975,7 @@ const ScreenSituation = ({ live }) => {
         </div>
 
         {/* Map + Right Panel */}
-        <div style={{ display:"flex", gap:0 }}>
+        <div style={{ display:"flex", gap:0, alignItems:"stretch" }}>
           {/* Left: Theater Map */}
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -984,7 +998,7 @@ const ScreenSituation = ({ live }) => {
           </div>
 
           {/* Right column */}
-          <div style={{ flex:1, maxHeight: theaterView === "GCC" ? undefined : 380, overflowY: theaterView === "GCC" ? "hidden" : "auto", display:"flex", flexDirection:"column" }}>
+          <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column" }}>
             {theaterView === "LOG" ? (
               <>
                 {/* KSA Event Log */}
@@ -994,7 +1008,7 @@ const ScreenSituation = ({ live }) => {
                     <span style={{ fontSize:10, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
                   </div>
                   {filteredStrikes.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {dayToTabLabel(activeDay)}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                       {filteredStrikes.map(e => {
@@ -1129,7 +1143,7 @@ const ScreenSituation = ({ live }) => {
           </div>
         </div>
       </div>
-      <GCCTheater gcc={live.gcc} />
+      {/* GCC Theater banner removed — info available in GCC THEATER map view */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
@@ -2011,8 +2025,8 @@ export default function NEMACOPLive() {
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:38,height:38,borderRadius:6,background:"linear-gradient(135deg,#1e40af,#1e3a8a)",border:"1px solid #3b82f644",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 20px rgba(59,130,246,0.15)"}}>⬡</div>
             <div>
-              <div style={{fontSize:16,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>NEMA MINISTER COP</div>
-              <div style={{fontSize:10,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>NATIONAL EMERGENCY MANAGEMENT AUTHORITY · LIVE DEMO</div>
+              <div style={{fontSize:16,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>National Common Operating Picture</div>
+              <div style={{fontSize:10,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>MINISTER VIEW · LIVE DEMO</div>
             </div>
           </div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
