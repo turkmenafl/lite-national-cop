@@ -400,20 +400,22 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
         const isCritical = g.strikes > 100;
         const m = L.marker(coords, {
+          interactive: false,
           icon: L.divIcon({
             className: "",
             html: isCritical
-              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+              ? `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9;pointer-events:none"></div>`,
             iconSize: [14, 14], iconAnchor: [7, 7],
           }),
         }).addTo(map);
         layersRef.current.push(m);
         // Country label
         const lbl = L.marker(coords, {
+          interactive: false,
           icon: L.divIcon({
             className: "",
-            html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap">${g.code} ${g.strikes.toLocaleString()}</div>`,
+            html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${g.code} ${g.strikes.toLocaleString()}</div>`,
             iconSize: [0, 0], iconAnchor: [-10, 4],
           }),
         }).addTo(map);
@@ -458,19 +460,17 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     if (theaterView !== "GCC") return;
 
     const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
-    const GCC_ISO_A2 = ["SA","AE","QA","KW","BH","OM"];
 
     const addPolygons = (geojson) => {
       if (!mapRef.current) return;
       const gccFeatures = geojson.features.filter(f => {
-        const iso3 = f.properties?.ISO_A3 || f.properties?.iso_a3 || f.properties?.ISO3 || "";
-        const iso2 = f.properties?.ISO_A2 || f.properties?.iso_a2 || f.properties?.ISO2 || f.id || "";
-        return GCC_ISO[iso3] || GCC_ISO_A2.includes(iso2);
+        const iso3 = f.id || f.properties?.ISO_A3 || f.properties?.iso_a3 || "";
+        return !!GCC_ISO[iso3];
       });
 
       gccFeatures.forEach(feature => {
-        const iso3 = feature.properties?.ISO_A3 || feature.properties?.iso_a3 || feature.properties?.ISO3 || "";
-        const iso2 = GCC_ISO[iso3] || feature.properties?.ISO_A2 || feature.properties?.iso_a2 || feature.id || "";
+        const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
+        const iso2 = GCC_ISO[iso3];
         const seed = GCC_SEED.find(g => g.code === iso2);
         if (!seed) return;
         const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
@@ -528,11 +528,11 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     if (gccGeoRef.current) {
       addPolygons(gccGeoRef.current);
     } else {
-      fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+      fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
         .then(r => r.json())
         .then(data => {
           gccGeoRef.current = data;
-          addPolygons(data);
+          if (mapRef.current) addPolygons(data);
         })
         .catch(() => {});
     }
