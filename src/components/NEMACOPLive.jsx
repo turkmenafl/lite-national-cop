@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -319,7 +321,7 @@ async function fetchOPABrent() {
 }
 
 async function fetchFinancial() {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch(ANTHROPIC_PROXY_URL, {
     method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({
       model:"claude-sonnet-4-20250514", max_tokens:400,
@@ -358,7 +360,7 @@ async function fetchGCCStrikes() {
 For each country — SA, AE, QA, KW, BH, OM — find total strikes, intercept %, source, confidence (CONFIRMED=official MoD/Reuters/AP, EST=think-tank).
 Reply ONLY with valid JSON:
 {"SA":{"total":19,"intercept_pct":96,"source":"Saudi MoD spokesman","confidence":"CONFIRMED","note":"96% intercept. Abqaiq near-miss Mar 4"},"AE":{"total":1276,"intercept_pct":92,"source":"UAE MoD press conference","confidence":"CONFIRMED","note":"Jebel Ali and Dubai T3 hit"},"QA":{"total":115,"intercept_pct":90,"source":"CTP-ISW","confidence":"EST","note":"Al Udeid struck. LNG suspended"},"KW":{"total":484,"intercept_pct":88,"source":"KUNA / US DoD","confidence":"EST","note":"Ali Al Salem struck"},"BH":{"total":198,"intercept_pct":85,"source":"NAVCENT","confidence":"EST","note":"5th Fleet HQ struck"},"OM":{"total":4,"intercept_pct":50,"source":"ONA","confidence":"EST","note":"Duqm Port drone"}}`;
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch(ANTHROPIC_PROXY_URL, {
     method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000,
       tools:[{ type:"web_search_20250305", name:"web_search" }],
@@ -385,7 +387,7 @@ Reply ONLY with valid JSON array, no other text:
 [{"id":1,"time":"Mar 06 02:15","type":"Ballistic Missile","loc":"Abqaiq Processing vicinity","status":"Intercepted","sev":"critical"},{"id":2,"time":"Mar 05 23:40","type":"Drone (4x)","loc":"Yanbu Port","status":"Intercepted","sev":"high"}]
 Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Research. If fewer than 10 events confirmed, return what is verified. Do not fabricate events.`;
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch(ANTHROPIC_PROXY_URL, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         model:"claude-sonnet-4-20250514", max_tokens:1200,
@@ -425,7 +427,7 @@ pct: operational capacity 0-100
 note: max 60 chars, specific and factual
 Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP-ISW.`;
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch(ANTHROPIC_PROXY_URL, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         model:"claude-sonnet-4-20250514", max_tokens:800,
@@ -512,7 +514,7 @@ HORMUZ: [SUSPENDED/CLOSED/RESTRICTED/DISRUPTED/OPEN]
 GNSS: [YES or NO]
 TEXT: [max 120 char summary]`;
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch(ANTHROPIC_PROXY_URL, {
       method:"POST", headers:{"Content-Type":"application/json"},
       body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:400,
         tools:[{ type:"web_search_20250305", name:"web_search" }],
@@ -1658,7 +1660,7 @@ const ScreenAIBrief = ({ live }) => {
   const generateBrief = async () => {
     setLoading(true); setBrief(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch(ANTHROPIC_PROXY_URL, {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:600, system:ctx,
           messages:[{ role:"user", content:"Generate 200-word executive brief. Format: BOTTOM LINE UP FRONT (2 sentences). CRITICAL GAPS (3 bullets). DECISIONS REQUIRED IN 24H (2 bullets). Use hard numbers." }]
@@ -1675,7 +1677,7 @@ const ScreenAIBrief = ({ live }) => {
     const q=input.trim(); setInput("");
     setMsgs(p=>[...p,{role:"user",content:q}]); setChatLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch(ANTHROPIC_PROXY_URL, {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:400, system:ctx,
           messages:[...msgs.map(m=>({role:m.role,content:m.content})),{role:"user",content:q}]
