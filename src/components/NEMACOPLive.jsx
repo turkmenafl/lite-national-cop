@@ -458,7 +458,6 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     if (theaterView !== "GCC") return;
 
     const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
-    const GCC_ISO_A2 = ["SA","AE","QA","KW","BH","OM"];
 
     const addPolygons = (geojson) => {
       if (!mapRef.current) return;
