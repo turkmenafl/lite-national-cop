@@ -163,12 +163,27 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const results: Record<string, { success: boolean; error?: string }> = {};
+    const results: Record<string, { success: boolean; error?: string; skipped?: boolean }> = {};
     const feedKeys = Object.keys(PROMPTS);
+
+    // Check which entries are already fresh (< 9 min old)
+    const { data: existing } = await supabase.from('ai_cache').select('key, updated_at');
+    const freshKeys = new Set<string>();
+    const now = Date.now();
+    for (const row of existing || []) {
+      const age = now - new Date(row.updated_at).getTime();
+      if (age < 9 * 60 * 1000) freshKeys.add(row.key); // skip if < 9 min old
+    }
 
     for (let i = 0; i < feedKeys.length; i++) {
       const key = feedKeys[i];
       const config = PROMPTS[key];
+
+      if (freshKeys.has(key)) {
+        results[key] = { success: true, skipped: true };
+        console.log(`[${key}] ⏭ skipped (fresh)`);
+        continue;
+      }
       
       try {
         console.log(`[${key}] Calling Anthropic...`);
