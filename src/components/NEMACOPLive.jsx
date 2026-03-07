@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
-import { MapContainer, TileLayer, Rectangle, CircleMarker, Polyline, Marker as LeafletMarker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -304,7 +303,100 @@ Reply ONLY with valid JSON:
   return JSON.parse(m[0]);
 }
 
-// ─── GCC THEATER ──────────────────────────────────────────────────────────────
+// ─── LEAFLET THEATER MAP (plain Leaflet, no react-leaflet) ───────────────────
+const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers }) => {
+  const mapRef = useRef(null);
+  const mapContainerRef = useRef(null);
+  const layersRef = useRef([]);
+
+  // Initialize map once
+  useEffect(() => {
+    if (mapRef.current || !mapContainerRef.current) return;
+    const map = L.map(mapContainerRef.current, {
+      center: [25, 50],
+      zoom: 4,
+      maxBounds: [[12, 32], [38, 62]],
+      maxBoundsViscosity: 1.0,
+      zoomControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      attributionControl: false,
+    });
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
+      tileSize: 256,
+      detectRetina: true,
+    }).addTo(map);
+    // Eastern Province rectangle
+    L.rectangle([[21.5, 46.5], [29.5, 55.5]], {
+      color: "rgba(239,68,68,0.5)", weight: 0.8,
+      fillColor: "rgba(239,68,68,0.12)", fillOpacity: 1,
+    }).addTo(map);
+    // Eastern Province label
+    L.marker([28.8, 51], {
+      icon: L.divIcon({
+        className: "",
+        html: '<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',
+        iconSize: [0, 0], iconAnchor: [-5, 5],
+      }),
+    }).addTo(map);
+    // Hormuz dashed line
+    L.polyline([[26.6, 56.3], [27.2, 56.3]], {
+      color: "#ef4444", weight: 2, dashArray: "5,3",
+    }).addTo(map);
+    // Hormuz label
+    L.marker([27.0, 56.4], {
+      icon: L.divIcon({
+        className: "",
+        html: '<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',
+        iconSize: [0, 0], iconAnchor: [-5, 8],
+      }),
+    }).addTo(map);
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
+
+  // Update strike markers when data changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    // Remove old dynamic layers
+    layersRef.current.forEach(l => map.removeLayer(l));
+    layersRef.current = [];
+    const markers = getMarkers();
+    markers.forEach(p => {
+      const col = p.s === "critical" ? C.critical : C.warning;
+      const m = L.marker([p.lat, p.lng], {
+        icon: L.divIcon({
+          className: "",
+          html: p.s === "critical"
+            ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+            : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+          iconSize: [14, 14], iconAnchor: [7, 7],
+        }),
+      }).addTo(map);
+      layersRef.current.push(m);
+    });
+    if (filteredStrikes.length === 0) {
+      const m = L.marker([24, 46], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
+          iconSize: [0, 0], iconAnchor: [-10, 5],
+        }),
+      }).addTo(map);
+      layersRef.current.push(m);
+    }
+  }, [filteredStrikes, getMarkers]);
+
+  return (
+    <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520 }}>
+      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+    </div>
+  );
+});
+
+
 const GCCTheater = ({ gcc }) => {
   const [expanded, setExpanded] = useState(false);
   const states = GCC_SEED.map(s=>{
@@ -456,81 +548,7 @@ const ScreenSituation = ({ live }) => {
                 <FeedTag feed="STATIC" />
               </div>
             </div>
-            <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden", height:520 }}>
-              <MapContainer
-                center={[25, 50]}
-                zoom={4}
-                maxBounds={[[12, 32], [38, 62]]}
-                maxBoundsViscosity={1.0}
-                style={{ width:"100%", height:"100%" }}
-                zoomControl={false}
-                dragging={false}
-                scrollWheelZoom={false}
-                doubleClickZoom={false}
-                attributionControl={false}
-              >
-                <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                  tileSize={256}
-                  detectRetina={true}
-                />
-                {/* Eastern Province rectangle */}
-                <Rectangle
-                  bounds={[[21.5, 46.5], [29.5, 55.5]]}
-                  pathOptions={{ color:"rgba(239,68,68,0.5)", weight:0.8, fillColor:"rgba(239,68,68,0.12)", fillOpacity:1 }}
-                />
-                {/* Eastern Province label */}
-                <LeafletMarker
-                  position={[28.8, 51]}
-                  icon={L.divIcon({
-                    className:"",
-                    html:'<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',
-                    iconSize:[0,0], iconAnchor:[-5,5]
-                  })}
-                />
-                {/* Hormuz dashed line */}
-                <Polyline
-                  positions={[[26.6,56.3],[27.2,56.3]]}
-                  pathOptions={{ color:"#ef4444", weight:2, dashArray:"5,3" }}
-                />
-                {/* Hormuz label */}
-                <LeafletMarker
-                  position={[27.0, 56.4]}
-                  icon={L.divIcon({
-                    className:"",
-                    html:'<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',
-                    iconSize:[0,0], iconAnchor:[-5,8]
-                  })}
-                />
-                {/* Strike markers */}
-                {getMarkers().map((p,i) => {
-                  const col = p.s==="critical" ? C.critical : C.warning;
-                  return (
-                    <LeafletMarker
-                      key={i}
-                      position={[p.lat, p.lng]}
-                      icon={L.divIcon({
-                        className:"",
-                        html: p.s==="critical"
-                          ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-                          : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
-                        iconSize:[14,14], iconAnchor:[7,7]
-                      })}
-                    />
-                  );
-                })}
-                {filteredStrikes.length===0 && (
-                  <LeafletMarker
-                    position={[24, 46]}
-                    icon={L.divIcon({
-                      className:"",
-                      html:`<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
-                      iconSize:[0,0], iconAnchor:[-10,5]
-                    })}
-                  />
-                )}
-              </MapContainer>
-            </div>
+            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} />
           </div>
 
           {/* Right: Scrollable column */}
