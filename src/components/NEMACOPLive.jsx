@@ -1534,6 +1534,34 @@ const ScreenDecisions = ({ live }) => {
 // ─── SCREEN 5: ECONOMIC ───────────────────────────────────────────────────────
 const ScreenEconomic = ({ live }) => (
   <div>
+    {/* National Severity Level */}
+    <div style={{ display:"flex", alignItems:"center", gap:16, padding:12, borderRadius:6, marginBottom:12, background:`${severityColor}08`, border:`1px solid ${severityColor}22` }}>
+      <div>
+        <div style={{ fontSize:11, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL SEVERITY LEVEL</div>
+        <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+          <span style={{ fontSize:38, fontWeight:"bold", color:severityColor }}>{severityLevel}</span>
+          <span style={{ fontSize:16, color:C.muted }}>{severityLabel[severityLevel]}</span>
+        </div>
+        <div style={{ fontSize:11, color:C.dim }}>{severityScore}/100 · Auto-calculated composite</div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, flex:1 }}>
+        {Object.entries(SEVERITY_FACTORS).map(([k,f])=>{
+          const pct=(f.value/f.max)*100;
+          const col=pct>=80?C.critical:pct>=60?C.warning:C.success;
+          return (
+            <div key={k} style={{ padding:"5px 8px", borderRadius:3, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                <span style={{ fontSize:10, color:C.fg }}>{f.label}</span>
+                <span style={{ fontSize:10, fontWeight:"bold", color:col }}>{f.value}/{f.max}</span>
+              </div>
+              <div style={{ height:2, background:C.surfBorder, borderRadius:1 }}>
+                <div style={{ height:"100%", width:`${pct}%`, background:col, borderRadius:1 }}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
     {/* Live financial KPIs */}
     <div style={{ display:"flex", gap:6, marginBottom:12 }}>
       <KpiCard label="BRENT CRUDE" value={live.brent.value} change={live.brent.change} color={C.critical} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
@@ -1663,35 +1691,6 @@ const ScreenScenarios = () => {
   ];
   return (
     <div>
-      {/* Severity level */}
-      <div style={{ display:"flex", alignItems:"center", gap:16, padding:12, borderRadius:6, marginBottom:12, background:`${severityColor}08`, border:`1px solid ${severityColor}22` }}>
-        <div>
-          <div style={{ fontSize:11, color:C.muted, letterSpacing:"0.05em" }}>NATIONAL SEVERITY LEVEL</div>
-          <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-            <span style={{ fontSize:38, fontWeight:"bold", color:severityColor }}>{severityLevel}</span>
-            <span style={{ fontSize:16, color:C.muted }}>{severityLabel[severityLevel]}</span>
-          </div>
-          <div style={{ fontSize:11, color:C.dim }}>{severityScore}/100 · Auto-calculated composite</div>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, flex:1 }}>
-          {Object.entries(SEVERITY_FACTORS).map(([k,f])=>{
-            const pct=(f.value/f.max)*100;
-            const col=pct>=80?C.critical:pct>=60?C.warning:C.success;
-            return (
-              <div key={k} style={{ padding:"5px 8px", borderRadius:3, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}` }}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                  <span style={{ fontSize:10, color:C.fg }}>{f.label}</span>
-                  <span style={{ fontSize:10, fontWeight:"bold", color:col }}>{f.value}/{f.max}</span>
-                </div>
-                <div style={{ height:2, background:C.surfBorder, borderRadius:1 }}>
-                  <div style={{ height:"100%", width:`${pct}%`, background:col, borderRadius:1 }}/>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Scenario probability cards */}
       <div style={{ marginBottom:12 }}>
         <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>SCENARIO PROBABILITIES — Day 7</div>
