@@ -408,7 +408,48 @@ Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Res
   }
 }
 
-async function fetchPortWatch() {
+async function fetchCIStatus() {
+  const prompt = `You are a critical infrastructure analyst. Search for the current operational status of Saudi Arabia's key infrastructure sectors during the Iran-GCC conflict, March 2026.
+For each of the 6 sectors below, return the current status based on verified reporting:
+1. Oil & Gas — Aramco, Ras Tanura, Abqaiq, Yanbu refinery status
+2. Airports — RUH (Riyadh), DMM (Dammam), JED (Jeddah) capacity %
+3. Ports & Maritime — Jubail, Dammam, Jeddah, Yanbu port operations + Hormuz status
+4. Power Grid — SEC eastern province grid status
+5. Water / Desal — SWCC Jubail and Yanbu desalination plant status
+6. Telecom & Cyber — STC/Mobily network status, cyber threat level
+Reply ONLY with valid JSON, no other text:
+{"oilgas":{"status":"DEGRADED","pct":82,"note":"Ras Tanura 85% cap. Abqaiq near-miss Mar 4.","confidence":"EST"},"airports":{"status":"RESTRICTED","pct":60,"note":"RUH 42%. DMM 33%. JED 112% overflow.","confidence":"CONFIRMED"},"ports":{"status":"DISRUPTED","pct":45,"note":"Hormuz D7 — 0 transits. ~91 tankers holding.","confidence":"EST"},"power":{"status":"ELEVATED","pct":88,"note":"Eastern Province proximity threat.","confidence":"EST"},"water":{"status":"OPERATIONAL","pct":90,"note":"Jubail RO on elevated watch.","confidence":"EST"},"telecom":{"status":"ELEVATED","pct":73,"note":"APT33 activity. AWS Gulf degraded.","confidence":"EST"}}
+Status values: OPERATIONAL / ELEVATED / RESTRICTED / DEGRADED / DISRUPTED / CRITICAL / OFFLINE
+Confidence: CONFIRMED (official source) or EST (synthesised estimate)
+pct: operational capacity 0-100
+note: max 60 chars, specific and factual
+Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP-ISW.`;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-20250514", max_tokens:800,
+        tools:[{ type:"web_search_20250305", name:"web_search" }],
+        messages:[{ role:"user", content:prompt }]
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error("No JSON");
+    const d = JSON.parse(m[0]);
+    const required = ["oilgas","airports","ports","power","water","telecom"];
+    if (!required.every(k=>d[k]?.status)) throw new Error("Incomplete response");
+    return d;
+  } catch(e) {
+    console.warn("[CIStatus] fallback:", e.message);
+    return null;
+  }
+}
+
+
   const PW_BASE = "https://portwatch.imf.org/api/v3/datasets";
   const CHOKE_ID = "42132aa4e2fc4d41bdaf9a445f688931_0";
   const PORT_ID  = "959214444157458aad969389b3ebe1a0_0";
@@ -1225,26 +1266,42 @@ const ScreenRiskClusters = ({ live }) => {
 };
 
 // ─── SCREEN 3: INFRASTRUCTURE ─────────────────────────────────────────────────
-const ScreenInfra = ({ live }) => (
+const CI_KEY_MAP = {
+  "Oil & Gas":"oilgas", "Airports":"airports",
+  "Ports & Maritime":"ports", "Power Grid":"power",
+  "Water / Desal":"water", "Telecom & Cyber":"telecom"
+};
+
+const ScreenInfra = ({ live }) => {
+  const liveCI = live.ciStatus?.data;
+  return (
   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
     {CI_SECTORS.map(s=>{
-      const col=s.status==="DEGRADED"||s.status==="CRITICAL"?C.critical:s.status==="DISRUPTED"?"#f97316":s.status==="RESTRICTED"||s.status==="ELEVATED"?C.warning:C.success;
-      const note = s.feed==="IODA"&&live.ioda.value!==null?`Connectivity: ${live.ioda.value}% of baseline`:s.note;
+      const key = CI_KEY_MAP[s.name];
+      const merged = (liveCI && key && liveCI[key]) ? {
+        ...s,
+        status: liveCI[key].status ?? s.status,
+        pct:    liveCI[key].pct    ?? s.pct,
+        note:   liveCI[key].note   ?? s.note,
+        feed:   liveCI[key].confidence === "CONFIRMED" ? "CONFIRMED" : "AI+WEB",
+      } : s;
+      const col=merged.status==="DEGRADED"||merged.status==="CRITICAL"?C.critical:merged.status==="DISRUPTED"?"#f97316":merged.status==="RESTRICTED"||merged.status==="ELEVATED"?C.warning:merged.status==="OFFLINE"?C.critical:C.success;
+      const note = merged.feed==="IODA"&&live.ioda.value!==null?`Connectivity: ${live.ioda.value}% of baseline`:merged.note;
       return (
-        <div key={s.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:6, padding:"12px 14px", boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
+        <div key={merged.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:6, padding:"12px 14px", boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:18 }}>{s.icon}</span>
-              <span style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{s.name}</span>
-              <StatusBadge s={s.status}/>
+              <span style={{ fontSize:18 }}>{merged.icon}</span>
+              <span style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{merged.name}</span>
+              <StatusBadge s={merged.status}/>
             </div>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              <span style={{ fontSize:12, color:col, fontWeight:"bold" }}>{s.pct}%</span>
-              <FeedTag feed={s.feed} loading={s.feed==="IODA"&&live.ioda.loading}/>
+              <span style={{ fontSize:12, color:col, fontWeight:"bold" }}>{merged.pct}%</span>
+              <FeedTag feed={merged.feed} loading={merged.feed==="IODA"&&live.ioda.loading}/>
             </div>
           </div>
           <div style={{ height:4, background:C.surfBorder, borderRadius:2, marginBottom:6 }}>
-            <div style={{ height:"100%", width:`${s.pct}%`, background:col, borderRadius:2 }}/>
+            <div style={{ height:"100%", width:`${merged.pct}%`, background:col, borderRadius:2 }}/>
           </div>
           <div style={{ fontSize:11, color:C.muted }}>{note}</div>
           {/* PORTWATCH + UKMTO maritime live block */}
@@ -1313,7 +1370,8 @@ const ScreenInfra = ({ live }) => (
       );
     })}
   </div>
-);
+  );
+};
 
 // ─── SCREEN 4: DECISIONS ──────────────────────────────────────────────────────
 const ScreenDecisions = () => {
@@ -1695,6 +1753,7 @@ export default function NEMACOPLive() {
     portwatch: { loading:false, error:null, data:null },
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
+    ciStatus: { loading:false, error:null, data:null },
   });
 
   const refresh = useCallback(async () => {
@@ -1706,10 +1765,11 @@ export default function NEMACOPLive() {
       portwatch:{...d.portwatch,loading:true},
       ukmto:{...d.ukmto,loading:true},
       ksaStrikes:{...d.ksaStrikes,loading:true},
+      ciStatus:{...d.ciStatus,loading:true},
     }));
-    const [eia, opa, fin, gdelt, ioda, gcc, pw, ukmtoRes, ksaStr] = await Promise.allSettled([
+    const [eia, opa, fin, gdelt, ioda, gcc, pw, ukmtoRes, ksaStr, ciStat] = await Promise.allSettled([
       fetchEIABrent(), fetchOPABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes(),
-      fetchPortWatch(), fetchUKMTO(), fetchKSAStrikes()
+      fetchPortWatch(), fetchUKMTO(), fetchKSAStrikes(), fetchCIStatus()
     ]);
     setLive(d=>{
       const n={...d};
@@ -1738,6 +1798,7 @@ export default function NEMACOPLive() {
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
       n.ukmto     = { loading:false, error:ukmtoRes.status==="rejected"?ukmtoRes.reason?.message:null, data:ukmtoRes.status==="fulfilled"?ukmtoRes.value:null };
       n.ksaStrikes = { loading:false, error:ksaStr.status==="rejected"?ksaStr.reason?.message:null, data:ksaStr.status==="fulfilled"?ksaStr.value:null };
+      n.ciStatus = { loading:false, error:ciStat.status==="rejected"?ciStat.reason?.message:null, data:ciStat.status==="fulfilled"?ciStat.value:null };
       return n;
     });
     setLastRefresh(new Date());
