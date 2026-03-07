@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const AI_GAP_MS = 15_000; // 15s between calls
-const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+const AI_GAP_MS = 20_000; // 20s between calls
+const MAX_RETRIES = 1;
 
 // ─── Prompts for each feed ───────────────────────────────────────────────────
 
