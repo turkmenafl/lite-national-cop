@@ -408,6 +408,7 @@ Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Res
   }
 }
 
+async function fetchPortWatch() {
   const PW_BASE = "https://portwatch.imf.org/api/v3/datasets";
   const CHOKE_ID = "42132aa4e2fc4d41bdaf9a445f688931_0";
   const PORT_ID  = "959214444157458aad969389b3ebe1a0_0";
