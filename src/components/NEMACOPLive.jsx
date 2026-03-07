@@ -1026,7 +1026,7 @@ const ScreenSituation = ({ live }) => {
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
                               <span style={{ fontSize:11, fontWeight:700, color:col }}>{strikeLabel(e)}</span>
-                              <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{strikeTime(e)}</span>
                             </div>
                             <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location}</div>
                           </div>
