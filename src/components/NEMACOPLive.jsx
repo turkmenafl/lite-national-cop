@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { ComposableMap, Geographies, Geography, Marker, Line, Annotation } from "react-simple-maps";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -449,19 +450,58 @@ const ScreenSituation = ({ live }) => {
                 <FeedTag feed="STATIC" />
               </div>
             </div>
-            <svg viewBox="0 0 360 200" style={{ width:"100%", background:"#060b17", borderRadius:4 }}>
-              <path d="M55,25 L130,20 L155,40 L175,35 L195,55 L240,68 L255,100 L265,130 L255,165 L230,185 L195,195 L150,190 L100,185 L65,165 L45,135 L35,95 L40,60 Z" fill="#1e3a5f44" stroke="#2d5a8e" strokeWidth="1.2"/>
-              <path d="M215,10 L280,8 L310,25 L315,55 L295,75 L270,80 L255,100 L240,68 L220,55 L205,35 Z" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.25)" strokeWidth="0.8"/>
-              <text x="255" y="48" fill="#ef444488" fontSize="7" fontFamily="monospace">IRAN</text>
-              <line x1="260" y1="82" x2="305" y2="78" stroke="#ef4444" strokeWidth="2" strokeDasharray="4,2"/>
-              <text x="268" y="76" fill="#ef4444" fontSize="7" fontFamily="monospace">⛔ HORMUZ D7</text>
-              {[{n:"KSA",x:130,y:110},{n:"UAE",x:255,y:125},{n:"OMAN",x:285,y:150},{n:"QA",x:238,y:95},{n:"BH",x:220,y:85},{n:"KW",x:195,y:65}].map(l=><text key={l.n} x={l.x} y={l.y} fill="#7d8fa3" fontSize="7" fontFamily="monospace" textAnchor="middle">{l.n}</text>)}
-              {getMarkers().map((p,i)=>{
-                const x=((p.lng-34)/(58-34))*340+10, y=((32-p.lat)/(32-15))*180+10, col=p.s==="critical"?C.critical:C.warning;
-                return (<g key={i}>{p.s==="critical"&&<circle cx={x} cy={y} r={8} fill="none" stroke={col} strokeWidth="0.5" opacity="0.4"><animate attributeName="r" values="5;12;5" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/></circle>}<circle cx={x} cy={y} r={3} fill={col} opacity="0.9"/></g>);
-              })}
-              {filteredStrikes.length===0 && <text x="180" y="105" fill={C.dim} fontSize="9" fontFamily="monospace" textAnchor="middle">No KSA strikes this day</text>}
-            </svg>
+            <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden" }}>
+              <ComposableMap
+                projection="geoMercator"
+                projectionConfig={{ center:[49,25], scale:2800 }}
+                style={{ width:"100%", height:"auto" }}
+                width={460} height={300}
+              >
+                <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
+                  {({ geographies }) => {
+                    const SHOW = ["Saudi Arabia","United Arab Emirates","Qatar","Kuwait","Bahrain","Oman","Iran","Iraq","Yemen"];
+                    return geographies.map(geo => {
+                      const name = geo.properties.name;
+                      if (!SHOW.includes(name)) return null;
+                      const isIran = name === "Iran";
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          fill={isIran ? "#3d0f0f" : "#0d1f3c"}
+                          stroke="#2d5a8e"
+                          strokeWidth={0.6}
+                          style={{ default:{outline:"none"}, hover:{outline:"none", fill:isIran?"#4d1515":"#132d52"}, pressed:{outline:"none"} }}
+                        />
+                      );
+                    });
+                  }}
+                </Geographies>
+                {/* Hormuz annotation */}
+                <Line from={[56.3,26.6]} to={[56.3,27.2]} stroke="#ef4444" strokeWidth={2} strokeDasharray="5,3" />
+                <Annotation subject={[56.4,26.9]} dx={-15} dy={-12} connectorProps={{stroke:"none"}}>
+                  <text fill="#ef4444" fontSize={7} fontFamily="'JetBrains Mono',monospace" fontWeight={700}>⛔ HORMUZ D7</text>
+                </Annotation>
+                {/* Strike markers */}
+                {getMarkers().map((p,i) => {
+                  const col = p.s==="critical" ? C.critical : C.warning;
+                  return (
+                    <Marker key={i} coordinates={[p.lng, p.lat]}>
+                      {p.s==="critical" && <circle r={7} fill="none" stroke={col} strokeWidth={0.5} opacity={0.4}>
+                        <animate attributeName="r" values="4;10;4" dur="2s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
+                      </circle>}
+                      <circle r={3.5} fill={col} opacity={0.9} />
+                    </Marker>
+                  );
+                })}
+                {filteredStrikes.length===0 && (
+                  <Annotation subject={[46,24]} dx={0} dy={0} connectorProps={{stroke:"none"}}>
+                    <text fill={C.dim} fontSize={9} fontFamily="'JetBrains Mono',monospace" textAnchor="middle">No KSA strikes this day</text>
+                  </Annotation>
+                )}
+              </ComposableMap>
+            </div>
           </div>
 
           {/* Right: Scrollable column */}
