@@ -1037,41 +1037,41 @@ export default function NEMACOPLive() {
       <div style={{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",fontFamily:"'JetBrains Mono','SF Mono','Fira Code',monospace"}}>
 
         {/* HEADER */}
-        <header style={{background:"#0a1628",borderBottom:`1px solid ${C.surfBorder}`,padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:34,height:34,borderRadius:4,background:"linear-gradient(135deg,#1e40af,#1e3a8a)",border:"1px solid #3b82f6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>⬡</div>
+        <header style={{background:"#0a1628",borderBottom:`1px solid ${C.surfBorder}`,padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:38,height:38,borderRadius:6,background:"linear-gradient(135deg,#1e40af,#1e3a8a)",border:"1px solid #3b82f644",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 20px rgba(59,130,246,0.15)"}}>⬡</div>
             <div>
-              <div style={{fontSize:13,fontWeight:700,letterSpacing:"0.12em",color:C.fg}}>NEMA MINISTER COP</div>
-              <div style={{fontSize:8,color:C.dim,letterSpacing:"0.08em"}}>NATIONAL EMERGENCY MANAGEMENT AUTHORITY · LIVE DEMO</div>
+              <div style={{fontSize:14,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>NEMA MINISTER COP</div>
+              <div style={{fontSize:8,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>NATIONAL EMERGENCY MANAGEMENT AUTHORITY · LIVE DEMO</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
             {[["HORMUZ","CLOSED D7",C.critical],["KSA AIRSPACE","RESTRICTED",C.warning],["CIVIL DEFENSE","ACTIVATED",C.success],["THREAT","CRITICAL",C.critical]].map(([l,v,c])=>(
               <div key={l} style={{textAlign:"center"}}>
-                <div style={{fontSize:7,color:C.dim}}>{l}</div>
-                <span style={{fontSize:8,padding:"2px 6px",borderRadius:3,background:`${c}18`,color:c,border:`1px solid ${c}33`}}>{v}</span>
+                <div style={{fontSize:7,color:C.dim,letterSpacing:"0.06em",marginBottom:3}}>{l}</div>
+                <span style={{fontSize:8,padding:"3px 8px",borderRadius:4,background:`${c}14`,color:c,border:`1px solid ${c}28`,fontWeight:600}}>{v}</span>
               </div>
             ))}
           </div>
           <div style={{fontSize:8,color:C.dim,textAlign:"right"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-              <span style={{color:C.success}}>● Day 7 · 07 MAR 2026</span>
-              <button onClick={refresh} disabled={refreshing} style={{padding:"2px 8px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.3)",borderRadius:3,color:refreshing?C.dim:C.success,fontSize:7,cursor:"pointer",fontFamily:"JetBrains Mono,monospace"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <span style={{color:C.success,fontWeight:600}}>● Day 7 · 07 MAR 2026</span>
+              <button onClick={refresh} disabled={refreshing} style={{padding:"4px 10px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:4,color:refreshing?C.dim:C.success,fontSize:7,cursor:"pointer",fontFamily:"JetBrains Mono,monospace",fontWeight:600}}>
                 {refreshing?<span className="cop-pulse">↻ FETCHING…</span>:"↻ REFRESH LIVE"}
               </button>
             </div>
             <div style={{fontSize:7,color:C.dim}}>Last fetch: {fmt(lastRefresh)}</div>
-            <div style={{marginTop:3,display:"flex",gap:4}}>
+            <div style={{marginTop:4,display:"flex",gap:5}}>
               {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
-                <span key={l} style={{fontSize:6,padding:"1px 4px",borderRadius:2,background:`${c}18`,color:c}}>{l}</span>
+                <span key={l} style={{fontSize:6,padding:"2px 5px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
               ))}
             </div>
           </div>
         </header>
 
         {/* LIVE STATUS BAR */}
-        <div style={{background:"#0a1220",borderBottom:`1px solid ${C.surfBorder}`,padding:"4px 16px",display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
-          <span style={{fontSize:7,color:C.dim}}>LIVE:</span>
+        <div style={{background:"#0a1220",borderBottom:`1px solid ${C.surfBorder}`,padding:"6px 20px",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{fontSize:7,color:C.dim,fontWeight:600,letterSpacing:"0.08em"}}>LIVE:</span>
           {[
             {l:"BRENT", src:live.brent.source, loading:live.brent.loading, v:live.brent.value},
             {l:"TASI",  src:live.tasi.source,  loading:live.tasi.loading,  v:live.tasi.value},
@@ -1079,9 +1079,9 @@ export default function NEMACOPLive() {
             {l:"IODA",  src:live.ioda.source,  loading:live.ioda.loading,  v:live.ioda.value!==null?`${live.ioda.value}%`:"N/A"},
             {l:"GCC",   src:live.gcc.data?"AI+WEB":"STATIC", loading:live.gcc.loading, v:live.gcc.error?"⚠ failed":live.gcc.data?"✓ sourced":"seed"},
           ].map(f=>(
-            <div key={f.l} style={{display:"flex",alignItems:"center",gap:4}}>
-              <span style={{fontSize:7,color:C.dim}}>{f.l}:</span>
-              {f.loading?<span className="cop-pulse" style={{fontSize:7,color:C.info}}>●</span>:<span style={{fontSize:7,color:f.src==="STATIC"?C.dim:C.success}}>{f.v}</span>}
+            <div key={f.l} style={{display:"flex",alignItems:"center",gap:5}}>
+              <span style={{fontSize:7,color:C.dim,fontWeight:500}}>{f.l}:</span>
+              {f.loading?<span className="cop-pulse" style={{fontSize:7,color:C.info}}>●</span>:<span style={{fontSize:7,color:f.src==="STATIC"?C.dim:C.success,fontWeight:500}}>{f.v}</span>}
               <FeedTag feed={f.src} loading={f.loading}/>
             </div>
           ))}
@@ -1092,12 +1092,12 @@ export default function NEMACOPLive() {
         <nav style={{display:"flex",background:"#0a1628",borderBottom:`1px solid ${C.surfBorder}`,overflowX:"auto"}}>
           {TABS.map((t,i)=>(
             <button key={i} onClick={()=>setTab(i)} style={{
-              padding:"8px 14px", background:tab===i?"#192233":"transparent",
+              padding:"10px 16px", background:tab===i?"#192233":"transparent",
               border:"none", borderBottom:tab===i?`2px solid ${C.info}`:"2px solid transparent",
               cursor:"pointer", color:tab===i?C.fg:C.muted,
               fontFamily:"'JetBrains Mono',monospace", fontSize:8,
-              fontWeight:tab===i?"bold":"normal", letterSpacing:"0.06em",
-              whiteSpace:"nowrap",
+              fontWeight:tab===i?700:500, letterSpacing:"0.08em",
+              whiteSpace:"nowrap", transition:"all 0.15s ease",
             }}>
               {t.icon} {t.label}
             </button>
@@ -1105,10 +1105,10 @@ export default function NEMACOPLive() {
         </nav>
 
         {/* CONTENT */}
-        <main style={{flex:1,overflowY:"auto",padding:"14px 16px"}}>{screens[tab]}</main>
+        <main style={{flex:1,overflowY:"auto",padding:"18px 20px"}}>{screens[tab]}</main>
 
         {/* FOOTER */}
-        <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"5px 16px",background:C.bg,display:"flex",justifyContent:"space-between",fontSize:7,color:C.dim,flexWrap:"wrap",gap:4}}>
+        <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:7,color:C.dim,flexWrap:"wrap",gap:6}}>
           <span>BRENT · TASI · GCC STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
           <span style={{color:"#f97316"}}>PENDING SERVER-SIDE: Yahoo Finance direct · NASA FIRMS · OpenWeatherMap · PortWatch · ACLED</span>
         </footer>
