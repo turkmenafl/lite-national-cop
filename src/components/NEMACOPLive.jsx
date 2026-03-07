@@ -373,7 +373,41 @@ Reply ONLY with valid JSON:
   return JSON.parse(m[0]);
 }
 
-async function fetchPortWatch() {
+async function fetchKSAStrikes() {
+  const prompt = `You are a conflict data analyst. Search for the latest verified reports of Iranian missile, drone, and cruise missile attacks against Saudi Arabia (KSA) during the Iran-GCC conflict, February 28 – March 2026.
+Find the 10 most recent individual strike events against KSA. For each event return:
+- time: date and time (e.g. "Mar 06 02:15")
+- type: weapon type (e.g. "Ballistic Missile", "Drone (3x)", "Cruise Missile")
+- loc: target location (e.g. "Ras Tanura Oil Terminal")
+- status: outcome (e.g. "Intercepted", "Hit — minor damage", "All destroyed")
+- sev: severity — "critical" if energy/military infra hit or near-miss, "high" otherwise
+Reply ONLY with valid JSON array, no other text:
+[{"id":1,"time":"Mar 06 02:15","type":"Ballistic Missile","loc":"Abqaiq Processing vicinity","status":"Intercepted","sev":"critical"},{"id":2,"time":"Mar 05 23:40","type":"Drone (4x)","loc":"Yanbu Port","status":"Intercepted","sev":"high"}]
+Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Research. If fewer than 10 events confirmed, return what is verified. Do not fabricate events.`;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-20250514", max_tokens:1200,
+        tools:[{ type:"web_search_20250305", name:"web_search" }],
+        messages:[{ role:"user", content:prompt }]
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
+    const m = text.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error("No JSON array");
+    const events = JSON.parse(m[0]);
+    if (!Array.isArray(events) || !events.length) throw new Error("Empty array");
+    return events;
+  } catch(e) {
+    console.warn("[KSAStrikes] fallback:", e.message);
+    return null;
+  }
+}
+
   const PW_BASE = "https://portwatch.imf.org/api/v3/datasets";
   const CHOKE_ID = "42132aa4e2fc4d41bdaf9a445f688931_0";
   const PORT_ID  = "959214444157458aad969389b3ebe1a0_0";
@@ -796,16 +830,17 @@ const ScreenSituation = ({ live }) => {
   const [hoveredCountry, setHoveredCountry] = useState(null);
 
   const isCumulative = activeDay === "CUMULATIVE";
-  const filteredStrikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
+  const strikeData = live.ksaStrikes?.data || STRIKES_KSA;
+  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
 
   const getMarkers = () => {
-    const strikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
+    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
     return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
   };
 
   // Build GCC theater data (all 6 countries) with per-day filtering
   const getGCCTheaterData = () => {
-    const ksaDayCount = isCumulative ? STRIKES_KSA.length : STRIKES_KSA.filter(s=>s.day===activeDay).length;
+    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.day===activeDay).length;
     const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
     const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
     Object.entries(GCC_DAILY).forEach(([code, data]) => {
@@ -844,7 +879,7 @@ const ScreenSituation = ({ live }) => {
         <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           {dateTabs.map(t => {
             const isActive = activeDay === t;
-            const dayStrikes = t==="CUMULATIVE" ? STRIKES_KSA.length : STRIKES_KSA.filter(s=>s.day===t).length;
+            const dayStrikes = t==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>s.day===t).length;
             return (
               <button key={t} onClick={()=>{setActiveDay(t);setSelEvent(null);}} style={{
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
@@ -869,7 +904,7 @@ const ScreenSituation = ({ live }) => {
               <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
               <div style={{ display:"flex", gap:5, alignItems:"center" }}>
                 <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
-                <FeedTag feed="STATIC" />
+                <FeedTag feed={live.ksaStrikes?.data ? "AI+WEB" : live.ksaStrikes?.loading ? "AI+WEB" : "STATIC"} loading={live.ksaStrikes?.loading} />
                 <div style={{ display:"flex", marginLeft:8, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
                   {[["LOG","KSA EVENT LOG"],["GCC","GCC THEATER"]].map(([k,label])=>(
                     <button key={k} onClick={()=>setTheaterView(k)} style={{
@@ -1658,6 +1693,7 @@ export default function NEMACOPLive() {
     gcc:   { data:null, loading:false, error:false },
     portwatch: { loading:false, error:null, data:null },
     ukmto:     { loading:false, error:null, data:null },
+    ksaStrikes: { loading:false, error:null, data:null },
   });
 
   const refresh = useCallback(async () => {
@@ -1668,10 +1704,11 @@ export default function NEMACOPLive() {
       gcc:{...d.gcc,loading:true,error:false},
       portwatch:{...d.portwatch,loading:true},
       ukmto:{...d.ukmto,loading:true},
+      ksaStrikes:{...d.ksaStrikes,loading:true},
     }));
-    const [eia, opa, fin, gdelt, ioda, gcc, pw, ukmtoRes] = await Promise.allSettled([
+    const [eia, opa, fin, gdelt, ioda, gcc, pw, ukmtoRes, ksaStr] = await Promise.allSettled([
       fetchEIABrent(), fetchOPABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes(),
-      fetchPortWatch(), fetchUKMTO()
+      fetchPortWatch(), fetchUKMTO(), fetchKSAStrikes()
     ]);
     setLive(d=>{
       const n={...d};
@@ -1699,6 +1736,7 @@ export default function NEMACOPLive() {
       n.gcc   = gcc.status==="fulfilled"&&gcc.value?{data:gcc.value,loading:false,error:false}:{data:d.gcc.data,loading:false,error:true};
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
       n.ukmto     = { loading:false, error:ukmtoRes.status==="rejected"?ukmtoRes.reason?.message:null, data:ukmtoRes.status==="fulfilled"?ukmtoRes.value:null };
+      n.ksaStrikes = { loading:false, error:ksaStr.status==="rejected"?ksaStr.reason?.message:null, data:ksaStr.status==="fulfilled"?ksaStr.value:null };
       return n;
     });
     setLastRefresh(new Date());
