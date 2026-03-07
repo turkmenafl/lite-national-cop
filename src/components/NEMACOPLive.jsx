@@ -878,7 +878,7 @@ const GCCTheater = ({ gcc }) => {
 
 // ─── DAILY DATA DERIVED FROM STRIKES_KSA ──────────────────────────────────────
 const getUniqueDays = () => {
-  const days = [...new Set(STRIKES_KSA.map(s => s.day))];
+  const days = [...new Set(STRIKES_KSA.map(s => strikeDay(s)))];
   days.sort((a, b) => new Date(`2026 ${a}`) - new Date(`2026 ${b}`));
   return days;
 };
@@ -917,16 +917,16 @@ const ScreenSituation = ({ live }) => {
 
   const isCumulative = activeDay === "CUMULATIVE";
   const strikeData = live.ksaStrikes?.data || STRIKES_KSA;
-  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
+  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => strikeDay(s) === activeDay);
 
   const getMarkers = () => {
-    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
-    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
+    const strikes = isCumulative ? strikeData : strikeData.filter(s => strikeDay(s) === activeDay);
+    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.severity }));
   };
 
   // Build GCC theater data (all 6 countries) with per-day filtering
   const getGCCTheaterData = () => {
-    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.day===activeDay).length;
+    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>strikeDay(s)===activeDay).length;
     const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
     const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
     Object.entries(GCC_DAILY).forEach(([code, data]) => {
@@ -965,7 +965,7 @@ const ScreenSituation = ({ live }) => {
         <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           {dateTabs.map(t => {
             const isActive = activeDay === t.dayKey;
-            const dayStrikes = t.dayKey==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>s.day===t.dayKey).length;
+            const dayStrikes = t.dayKey==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>strikeDay(s)===t.dayKey).length;
             return (
               <button key={t.dayKey} onClick={()=>{setActiveDay(t.dayKey);setSelEvent(null);}} style={{
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
@@ -1023,16 +1023,15 @@ const ScreenSituation = ({ live }) => {
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                       {filteredStrikes.map(e => {
-                        const col = e.sev==="critical"?C.critical:C.warning;
+                        const col = e.severity==="critical"?C.critical:C.warning;
                         return (
                           <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{strikeLabel(e)}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                            {selEvent===e.id && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location}</div>
                           </div>
                         );
                       })}
