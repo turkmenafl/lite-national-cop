@@ -83,30 +83,22 @@ function makeSparklineSvg(daily, color) {
 }
 
 const STRIKES_KSA = [
-  { id: 1,  date: '2026-03-07', time: '09:30', type: 'Ballistic Missile',   count: 1,  location: 'Abqaiq vicinity — 2nd attempt',        lat: 25.93, lng: 49.67, severity: 'critical' },
-  { id: 2,  date: '2026-03-07', time: '01:15', type: 'Drone',               count: 6,  location: 'Ras Tanura 3rd attempt',               lat: 26.64, lng: 50.16, severity: 'critical' },
-  { id: 3,  date: '2026-03-06', time: '14:20', type: 'Cruise Missile',      count: 1,  location: 'Riyadh airspace',                      lat: 24.69, lng: 46.72, severity: 'critical' },
-  { id: 4,  date: '2026-03-06', time: '03:45', type: 'Ballistic Missile',   count: 1,  location: 'Eastern Province — Al-Kharj corridor', lat: 24.15, lng: 47.32, severity: 'critical' },
-  { id: 5,  date: '2026-03-05', time: '22:10', type: 'Drone',               count: 2,  location: 'Jubail Industrial City',               lat: 27.00, lng: 49.66, severity: 'warning'  },
-  { id: 6,  date: '2026-03-04', time: '04:15', type: 'Drone',               count: 4,  location: 'Yanbu Port / Refinery',                lat: 24.09, lng: 38.06, severity: 'warning'  },
-  { id: 7,  date: '2026-03-04', time: '01:30', type: 'Ballistic Missile',   count: 1,  location: 'Abqaiq Processing vicinity',           lat: 25.93, lng: 49.67, severity: 'critical' },
-  { id: 8,  date: '2026-03-03', time: '19:20', type: 'Drone',               count: 3,  location: 'Riyadh — Embassy area',                lat: 24.71, lng: 46.68, severity: 'warning'  },
-  { id: 9,  date: '2026-03-03', time: '06:45', type: 'Cruise Missile',      count: 1,  location: 'Eastern Province Oil Infra',           lat: 26.30, lng: 50.20, severity: 'critical' },
-  { id: 10, date: '2026-03-02', time: '14:00', type: 'Drone',               count: 9,  location: 'KSA Airspace — multi-vector',          lat: 24.90, lng: 46.80, severity: 'warning'  },
-  { id: 11, date: '2026-03-01', time: '08:40', type: 'Drone',               count: 2,  location: 'Diplomatic Quarter 2nd wave',          lat: 24.69, lng: 46.63, severity: 'warning'  },
-  { id: 12, date: '2026-03-01', time: '03:15', type: 'Drone',               count: 2,  location: 'US Embassy — Riyadh',                  lat: 24.69, lng: 46.68, severity: 'warning'  },
-  { id: 13, date: '2026-02-28', time: '15:10', type: 'Drone',               count: 5,  location: 'Ras Tanura Oil Terminal',              lat: 26.64, lng: 50.16, severity: 'critical' },
-  { id: 14, date: '2026-02-28', time: '14:35', type: 'Ballistic Missile',   count: 1,  location: 'King Abdulaziz Air Base, EP',          lat: 26.27, lng: 50.15, severity: 'critical' },
-  { id: 15, date: '2026-02-28', time: '14:20', type: 'Ballistic Missile',   count: 1,  location: 'Riyadh — Diplomatic Quarter',          lat: 24.69, lng: 46.63, severity: 'critical' },
+  { id:1,  time:"Mar 07 09:30", type:"Ballistic Missile", loc:"Abqaiq vicinity — 2nd attempt",       status:"Intercepted",               sev:"critical", day:"Mar 07", wep:"Ballistic", lat:25.94, lng:49.68 },
+  { id:2,  time:"Mar 07 01:15", type:"Drone (6x)",        loc:"Ras Tanura 3rd attempt",              status:"Intercepted — 1 shrapnel hit", sev:"critical", day:"Mar 07", wep:"Drone",     lat:26.64, lng:50.16 },
+  { id:3,  time:"Mar 06 14:20", type:"Cruise Missile",    loc:"Riyadh airspace",                     status:"Intercepted",               sev:"high",     day:"Mar 06", wep:"Cruise",    lat:24.69, lng:46.63 },
+  { id:4,  time:"Mar 06 03:45", type:"Ballistic Missile", loc:"Eastern Province — Al-Kharj corridor",status:"Intercepted",               sev:"critical", day:"Mar 06", wep:"Ballistic", lat:24.15, lng:47.30 },
+  { id:5,  time:"Mar 05 22:10", type:"Drone (2x)",        loc:"Jubail Industrial City",              status:"Intercepted",               sev:"high",     day:"Mar 05", wep:"Drone",     lat:27.00, lng:49.66 },
+  { id:6,  time:"Mar 04 04:15", type:"Drone (4x)",        loc:"Yanbu Port / Refinery",               status:"Intercepted",               sev:"high",     day:"Mar 04", wep:"Drone",     lat:24.06, lng:38.06 },
+  { id:7,  time:"Mar 04 01:30", type:"Ballistic Missile", loc:"Abqaiq Processing vicinity",          status:"Intercepted",               sev:"critical", day:"Mar 04", wep:"Ballistic", lat:25.94, lng:49.68 },
+  { id:8,  time:"Mar 03 19:20", type:"Drone (3x)",        loc:"Riyadh — Embassy area",               status:"Intercepted",               sev:"high",     day:"Mar 03", wep:"Drone",     lat:24.69, lng:46.63 },
+  { id:9,  time:"Mar 03 06:45", type:"Cruise Missile",    loc:"Eastern Province Oil Infra",          status:"Intercepted",               sev:"critical", day:"Mar 03", wep:"Cruise",    lat:26.64, lng:50.16 },
+  { id:10, time:"Mar 02 14:00", type:"Drone (9x)",        loc:"KSA Airspace — multi-vector",         status:"All destroyed",             sev:"high",     day:"Mar 02", wep:"Drone",     lat:24.50, lng:45.00 },
+  { id:11, time:"Mar 01 08:40", type:"Drone (2x)",        loc:"Diplomatic Quarter 2nd wave",         status:"Hit — property damage",     sev:"high",     day:"Mar 01", wep:"Drone",     lat:24.67, lng:46.69 },
+  { id:12, time:"Mar 01 03:15", type:"Drone (2x)",        loc:"US Embassy — Riyadh",                 status:"Hit — fire, 0 KIA",         sev:"critical", day:"Mar 01", wep:"Drone",     lat:24.69, lng:46.63 },
+  { id:13, time:"Feb 28 15:10", type:"Drone (5x)",        loc:"Ras Tanura Oil Terminal",             status:"Intercepted — shrapnel",    sev:"critical", day:"Feb 28", wep:"Drone",     lat:26.64, lng:50.16 },
+  { id:14, time:"Feb 28 14:35", type:"Ballistic Missile", loc:"King Abdulaziz Air Base, EP",         status:"Intercepted",               sev:"high",     day:"Feb 28", wep:"Ballistic", lat:26.27, lng:50.15 },
+  { id:15, time:"Feb 28 14:20", type:"Ballistic Missile", loc:"Riyadh — Diplomatic Quarter",         status:"Intercepted",               sev:"high",     day:"Feb 28", wep:"Ballistic", lat:24.69, lng:46.63 },
 ];
-
-// Helper: derive "Mar 07" style day string from ISO date for filtering compatibility
-const strikeDay = (s) => {
-  const d = new Date(s.date + 'T00:00:00Z');
-  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' });
-};
-// Helper: format type with count
-const strikeLabel = (s) => s.count > 1 ? `${s.type} (${s.count}x)` : s.type;
 
 const CI_SECTORS = [
   { name:"Oil & Gas",        icon:"⬢", status:"DEGRADED",    pct:82, feed:"GDELT",  note:"Ras Tanura 85% cap. Abqaiq near-miss Mar 4." },
@@ -878,7 +870,7 @@ const GCCTheater = ({ gcc }) => {
 
 // ─── DAILY DATA DERIVED FROM STRIKES_KSA ──────────────────────────────────────
 const getUniqueDays = () => {
-  const days = [...new Set(STRIKES_KSA.map(s => strikeDay(s)))];
+  const days = [...new Set(STRIKES_KSA.map(s => s.day))];
   days.sort((a, b) => new Date(`2026 ${a}`) - new Date(`2026 ${b}`));
   return days;
 };
@@ -917,16 +909,16 @@ const ScreenSituation = ({ live }) => {
 
   const isCumulative = activeDay === "CUMULATIVE";
   const strikeData = live.ksaStrikes?.data || STRIKES_KSA;
-  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => strikeDay(s) === activeDay);
+  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
 
   const getMarkers = () => {
-    const strikes = isCumulative ? strikeData : strikeData.filter(s => strikeDay(s) === activeDay);
-    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.severity }));
+    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
+    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
   };
 
   // Build GCC theater data (all 6 countries) with per-day filtering
   const getGCCTheaterData = () => {
-    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>strikeDay(s)===activeDay).length;
+    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.day===activeDay).length;
     const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
     const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
     Object.entries(GCC_DAILY).forEach(([code, data]) => {
@@ -965,7 +957,7 @@ const ScreenSituation = ({ live }) => {
         <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           {dateTabs.map(t => {
             const isActive = activeDay === t.dayKey;
-            const dayStrikes = t.dayKey==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>strikeDay(s)===t.dayKey).length;
+            const dayStrikes = t.dayKey==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>s.day===t.dayKey).length;
             return (
               <button key={t.dayKey} onClick={()=>{setActiveDay(t.dayKey);setSelEvent(null);}} style={{
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
@@ -1023,15 +1015,16 @@ const ScreenSituation = ({ live }) => {
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                       {filteredStrikes.map(e => {
-                        const col = e.severity==="critical"?C.critical:C.warning;
+                        const col = e.sev==="critical"?C.critical:C.warning;
                         return (
                           <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{strikeLabel(e)}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location}</div>
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
+                            {selEvent===e.id && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
                           </div>
                         );
                       })}
