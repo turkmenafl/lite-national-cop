@@ -700,8 +700,8 @@ const ScreenSituation = ({ live }) => {
                   return (
                     <div key={g.code}>
                       <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
-                        style={{ padding:"10px 12px", borderRadius:isExpanded?"4px 4px 0 0":4, background:isExpanded?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}`, cursor:"pointer", transition:"background 0.15s", borderBottom:isExpanded?"none":`1px solid ${C.surfBorder}` }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                        style={{ padding:"6px 10px", borderRadius:isExpanded?"4px 4px 0 0":4, background:isExpanded?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}`, cursor:"pointer", transition:"background 0.15s", borderBottom:isExpanded?"none":`1px solid ${C.surfBorder}` }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                             <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
                             <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
