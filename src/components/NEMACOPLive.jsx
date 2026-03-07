@@ -1777,6 +1777,8 @@ export default function NEMACOPLive() {
   });
 
   const refresh = useCallback(async () => {
+    if (_refreshLock) { console.warn("[COP] refresh already in progress, skipping"); return; }
+    _refreshLock = true;
     setRefreshing(true);
     setLive(d=>({...d,
       brent:{...d.brent,loading:true}, tasi:{...d.tasi,loading:true},
