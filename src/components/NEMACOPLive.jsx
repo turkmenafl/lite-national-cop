@@ -1785,15 +1785,26 @@ export default function NEMACOPLive() {
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
     }));
-    // Non-AI calls run in parallel; AI calls are queued sequentially to avoid rate limits
-    const [eia, opa, gdelt, ioda, pw, fin, gcc, ukmtoRes, ksaStr, ciStat] = await Promise.allSettled([
+    // Non-AI calls run in parallel immediately
+    const [eia, opa, gdelt, ioda, pw] = await Promise.allSettled([
       fetchEIABrent(), fetchOPABrent(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
-      enqueueAICall(fetchFinancial),
-      enqueueAICall(fetchGCCStrikes),
-      enqueueAICall(fetchUKMTO),
-      enqueueAICall(fetchKSAStrikes),
-      enqueueAICall(fetchCIStatus),
     ]);
+
+    // AI calls run sequentially with gaps to stay under Anthropic's 30k tokens/min
+    const fin = await Promise.resolve().then(() => withRetry(fetchFinancial)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    setLive(d=>({...d, tasi:{...d.tasi,loading:false,source:"loading..."}})); // progressive update
+    await delay(AI_GAP);
+
+    const gcc = await Promise.resolve().then(() => withRetry(fetchGCCStrikes)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    await delay(AI_GAP);
+
+    const ukmtoRes = await Promise.resolve().then(() => withRetry(fetchUKMTO)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    await delay(AI_GAP);
+
+    const ksaStr = await Promise.resolve().then(() => withRetry(fetchKSAStrikes)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    await delay(AI_GAP);
+
+    const ciStat = await Promise.resolve().then(() => withRetry(fetchCIStatus)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
     setLive(d=>{
       const n={...d};
       if (opa.status==="fulfilled"&&opa.value) {
