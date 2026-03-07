@@ -453,17 +453,16 @@ const ScreenSituation = ({ live }) => {
             <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden" }}>
               <ComposableMap
                 projection="geoMercator"
-                projectionConfig={{ center:[50,24], scale:1800 }}
+                projectionConfig={{ center:[50,25], scale:800 }}
                 style={{ width:"100%", height:"auto" }}
                 width={500} height={340}
               >
-                {/* GCC + neighbors at country level (excluding Saudi Arabia) */}
+                {/* GCC + neighbors at country level (including Saudi Arabia) */}
                 <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
                   {({ geographies }) => {
-                    const SHOW_COUNTRIES = ["United Arab Emirates","Qatar","Kuwait","Bahrain","Oman","Iran","Iraq","Yemen"];
+                    const SHOW_COUNTRIES = ["Saudi Arabia","United Arab Emirates","Qatar","Kuwait","Bahrain","Oman","Iran","Iraq","Yemen"];
                     return geographies.map(geo => {
                       const name = geo.properties.name;
-                      if (name === "Saudi Arabia") return null; // rendered via provinces
                       if (!SHOW_COUNTRIES.includes(name)) return null;
                       const isIran = name === "Iran";
                       return (
@@ -479,25 +478,13 @@ const ScreenSituation = ({ live }) => {
                     });
                   }}
                 </Geographies>
-                {/* Saudi Arabia provinces */}
-                <Geographies geography="/data/sa-provinces.geojson">
-                  {({ geographies }) => {
-                    return geographies.map(geo => {
-                      const name = geo.properties.name_en || geo.properties.name || geo.properties.NAME_EN || "";
-                      const isEastern = name.toLowerCase().includes("eastern");
-                      return (
-                        <Geography
-                          key={geo.rsmKey}
-                          geography={geo}
-                          fill={isEastern ? "rgba(239,68,68,0.08)" : "rgba(30,58,95,0.6)"}
-                          stroke="#2d5a8e"
-                          strokeWidth={0.4}
-                          style={{ default:{outline:"none"}, hover:{outline:"none", fill:isEastern?"rgba(239,68,68,0.14)":"rgba(30,58,95,0.75)"}, pressed:{outline:"none"} }}
-                        />
-                      );
-                    });
-                  }}
-                </Geographies>
+                {/* Eastern Province highlight rectangle (lat/lng bounding box) */}
+                {(() => {
+                  const epCorners = [[46.5,29.5],[46.5,21.5],[55.5,21.5],[55.5,29.5],[46.5,29.5]];
+                  return (
+                    <Line coordinates={epCorners} stroke="rgba(239,68,68,0.5)" strokeWidth={1} fill="rgba(239,68,68,0.12)" />
+                  );
+                })()}
                 {/* Hormuz annotation */}
                 <Line from={[56.3,26.6]} to={[56.3,27.2]} stroke="#ef4444" strokeWidth={2} strokeDasharray="5,3" />
                 <Annotation subject={[56.4,26.9]} dx={-15} dy={-12} connectorProps={{stroke:"none"}}>
