@@ -529,8 +529,10 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
                       <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(34,197,94,0.14);color:#22c55e;font-weight:600">✓ ${seed.interceptPct}%</span>
                       ${confChip}
                     </div>
-                    <div style="font-size:8px;color:#a0b4c8;line-height:1.7;margin-bottom:6px;border-top:1px solid #27324860;padding-top:6px">${seed.note}</div>
-                    <div style="font-size:7px;color:#526175;text-align:right">${seed.source}</div>
+                    <div style="font-size:8px;color:#a0b4c8;line-height:1.7;margin-bottom:4px;border-top:1px solid #27324860;padding-top:6px">${seed.note}</div>
+                    <div style="font-size:7px;color:#526175;margin-bottom:2px">DAILY STRIKES (7d)</div>
+                    ${makeSparklineSvg(seed.daily, airCol)}
+                    <div style="font-size:7px;color:#526175;text-align:right;margin-top:2px">${seed.source}</div>
                   </div>
                 `)
                 .openOn(mapRef.current);
