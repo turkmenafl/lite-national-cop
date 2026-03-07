@@ -32,16 +32,16 @@ const GCC_SEED = [
 ];
 
 const STRIKES_KSA = [
-  { id:1,  time:"Mar 04 04:15", type:"Drone (4x)",        loc:"Yanbu Port / Refinery",       status:"Intercepted",               sev:"high" },
-  { id:2,  time:"Mar 04 01:30", type:"Ballistic Missile", loc:"Abqaiq Processing vicinity",  status:"Intercepted",               sev:"critical" },
-  { id:3,  time:"Mar 03 19:20", type:"Drone (3x)",        loc:"Riyadh — Embassy area",       status:"Intercepted",               sev:"high" },
-  { id:4,  time:"Mar 03 06:45", type:"Cruise Missile",    loc:"Eastern Province Oil Infra",  status:"Intercepted",               sev:"critical" },
-  { id:5,  time:"Mar 02 14:00", type:"Drone (9x)",        loc:"KSA Airspace — multi-vector", status:"All destroyed",             sev:"high" },
-  { id:6,  time:"Mar 01 08:40", type:"Drone (2x)",        loc:"Diplomatic Quarter 2nd wave", status:"Hit — property damage",     sev:"high" },
-  { id:7,  time:"Mar 01 03:15", type:"Drone (2x)",        loc:"US Embassy — Riyadh",         status:"Hit — fire, 0 KIA",         sev:"critical" },
-  { id:8,  time:"Feb 28 15:10", type:"Drone (5x)",        loc:"Ras Tanura Oil Terminal",     status:"Intercepted — shrapnel",    sev:"critical" },
-  { id:9,  time:"Feb 28 14:35", type:"Ballistic Missile", loc:"King Abdulaziz Air Base, EP", status:"Intercepted",               sev:"high" },
-  { id:10, time:"Feb 28 14:20", type:"Ballistic Missile", loc:"Riyadh — Diplomatic Quarter", status:"Intercepted",               sev:"high" },
+  { id:1,  time:"Mar 04 04:15", type:"Drone (4x)",        loc:"Yanbu Port / Refinery",       status:"Intercepted",               sev:"high",     day:"Mar 04", wep:"Drone",     lat:24.06, lng:38.06 },
+  { id:2,  time:"Mar 04 01:30", type:"Ballistic Missile", loc:"Abqaiq Processing vicinity",  status:"Intercepted",               sev:"critical", day:"Mar 04", wep:"Ballistic", lat:25.94, lng:49.68 },
+  { id:3,  time:"Mar 03 19:20", type:"Drone (3x)",        loc:"Riyadh — Embassy area",       status:"Intercepted",               sev:"high",     day:"Mar 03", wep:"Drone",     lat:24.69, lng:46.63 },
+  { id:4,  time:"Mar 03 06:45", type:"Cruise Missile",    loc:"Eastern Province Oil Infra",  status:"Intercepted",               sev:"critical", day:"Mar 03", wep:"Cruise",    lat:26.64, lng:50.16 },
+  { id:5,  time:"Mar 02 14:00", type:"Drone (9x)",        loc:"KSA Airspace — multi-vector", status:"All destroyed",             sev:"high",     day:"Mar 02", wep:"Drone",     lat:24.50, lng:45.00 },
+  { id:6,  time:"Mar 01 08:40", type:"Drone (2x)",        loc:"Diplomatic Quarter 2nd wave", status:"Hit — property damage",     sev:"high",     day:"Mar 01", wep:"Drone",     lat:24.67, lng:46.69 },
+  { id:7,  time:"Mar 01 03:15", type:"Drone (2x)",        loc:"US Embassy — Riyadh",         status:"Hit — fire, 0 KIA",         sev:"critical", day:"Mar 01", wep:"Drone",     lat:24.69, lng:46.63 },
+  { id:8,  time:"Feb 28 15:10", type:"Drone (5x)",        loc:"Ras Tanura Oil Terminal",     status:"Intercepted — shrapnel",    sev:"critical", day:"Feb 28", wep:"Drone",     lat:26.64, lng:50.16 },
+  { id:9,  time:"Feb 28 14:35", type:"Ballistic Missile", loc:"King Abdulaziz Air Base, EP", status:"Intercepted",               sev:"high",     day:"Feb 28", wep:"Ballistic", lat:26.27, lng:50.15 },
+  { id:10, time:"Feb 28 14:20", type:"Ballistic Missile", loc:"Riyadh — Diplomatic Quarter", status:"Intercepted",               sev:"high",     day:"Feb 28", wep:"Ballistic", lat:24.69, lng:46.63 },
 ];
 
 const CI_SECTORS = [
