@@ -1841,6 +1841,7 @@ export default function NEMACOPLive() {
     });
     setLastRefresh(new Date());
     setRefreshing(false);
+    _refreshLock = false;
   }, []);
 
   useEffect(()=>{refresh();},[refresh]);
