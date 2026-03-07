@@ -479,12 +479,16 @@ const ScreenSituation = ({ live }) => {
                   }}
                 </Geographies>
                 {/* Eastern Province highlight rectangle (lat/lng bounding box) */}
-                {(() => {
-                  const epCorners = [[46.5,29.5],[46.5,21.5],[55.5,21.5],[55.5,29.5],[46.5,29.5]];
-                  return (
-                    <Line coordinates={epCorners} stroke="rgba(239,68,68,0.5)" strokeWidth={1} fill="rgba(239,68,68,0.12)" />
-                  );
-                })()}
+                {/* Eastern Province highlight — 4 border lines forming rectangle */}
+                <Line from={[46.5,29.5]} to={[55.5,29.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
+                <Line from={[55.5,29.5]} to={[55.5,21.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
+                <Line from={[55.5,21.5]} to={[46.5,21.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
+                <Line from={[46.5,21.5]} to={[46.5,29.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
+                {/* Eastern Province filled overlay */}
+                <Marker coordinates={[51,25.5]}>
+                  <rect x={-45} y={-40} width={90} height={80} fill="rgba(239,68,68,0.12)" rx={0} style={{pointerEvents:"none"}} />
+                  <text fill="rgba(239,68,68,0.6)" fontSize={5} fontFamily="'JetBrains Mono',monospace" textAnchor="middle" dy={-30}>EASTERN PROVINCE</text>
+                </Marker>
                 {/* Hormuz annotation */}
                 <Line from={[56.3,26.6]} to={[56.3,27.2]} stroke="#ef4444" strokeWidth={2} strokeDasharray="5,3" />
                 <Annotation subject={[56.4,26.9]} dx={-15} dy={-12} connectorProps={{stroke:"none"}}>
