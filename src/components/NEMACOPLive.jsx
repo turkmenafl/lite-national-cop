@@ -107,12 +107,6 @@ const strikeDay = (s) => {
 };
 // Helper: format type with count
 const strikeLabel = (s) => s.count > 1 ? `${s.type} (${s.count}x)` : s.type;
-// Helper: format display time as "Mar 04 04:15"
-const strikeTime = (s) => {
-  const d = new Date(s.date + 'T00:00:00Z');
-  const mon = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' });
-  return `${mon} ${s.time}`;
-};
 
 const CI_SECTORS = [
   { name:"Oil & Gas",        icon:"⬢", status:"DEGRADED",    pct:82, feed:"GDELT",  note:"Ras Tanura 85% cap. Abqaiq near-miss Mar 4." },
@@ -890,10 +884,19 @@ const getUniqueDays = () => {
 };
 const STRIKE_DAYS = getUniqueDays();
 
-// Tab labels use the day key directly (e.g. "Feb 28", "Mar 01")
-const dayToTabLabel = (day) => day;
+// Format "Mar 07" → "03/07"
+const dayToTabLabel = (day) => {
+  if (day === "CUMULATIVE") return "CUMULATIVE";
+  const d = new Date(`2026 ${day}`);
+  if (isNaN(d.getTime())) return day;
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+};
+// Reverse lookup: tab label back to day key
+const tabLabelToDay = {};
+STRIKE_DAYS.forEach(d => { tabLabelToDay[dayToTabLabel(d)] = d; });
+tabLabelToDay["CUMULATIVE"] = "CUMULATIVE";
 // Add Mar 08 tab
-const DATE_TAB_ENTRIES = [...STRIKE_DAYS.map(d => ({ label: d, dayKey: d })), { label: "Mar 08", dayKey: "Mar 08" }];
+const DATE_TAB_ENTRIES = [...STRIKE_DAYS.map(d => ({ label: dayToTabLabel(d), dayKey: d })), { label: "03/08", dayKey: "Mar 08" }];
 
 // GCC per-day seed data (static estimates distributed across days)
 const GCC_DAILY = {
@@ -1026,7 +1029,7 @@ const ScreenSituation = ({ live }) => {
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
                               <span style={{ fontSize:11, fontWeight:700, color:col }}>{strikeLabel(e)}</span>
-                              <span style={{ fontSize:10, color:C.dim }}>{strikeTime(e)}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
                             <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location}</div>
                           </div>
