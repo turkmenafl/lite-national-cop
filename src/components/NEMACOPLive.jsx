@@ -1,11 +1,17 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
-import { ComposableMap, Geographies, Geography, Marker, Line, Annotation } from "react-simple-maps";
+import { MapContainer, TileLayer, Rectangle, CircleMarker, Polyline, Marker as LeafletMarker } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body, #root { background: #060b17; color: #d8e6f5; font-family: 'JetBrains Mono','SF Mono','Fira Code',monospace; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
   @keyframes cop-pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  @keyframes strike-pulse { 0%{transform:scale(1);opacity:0.9} 50%{transform:scale(2.2);opacity:0} 100%{transform:scale(1);opacity:0} }
+  .strike-ping { position:absolute; border-radius:50%; animation: strike-pulse 2s ease-out infinite; }
+  .leaflet-container { background: #060b17 !important; }
+  .leaflet-control-attribution { display: none !important; }
   .cop-pulse { animation: cop-pulse 1.5s ease-in-out infinite; }
   @keyframes cop-fade-in { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
   .cop-fade-in { animation: cop-fade-in 0.25s ease-out; }
@@ -450,69 +456,80 @@ const ScreenSituation = ({ live }) => {
                 <FeedTag feed="STATIC" />
               </div>
             </div>
-            <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden" }}>
-              <ComposableMap
-                projection="geoMercator"
-                projectionConfig={{ center:[50,25], scale:800 }}
-                style={{ width:"100%", height:"auto" }}
-                width={500} height={340}
+            <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden", height:520 }}>
+              <MapContainer
+                center={[25, 50]}
+                zoom={4}
+                maxBounds={[[12, 32], [38, 62]]}
+                maxBoundsViscosity={1.0}
+                style={{ width:"100%", height:"100%" }}
+                zoomControl={false}
+                dragging={false}
+                scrollWheelZoom={false}
+                doubleClickZoom={false}
+                attributionControl={false}
               >
-                {/* GCC + neighbors at country level (including Saudi Arabia) */}
-                <Geographies geography="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json">
-                  {({ geographies }) => {
-                    const SHOW_COUNTRIES = ["Saudi Arabia","United Arab Emirates","Qatar","Kuwait","Bahrain","Oman","Iran","Iraq","Yemen"];
-                    return geographies.map(geo => {
-                      const name = geo.properties.name;
-                      if (!SHOW_COUNTRIES.includes(name)) return null;
-                      const isIran = name === "Iran";
-                      return (
-                        <Geography
-                          key={geo.rsmKey}
-                          geography={geo}
-                          fill={isIran ? "rgba(239,68,68,0.06)" : "#0d1f3c"}
-                          stroke={isIran ? "rgba(239,68,68,0.35)" : "#2d5a8e"}
-                          strokeWidth={isIran ? 0.8 : 0.5}
-                          style={{ default:{outline:"none"}, hover:{outline:"none"}, pressed:{outline:"none"} }}
-                        />
-                      );
-                    });
-                  }}
-                </Geographies>
-                {/* Eastern Province highlight rectangle (lat/lng bounding box) */}
-                {/* Eastern Province highlight — 4 border lines forming rectangle */}
-                <Line from={[46.5,29.5]} to={[55.5,29.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
-                <Line from={[55.5,29.5]} to={[55.5,21.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
-                <Line from={[55.5,21.5]} to={[46.5,21.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
-                <Line from={[46.5,21.5]} to={[46.5,29.5]} stroke="rgba(239,68,68,0.5)" strokeWidth={0.8} />
-                {/* Eastern Province filled overlay */}
-                <Marker coordinates={[51,25.5]}>
-                  <rect x={-45} y={-40} width={90} height={80} fill="rgba(239,68,68,0.12)" rx={0} style={{pointerEvents:"none"}} />
-                  <text fill="rgba(239,68,68,0.6)" fontSize={5} fontFamily="'JetBrains Mono',monospace" textAnchor="middle" dy={-30}>EASTERN PROVINCE</text>
-                </Marker>
-                {/* Hormuz annotation */}
-                <Line from={[56.3,26.6]} to={[56.3,27.2]} stroke="#ef4444" strokeWidth={2} strokeDasharray="5,3" />
-                <Annotation subject={[56.4,26.9]} dx={-15} dy={-12} connectorProps={{stroke:"none"}}>
-                  <text fill="#ef4444" fontSize={7} fontFamily="'JetBrains Mono',monospace" fontWeight={700}>⛔ HORMUZ D7</text>
-                </Annotation>
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  tileSize={256}
+                  detectRetina={true}
+                />
+                {/* Eastern Province rectangle */}
+                <Rectangle
+                  bounds={[[21.5, 46.5], [29.5, 55.5]]}
+                  pathOptions={{ color:"rgba(239,68,68,0.5)", weight:0.8, fillColor:"rgba(239,68,68,0.12)", fillOpacity:1 }}
+                />
+                {/* Eastern Province label */}
+                <LeafletMarker
+                  position={[28.8, 51]}
+                  icon={L.divIcon({
+                    className:"",
+                    html:'<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',
+                    iconSize:[0,0], iconAnchor:[-5,5]
+                  })}
+                />
+                {/* Hormuz dashed line */}
+                <Polyline
+                  positions={[[26.6,56.3],[27.2,56.3]]}
+                  pathOptions={{ color:"#ef4444", weight:2, dashArray:"5,3" }}
+                />
+                {/* Hormuz label */}
+                <LeafletMarker
+                  position={[27.0, 56.4]}
+                  icon={L.divIcon({
+                    className:"",
+                    html:'<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',
+                    iconSize:[0,0], iconAnchor:[-5,8]
+                  })}
+                />
                 {/* Strike markers */}
                 {getMarkers().map((p,i) => {
                   const col = p.s==="critical" ? C.critical : C.warning;
                   return (
-                    <Marker key={i} coordinates={[p.lng, p.lat]}>
-                      {p.s==="critical" && <circle r={7} fill="none" stroke={col} strokeWidth={0.5} opacity={0.4}>
-                        <animate attributeName="r" values="4;10;4" dur="2s" repeatCount="indefinite"/>
-                        <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
-                      </circle>}
-                      <circle r={3.5} fill={col} opacity={0.9} />
-                    </Marker>
+                    <LeafletMarker
+                      key={i}
+                      position={[p.lat, p.lng]}
+                      icon={L.divIcon({
+                        className:"",
+                        html: p.s==="critical"
+                          ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+                          : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+                        iconSize:[14,14], iconAnchor:[7,7]
+                      })}
+                    />
                   );
                 })}
                 {filteredStrikes.length===0 && (
-                  <Annotation subject={[46,24]} dx={0} dy={0} connectorProps={{stroke:"none"}}>
-                    <text fill={C.dim} fontSize={9} fontFamily="'JetBrains Mono',monospace" textAnchor="middle">No KSA strikes this day</text>
-                  </Annotation>
+                  <LeafletMarker
+                    position={[24, 46]}
+                    icon={L.divIcon({
+                      className:"",
+                      html:`<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
+                      iconSize:[0,0], iconAnchor:[-10,5]
+                    })}
+                  />
                 )}
-              </ComposableMap>
+              </MapContainer>
             </div>
           </div>
 
