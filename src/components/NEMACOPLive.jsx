@@ -627,7 +627,7 @@ const ScreenSituation = ({ live }) => {
                 </div>
               </div>
             </div>
-            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} />
+            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} />
           </div>
 
           {/* Right: Scrollable column */}
