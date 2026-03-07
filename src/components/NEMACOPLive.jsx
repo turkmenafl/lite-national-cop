@@ -698,63 +698,78 @@ const ScreenSituation = ({ live }) => {
                   const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
                   const confCol = g.confidence==="CONFIRMED"?C.success:"#f97316";
                   const isExpanded = expandedCountry === g.code;
-                  return (
-                    <div key={g.code}>
-                      <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
-                        style={{ padding:"6px 10px", borderRadius:isExpanded?"4px 4px 0 0":4, background:isExpanded?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}`, cursor:"pointer", transition:"background 0.15s", borderBottom:isExpanded?"none":`1px solid ${C.surfBorder}` }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                            <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
-                            <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
-                            <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
-                          </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                            <span style={{ fontSize:18, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
-                            <span style={{ fontSize:9, color:C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
-                          </div>
-                        </div>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                            <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
-                            <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
-                          </div>
-                        </div>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
-                          <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
-                          <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
-                        </div>
-                      </div>
-                      {/* Expandable commentary panel */}
-                      <div style={{
-                        maxHeight: isExpanded ? 200 : 0,
-                        overflow: "hidden",
-                        transition: "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
-                        opacity: isExpanded ? 1 : 0,
-                        background: "rgba(255,255,255,0.02)",
-                        borderLeft: `3px solid ${airCol}`,
-                        border: isExpanded ? `1px solid ${C.surfBorder}` : "none",
-                        borderTop: "none",
-                        borderRadius: "0 0 4px 4px",
-                        padding: isExpanded ? "10px 12px" : "0 12px",
-                      }}>
-                        <div style={{ fontSize:8, color:C.fg, marginBottom:6, lineHeight:1.6 }}>
-                          <span style={{ fontWeight:700, color:airCol }}>SITUATION: </span>
-                          {g.note} {g.airspace === "CLOSED" ? "All commercial flights suspended." : g.airspace === "RESTRICTED" ? "Military operations ongoing, limited civilian access." : "Airspace open with heightened monitoring."}
-                        </div>
-                        <div style={{ fontSize:8, color:C.muted, marginBottom:4 }}>
-                          <span style={{ fontWeight:600, color:C.fg }}>INTERCEPT RATE: </span>
-                          {g.interceptPct}% — {g.interceptPct >= 95 ? "Near-total defense effectiveness." : g.interceptPct >= 85 ? "High effectiveness, occasional penetration." : g.interceptPct >= 50 ? "Moderate effectiveness, significant leakage risk." : "Low intercept capability."}
-                        </div>
-                        <div style={{ fontSize:8, color:C.muted, marginBottom:4 }}>
-                          <span style={{ fontWeight:600, color:C.fg }}>AIRSPACE: </span>
-                          {g.airspace} — {g.code === "QA" ? "Al Udeid operations impacted. LNG exports halted." : g.code === "AE" ? "Dubai/Abu Dhabi airports at reduced capacity. Jebel Ali port restricted." : g.code === "KW" ? "Ali Al Salem base struck. US military assets relocating." : g.code === "BH" ? "5th Fleet HQ damage assessed. Bapco refinery offline." : g.code === "OM" ? "Maintaining neutrality. Duqm port under watch." : "Eastern Province infrastructure primary target."}
-                        </div>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
-                          <span style={{ fontSize:7, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
-                          <span style={{ fontSize:7, color:C.dim }}>{g.source}</span>
-                        </div>
-                      </div>
-                    </div>
+                   const isHovered = hoveredCountry === g.code;
+                   const countryLabel = g.name.replace(/^..\s/, ''); // strip emoji
+                   return (
+                     <div key={g.code}>
+                       <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
+                         onMouseEnter={()=>setHoveredCountry(g.code)}
+                         onMouseLeave={()=>setHoveredCountry(null)}
+                         style={{
+                           padding:"6px 10px",
+                           borderRadius:isExpanded?"4px 4px 0 0":4,
+                           background:isExpanded?"rgba(255,255,255,0.04)":isHovered?"#1e2d45":"rgba(255,255,255,0.02)",
+                           border:`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
+                           borderLeft:`3px solid ${isHovered||isExpanded?airCol:airCol}`,
+                           cursor:"pointer",
+                           transition:"all 0.15s ease",
+                           borderBottom:isExpanded?"none":`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
+                           boxShadow:isHovered?"0 2px 8px rgba(0,0,0,0.2)":"none",
+                         }}>
+                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
+                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                             <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
+                             <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
+                             <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${airCol}22`, color:airCol, fontWeight:600 }}>{g.airspace}</span>
+                           </div>
+                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                             <span style={{ fontSize:18, fontWeight:800, color:airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
+                             <span style={{ fontSize:9, color:C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
+                           </div>
+                         </div>
+                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                             <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
+                             <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
+                           </div>
+                         </div>
+                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
+                           <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
+                           <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
+                         </div>
+                       </div>
+                       {/* Expandable commentary panel */}
+                       <div style={{
+                         maxHeight: isExpanded ? 200 : 0,
+                         overflow: "hidden",
+                         transition: "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
+                         opacity: isExpanded ? 1 : 0,
+                         background: "rgba(255,255,255,0.03)",
+                         borderLeft: `3px solid ${airCol}`,
+                         borderRight: `1px solid ${C.surfBorder}`,
+                         borderBottom: isExpanded ? `1px solid ${C.surfBorder}` : "none",
+                         borderTop: "none",
+                         borderRadius: "0 0 4px 4px",
+                         padding: isExpanded ? "8px 10px" : "0 10px",
+                       }}>
+                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                           <span style={{ fontSize:9, fontWeight:700, color:airCol, letterSpacing:"0.04em" }}>{countryLabel} — Situation Summary</span>
+                           <span onClick={(e)=>{e.stopPropagation();setExpandedCountry(null);}} style={{ fontSize:11, color:C.dim, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>×</span>
+                         </div>
+                         <div style={{ fontSize:8, color:C.fg, lineHeight:1.7 }}>
+                           {g.code === "SA" ? `${g.strikes} strikes recorded to date targeting Eastern Province oil infrastructure, Riyadh diplomatic quarter, and military airbases. Abqaiq processing facility near-miss on Mar 4. Ras Tanura terminal degraded to 85% capacity. ${g.interceptPct}% intercept rate via Patriot/THAAD demonstrates near-total defense coverage. Airspace remains ${g.airspace.toLowerCase()} with heightened alert across all sectors.`
+                           : g.code === "AE" ? `${g.strikes.toLocaleString()} projectiles recorded — heaviest volume in theater. Key impacts at Jebel Ali port, Dubai Terminal 3, and French naval base. ${g.interceptPct}% intercept rate under extreme volume pressure. Dubai and Abu Dhabi airports operating at reduced capacity. Jebel Ali port restricted to military logistics only.`
+                           : g.code === "QA" ? `${g.strikes} strikes including 2 ballistic missile impacts at Al Udeid Air Base — critical CENTCOM forward HQ. LNG exports suspended indefinitely, affecting ~25% of global supply. Airspace ${g.airspace.toLowerCase()} — all commercial flights halted. ${g.interceptPct}% intercept rate with notable gaps in coverage.`
+                           : g.code === "KW" ? `${g.strikes} strikes targeting Ali Al Salem Air Base and US Embassy compound. US military assets in active relocation to secondary positions. Embassy sustained direct hit — fire damage, 0 KIA confirmed. ${g.interceptPct}% intercept rate. Kuwait requesting additional Patriot battery deployment.`
+                           : g.code === "BH" ? `${g.strikes} strikes concentrated on NAVCENT 5th Fleet HQ and Bapco refinery. 5th Fleet operations temporarily relocated to sea-based command. Bapco refinery offline — domestic fuel reserves adequate for 14 days. ${g.interceptPct}% intercept rate — lowest among major GCC states.`
+                           : `${g.strikes} strikes — minimal targeting reflecting Oman's mediator status. Duqm Port drone incursion detected. Maintaining diplomatic neutrality in conflict. ${g.interceptPct}% intercept rate with limited engagement. Airspace remains ${g.airspace.toLowerCase()} with heightened monitoring of maritime approaches.`}
+                         </div>
+                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, marginTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
+                           <span style={{ fontSize:7, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
+                           <span style={{ fontSize:7, color:C.dim }}>{g.source}</span>
+                         </div>
+                       </div>
+                     </div>
                   );
                 })}
               </div>
