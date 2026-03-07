@@ -359,9 +359,42 @@ const GCCTheater = ({ gcc }) => {
   );
 };
 
+// ─── DAILY DATA DERIVED FROM STRIKES_KSA ──────────────────────────────────────
+const DAILY_ORDER = ["Feb 28","Mar 01","Mar 02","Mar 03","Mar 04"];
+const getDailyBreakdown = () => {
+  const days = {};
+  DAILY_ORDER.forEach(d => { days[d] = { strikes:[], weps:new Set() }; });
+  STRIKES_KSA.forEach(s => {
+    if (days[s.day]) { days[s.day].strikes.push(s); days[s.day].weps.add(s.wep); }
+  });
+  let cumTotal = 0, cumIntercept = 0;
+  return DAILY_ORDER.map((d,i) => {
+    const info = days[d];
+    const count = info.strikes.length;
+    const intercepted = info.strikes.filter(s => !s.status.includes("Hit")).length;
+    cumTotal += count;
+    cumIntercept += intercepted;
+    return { day:d, dayNum:i+1, count, intercepted, interceptPct:count?Math.round((intercepted/count)*100):0, cumTotal, cumInterceptPct:cumTotal?Math.round((cumIntercept/cumTotal)*100):0, weps:[...info.weps], strikes:info.strikes };
+  });
+};
+const DAILY_DATA = getDailyBreakdown();
+
 // ─── SCREEN 1: SITUATION ──────────────────────────────────────────────────────
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
+  const [mapTab, setMapTab] = useState("map");
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  // Get strike markers, highlighting if a day is selected
+  const getMarkers = () => {
+    if (!selectedDay) {
+      return [{lat:24.69,lng:46.63,s:"high"},{lat:26.27,lng:50.15,s:"high"},{lat:26.64,lng:50.16,s:"critical"},{lat:24.06,lng:47.58,s:"high"},{lat:24.67,lng:46.69,s:"critical"},{lat:25.94,lng:49.68,s:"critical"}];
+    }
+    return STRIKES_KSA.filter(s => s.day === selectedDay).map(s => ({ lat:s.lat, lng:s.lng, s:s.sev, active:true }));
+  };
+
+  const wepColor = (w) => w==="Ballistic"?C.critical:w==="Cruise"?"#f97316":C.warning;
+
   return (
     <div>
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
@@ -375,22 +408,125 @@ const ScreenSituation = ({ live }) => {
       </div>
       <div style={{ display:"flex", gap:12, marginBottom:14 }}>
         <div style={{ flex:2, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP</span>
+          {/* Mini tabs */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+            <div style={{ display:"flex", gap:0, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
+              {[{k:"map",l:"MAP"},{k:"byday",l:"BY DAY"},{k:"cumul",l:"CUMULATIVE"}].map(t=>(
+                <button key={t.k} onClick={()=>{setMapTab(t.k);if(t.k!=="byday")setSelectedDay(null);}} style={{
+                  padding:"5px 12px", border:"none", cursor:"pointer",
+                  background:mapTab===t.k?"#1e3a5f":C.bg,
+                  color:mapTab===t.k?C.fg:C.muted, fontSize:7, fontWeight:mapTab===t.k?700:500,
+                  fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.08em",
+                }}>{t.l}</button>
+              ))}
+            </div>
             <FeedTag feed="STATIC" />
           </div>
-          <svg viewBox="0 0 360 200" style={{ width:"100%", background:"#060b17", borderRadius:3 }}>
-            <path d="M55,25 L130,20 L155,40 L175,35 L195,55 L240,68 L255,100 L265,130 L255,165 L230,185 L195,195 L150,190 L100,185 L65,165 L45,135 L35,95 L40,60 Z" fill="#1e3a5f44" stroke="#2d5a8e" strokeWidth="1.2"/>
-            <path d="M215,10 L280,8 L310,25 L315,55 L295,75 L270,80 L255,100 L240,68 L220,55 L205,35 Z" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.25)" strokeWidth="0.8"/>
-            <text x="255" y="48" fill="#ef444488" fontSize="7" fontFamily="monospace">IRAN</text>
-            <line x1="260" y1="82" x2="305" y2="78" stroke="#ef4444" strokeWidth="2" strokeDasharray="4,2"/>
-            <text x="268" y="76" fill="#ef4444" fontSize="7" fontFamily="monospace">⛔ HORMUZ D7</text>
-            {[{n:"KSA",x:130,y:110},{n:"UAE",x:255,y:125},{n:"OMAN",x:285,y:150},{n:"QA",x:238,y:95},{n:"BH",x:220,y:85},{n:"KW",x:195,y:65}].map(l=><text key={l.n} x={l.x} y={l.y} fill="#7d8fa3" fontSize="7" fontFamily="monospace" textAnchor="middle">{l.n}</text>)}
-            {[{lat:24.69,lng:46.63,s:"high"},{lat:26.27,lng:50.15,s:"high"},{lat:26.64,lng:50.16,s:"critical"},{lat:24.06,lng:47.58,s:"high"},{lat:24.67,lng:46.69,s:"critical"},{lat:25.94,lng:49.68,s:"critical"}].map((p,i)=>{
-              const x=((p.lng-34)/(58-34))*340+10, y=((32-p.lat)/(32-15))*180+10, col=p.s==="critical"?C.critical:C.warning;
-              return (<g key={i}>{p.s==="critical"&&<circle cx={x} cy={y} r={8} fill="none" stroke={col} strokeWidth="0.5" opacity="0.4"><animate attributeName="r" values="5;12;5" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/></circle>}<circle cx={x} cy={y} r={3} fill={col} opacity="0.9"/></g>);
-            })}
-          </svg>
+
+          {/* MAP view */}
+          {mapTab==="map" && (
+            <div>
+              <svg viewBox="0 0 360 200" style={{ width:"100%", background:"#060b17", borderRadius:4 }}>
+                <path d="M55,25 L130,20 L155,40 L175,35 L195,55 L240,68 L255,100 L265,130 L255,165 L230,185 L195,195 L150,190 L100,185 L65,165 L45,135 L35,95 L40,60 Z" fill="#1e3a5f44" stroke="#2d5a8e" strokeWidth="1.2"/>
+                <path d="M215,10 L280,8 L310,25 L315,55 L295,75 L270,80 L255,100 L240,68 L220,55 L205,35 Z" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.25)" strokeWidth="0.8"/>
+                <text x="255" y="48" fill="#ef444488" fontSize="7" fontFamily="monospace">IRAN</text>
+                <line x1="260" y1="82" x2="305" y2="78" stroke="#ef4444" strokeWidth="2" strokeDasharray="4,2"/>
+                <text x="268" y="76" fill="#ef4444" fontSize="7" fontFamily="monospace">⛔ HORMUZ D7</text>
+                {[{n:"KSA",x:130,y:110},{n:"UAE",x:255,y:125},{n:"OMAN",x:285,y:150},{n:"QA",x:238,y:95},{n:"BH",x:220,y:85},{n:"KW",x:195,y:65}].map(l=><text key={l.n} x={l.x} y={l.y} fill="#7d8fa3" fontSize="7" fontFamily="monospace" textAnchor="middle">{l.n}</text>)}
+                {getMarkers().map((p,i)=>{
+                  const x=((p.lng-34)/(58-34))*340+10, y=((32-p.lat)/(32-15))*180+10, col=p.s==="critical"?C.critical:C.warning;
+                  const isActive = p.active;
+                  return (<g key={i}>{(p.s==="critical"||isActive)&&<circle cx={x} cy={y} r={isActive?10:8} fill="none" stroke={col} strokeWidth={isActive?1:0.5} opacity="0.4"><animate attributeName="r" values={isActive?"6;14;6":"5;12;5"} dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/></circle>}<circle cx={x} cy={y} r={isActive?4:3} fill={col} opacity={isActive?1:0.9}/></g>);
+                })}
+              </svg>
+              {selectedDay && <div style={{ marginTop:6, fontSize:7, color:C.info }}>● Showing strikes for {selectedDay} — click a day in BY DAY tab</div>}
+            </div>
+          )}
+
+          {/* BY DAY view */}
+          {mapTab==="byday" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {DAILY_DATA.map(d => {
+                const isSelected = selectedDay === d.day;
+                return (
+                  <div key={d.day} onClick={()=>setSelectedDay(isSelected?null:d.day)} style={{
+                    display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:4, cursor:"pointer",
+                    background:isSelected?"rgba(59,130,246,0.1)":"rgba(255,255,255,0.02)",
+                    border:`1px solid ${isSelected?"rgba(59,130,246,0.3)":C.surfBorder+"40"}`,
+                    transition:"all 0.15s ease",
+                  }}>
+                    <span style={{ fontSize:9, fontWeight:600, color:isSelected?C.info:C.fg, width:46, flexShrink:0 }}>{d.day}</span>
+                    <span style={{ fontSize:8, color:C.dim, width:14, textAlign:"center" }}>D{d.dayNum}</span>
+                    <div style={{ display:"flex", alignItems:"center", gap:3, flex:1 }}>
+                      {d.weps.map(w => (
+                        <span key={w} style={{ fontSize:6, padding:"2px 5px", borderRadius:3, background:`${wepColor(w)}18`, color:wepColor(w), fontWeight:600 }}>{w}</span>
+                      ))}
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:d.count>=3?C.critical:C.warning }}>{d.count}</span>
+                      <span style={{ fontSize:7, color:C.dim }}>events</span>
+                    </div>
+                    <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{d.interceptPct}%</span>
+                  </div>
+                );
+              })}
+              <div style={{ marginTop:4, fontSize:7, color:C.dim }}>Click a row to highlight strikes on MAP tab</div>
+            </div>
+          )}
+
+          {/* CUMULATIVE view */}
+          {mapTab==="cumul" && (
+            <div>
+              {/* Bar chart */}
+              <svg viewBox="0 0 320 140" style={{ width:"100%", background:"#060b17", borderRadius:4 }}>
+                {/* Grid lines */}
+                {[0,1,2,3,4].map(i => (
+                  <g key={i}>
+                    <line x1="40" y1={20+i*25} x2="310" y2={20+i*25} stroke={C.surfBorder} strokeWidth="0.5" opacity="0.4"/>
+                    <text x="36" y={24+i*25} fill={C.dim} fontSize="6" fontFamily="monospace" textAnchor="end">{10-i*2.5>=0?(10-i*2.5).toFixed(0):""}</text>
+                  </g>
+                ))}
+                {/* Bars — daily count */}
+                {DAILY_DATA.map((d,i) => {
+                  const barH = (d.count/4)*100; // max ~4 events/day, scale to 100px
+                  const x = 55 + i*55;
+                  return (
+                    <g key={d.day}>
+                      <rect x={x} y={120-barH} width={28} height={barH} rx={2} fill={d.count>=3?`${C.critical}88`:`${C.warning}66`} />
+                      <text x={x+14} y={118-barH} fill={C.fg} fontSize="8" fontFamily="monospace" textAnchor="middle" fontWeight="bold">{d.count}</text>
+                      <text x={x+14} y={134} fill={C.dim} fontSize="6" fontFamily="monospace" textAnchor="middle">D{d.dayNum}</text>
+                    </g>
+                  );
+                })}
+                {/* Cumulative line */}
+                <polyline
+                  points={DAILY_DATA.map((d,i) => `${69+i*55},${120-(d.cumTotal/10)*100}`).join(" ")}
+                  fill="none" stroke={C.info} strokeWidth="1.5" strokeDasharray="3,2"
+                />
+                {DAILY_DATA.map((d,i) => (
+                  <g key={`cum-${i}`}>
+                    <circle cx={69+i*55} cy={120-(d.cumTotal/10)*100} r={3} fill={C.info} />
+                    <text x={69+i*55} y={120-(d.cumTotal/10)*100-6} fill={C.info} fontSize="7" fontFamily="monospace" textAnchor="middle" fontWeight="bold">{d.cumTotal}</text>
+                  </g>
+                ))}
+                {/* Legend */}
+                <rect x="45" y="2" width="8" height="6" rx="1" fill={`${C.warning}88`}/>
+                <text x="56" y="8" fill={C.dim} fontSize="6" fontFamily="monospace">Daily</text>
+                <line x1="100" y1="5" x2="115" y2="5" stroke={C.info} strokeWidth="1.5" strokeDasharray="3,2"/>
+                <text x="118" y="8" fill={C.dim} fontSize="6" fontFamily="monospace">Cumulative</text>
+              </svg>
+              {/* Intercept rate overlay */}
+              <div style={{ marginTop:8, display:"flex", gap:6 }}>
+                {DAILY_DATA.map(d => (
+                  <div key={d.day} style={{ flex:1, textAlign:"center", padding:"6px 4px", borderRadius:4, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}40` }}>
+                    <div style={{ fontSize:7, color:C.dim, marginBottom:2 }}>D{d.dayNum}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:d.cumInterceptPct>=90?C.success:C.warning }}>{d.cumInterceptPct}%</div>
+                    <div style={{ fontSize:6, color:C.dim }}>intercept</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div style={{ flex:1, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
