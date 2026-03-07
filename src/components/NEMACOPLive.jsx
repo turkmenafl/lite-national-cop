@@ -758,11 +758,11 @@ const ScreenSituation = ({ live }) => {
                 {/* KSA Event Log */}
                 <div style={{ padding:14, borderBottom:`1px solid ${C.surfBorder}` }}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
-                    <span style={{ fontSize:7, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
                   </div>
                   {filteredStrikes.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:8, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                       {filteredStrikes.map(e => {
@@ -771,11 +771,11 @@ const ScreenSituation = ({ live }) => {
                           <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:8, fontWeight:700, color:col }}>{e.type}</span>
-                              <span style={{ fontSize:7, color:C.dim }}>{e.time}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
-                            <div style={{ fontSize:8, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                            {selEvent===e.id && <div style={{ fontSize:8, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
+                            {selEvent===e.id && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
                           </div>
                         );
                       })}
@@ -785,7 +785,7 @@ const ScreenSituation = ({ live }) => {
 
                 {/* Divider label */}
                 <div style={{ padding:"6px 14px", background:"#0a1628", borderBottom:`1px solid ${C.surfBorder}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <span style={{ fontSize:8, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
                   <FeedTag feed="STATIC" />
                 </div>
 
@@ -796,17 +796,17 @@ const ScreenSituation = ({ live }) => {
                       const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
                       return (
                         <div key={g.code} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 9px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
-                          <span style={{ fontSize:9, fontWeight:600, color:C.fg, width:72, flexShrink:0 }}>{g.name}</span>
+                          <span style={{ fontSize:12, fontWeight:600, color:C.fg, width:85, flexShrink:0 }}>{g.name}</span>
                           <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ fontSize:12, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
-                            <span style={{ fontSize:7, color:C.dim }}>{isCumulative?"total":"today"}</span>
+                            <span style={{ fontSize:16, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
+                            <span style={{ fontSize:10, color:C.dim }}>{isCumulative?"total":"today"}</span>
                           </div>
-                          <span style={{ fontSize:7, padding:"2px 5px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
+                          <span style={{ fontSize:10, padding:"3px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
                         </div>
                       );
                     })}
                   </div>
-                  <div style={{ marginTop:8, fontSize:7, color:C.dim, lineHeight:1.5 }}>
+                  <div style={{ marginTop:8, fontSize:10, color:C.dim, lineHeight:1.5 }}>
                     {getGCCForDay().filter(g=>g.strikes>0).slice(0,2).map(g=>g.note).join(" ")}
                   </div>
                 </div>
@@ -838,24 +838,24 @@ const ScreenSituation = ({ live }) => {
                           }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:8, color:isHovered?"#ffffff":C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
-                              <span style={{ fontSize:11, fontWeight:700, color:isHovered?"#ffffff":C.fg }}>{g.name}</span>
-                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?`${airCol}80`:`${airCol}22`, color:isHovered?"#ffffff":airCol, fontWeight:600 }}>{g.airspace}</span>
+                              <span style={{ fontSize:11, color:isHovered?"#ffffff":C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
+                              <span style={{ fontSize:14, fontWeight:700, color:isHovered?"#ffffff":C.fg }}>{g.name}</span>
+                              <span style={{ fontSize:10, padding:"3px 8px", borderRadius:3, background:isHovered?`${airCol}80`:`${airCol}22`, color:isHovered?"#ffffff":airCol, fontWeight:600 }}>{g.airspace}</span>
                             </div>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:20, fontWeight:800, color:isHovered?"#ffffff":airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
-                              <span style={{ fontSize:9, color:isHovered?"#ffffff":C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
+                              <span style={{ fontSize:24, fontWeight:800, color:isHovered?"#ffffff":airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
+                              <span style={{ fontSize:12, color:isHovered?"#ffffff":C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
                             </div>
                           </div>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":`${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
-                              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)":`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
+                              <span style={{ fontSize:11, padding:"3px 8px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":`${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
+                              <span style={{ fontSize:10, padding:"3px 8px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)":`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
                             </div>
                           </div>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
-                            <span style={{ fontSize:8, color:isHovered?"#ffffff":C.muted, flex:1 }}>{g.note}</span>
-                            <span style={{ fontSize:7, color:isHovered?"#ffffff":C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
+                            <span style={{ fontSize:11, color:isHovered?"#ffffff":C.muted, flex:1 }}>{g.note}</span>
+                            <span style={{ fontSize:10, color:isHovered?"#ffffff":C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
                           </div>
                        </div>
                        {/* Expandable commentary panel */}
@@ -901,26 +901,26 @@ const ScreenSituation = ({ live }) => {
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>AIRSPACE</span>
+            <span style={{ fontSize:13, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>AIRSPACE</span>
             <FeedTag feed="STATIC" />
           </div>
           {[{l:"KSA",s:"RESTRICTED"},{l:"Qatar",s:"CLOSED"},{l:"UAE",s:"RESTRICTED"},{l:"Kuwait",s:"RESTRICTED"},{l:"Bahrain",s:"RESTRICTED"},{l:"Oman",s:"OPEN"}].map(a=>(
-            <div key={a.l} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
-              <span style={{ fontSize:9, color:C.fg }}>{a.l}</span><StatusBadge s={a.s}/>
+            <div key={a.l} style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
+              <span style={{ fontSize:12, color:C.fg }}>{a.l}</span><StatusBadge s={a.s}/>
             </div>
           ))}
         </div>
         <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MARITIME CHOKEPOINTS</span>
+            <span style={{ fontSize:13, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MARITIME CHOKEPOINTS</span>
             <FeedTag feed="STATIC" />
           </div>
           {[{l:"Strait of Hormuz",s:"CLOSED",n:"0/35 transits. ~91 tankers holding."},{l:"Bab al-Mandeb",s:"RESTRICTED",n:"28/35 transits. Houthi quiet."},{l:"Suez Canal",s:"OPERATIONAL",n:"No disruption."}].map(m=>(
             <div key={m.l} style={{ padding:"5px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                <span style={{ fontSize:9, color:C.fg, fontWeight:"bold" }}>{m.l}</span><StatusBadge s={m.s}/>
+                <span style={{ fontSize:12, color:C.fg, fontWeight:"bold" }}>{m.l}</span><StatusBadge s={m.s}/>
               </div>
-              <span style={{ fontSize:8, color:C.muted }}>{m.n}</span>
+              <span style={{ fontSize:11, color:C.muted }}>{m.n}</span>
             </div>
           ))}
         </div>
@@ -936,37 +936,37 @@ const ClusterRiskItem = ({ r, live }) => {
   const statIcon = (s) => s==="active"?"🔴":s==="elevated"?"🟡":s==="monitoring"?"🔵":"🟢";
   return (
     <div style={{ marginBottom:6, borderRadius:3, overflow:"hidden", border:`1px solid ${sevColor(r.severity)}22` }}>
-      <div onClick={()=>setOpen(!open)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 10px", cursor:"pointer", background:`${sevColor(r.severity)}06` }}>
+      <div onClick={()=>setOpen(!open)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", cursor:"pointer", background:`${sevColor(r.severity)}06` }}>
         <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-          <span style={{ fontSize:9, color:C.fg }}>{statIcon(r.status)} <strong>{r.id}</strong> — {r.name}</span>
+          <span style={{ fontSize:12, color:C.fg }}>{statIcon(r.status)} <strong>{r.id}</strong> — {r.name}</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:`${sevColor(r.severity)}22`, color:sevColor(r.severity) }}>{r.severity.toUpperCase()}</span>
+          <span style={{ fontSize:10, padding:"2px 6px", borderRadius:3, background:`${sevColor(r.severity)}22`, color:sevColor(r.severity) }}>{r.severity.toUpperCase()}</span>
           <FeedTag feed={r.badge} />
-          <span style={{ fontSize:9, color:C.dim }}>{open?"▾":"▸"}</span>
+          <span style={{ fontSize:12, color:C.dim }}>{open?"▾":"▸"}</span>
         </div>
       </div>
       {open && (
-        <div style={{ padding:"8px 10px", background:"rgba(255,255,255,0.01)" }}>
-          <div style={{ fontSize:9, color:C.muted, marginBottom:6, lineHeight:1.5 }}>{r.detail}</div>
+        <div style={{ padding:"10px 12px", background:"rgba(255,255,255,0.01)" }}>
+          <div style={{ fontSize:12, color:C.muted, marginBottom:6, lineHeight:1.5 }}>{r.detail}</div>
           {/* Live signals */}
           {r.liveSignals && r.liveSignals.length > 0 && (
             <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:6 }}>
               {r.liveSignals.map((sig, i) => (
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:4, padding:"3px 7px", borderRadius:3, background:"rgba(34,197,94,0.06)", border:"1px solid rgba(34,197,94,0.15)" }}>
-                  <span className="cop-pulse" style={{ fontSize:6, color:C.success }}>●</span>
-                  <span style={{ fontSize:7, color:C.dim }}>{sig.label}:</span>
-                  <span style={{ fontSize:8, fontWeight:"bold", color:sig.color(live) }}>{sig.render(live)}</span>
+                  <span className="cop-pulse" style={{ fontSize:9, color:C.success }}>●</span>
+                  <span style={{ fontSize:10, color:C.dim }}>{sig.label}:</span>
+                  <span style={{ fontSize:11, fontWeight:"bold", color:sig.color(live) }}>{sig.render(live)}</span>
                 </div>
               ))}
             </div>
           )}
           {r.liveSignals && r.liveSignals.length === 0 && (
             <div style={{ padding:"3px 7px", borderRadius:3, background:"rgba(82,97,117,0.15)", border:`1px solid ${C.surfBorder}`, marginBottom:6, display:"inline-block" }}>
-              <span style={{ fontSize:7, color:C.dim }}>STATIC — no API publishes this classification at required latency</span>
+              <span style={{ fontSize:10, color:C.dim }}>STATIC — no API publishes this classification at required latency</span>
             </div>
           )}
-          <div style={{ fontSize:7, color:C.dim }}>SOURCES: {r.sources.join(" · ")}</div>
+          <div style={{ fontSize:10, color:C.dim }}>SOURCES: {r.sources.join(" · ")}</div>
         </div>
       )}
     </div>
