@@ -538,6 +538,7 @@ const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("CUMULATIVE");
   const [theaterView, setTheaterView] = useState("LOG");
+  const [expandedCountry, setExpandedCountry] = useState(null);
 
   const isCumulative = activeDay === "CUMULATIVE";
   const filteredStrikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
@@ -545,6 +546,20 @@ const ScreenSituation = ({ live }) => {
   const getMarkers = () => {
     const strikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
     return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
+  };
+
+  // Build GCC theater data (all 6 countries) with per-day filtering
+  const getGCCTheaterData = () => {
+    const ksaDayCount = isCumulative ? STRIKES_KSA.length : STRIKES_KSA.filter(s=>s.day===activeDay).length;
+    const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
+    const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
+    Object.entries(GCC_DAILY).forEach(([code, data]) => {
+      const seed = GCC_SEED.find(g=>g.code===code);
+      if (!seed) return;
+      const dayCount = isCumulative ? data.total : (data.perDay[activeDay] || 0);
+      result.push({ ...seed, strikes: dayCount });
+    });
+    return result;
   };
 
   const getGCCForDay = () => {
