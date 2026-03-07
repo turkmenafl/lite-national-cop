@@ -463,14 +463,13 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     const addPolygons = (geojson) => {
       if (!mapRef.current) return;
       const gccFeatures = geojson.features.filter(f => {
-        const iso3 = f.properties?.ISO_A3 || f.properties?.iso_a3 || f.properties?.ISO3 || "";
-        const iso2 = f.properties?.ISO_A2 || f.properties?.iso_a2 || f.properties?.ISO2 || f.id || "";
-        return GCC_ISO[iso3] || GCC_ISO_A2.includes(iso2);
+        const iso3 = f.id || f.properties?.ISO_A3 || f.properties?.iso_a3 || "";
+        return !!GCC_ISO[iso3];
       });
 
       gccFeatures.forEach(feature => {
-        const iso3 = feature.properties?.ISO_A3 || feature.properties?.iso_a3 || feature.properties?.ISO3 || "";
-        const iso2 = GCC_ISO[iso3] || feature.properties?.ISO_A2 || feature.properties?.iso_a2 || feature.id || "";
+        const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
+        const iso2 = GCC_ISO[iso3];
         const seed = GCC_SEED.find(g => g.code === iso2);
         if (!seed) return;
         const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
