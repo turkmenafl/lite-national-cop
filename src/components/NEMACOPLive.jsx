@@ -630,8 +630,8 @@ const ScreenSituation = ({ live }) => {
             <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} />
           </div>
 
-          {/* Right: Scrollable column */}
-          <div style={{ flex:1, maxHeight:380, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+          {/* Right column */}
+          <div style={{ flex:1, maxHeight: theaterView === "GCC" ? undefined : 380, overflowY: theaterView === "GCC" ? "hidden" : "auto", display:"flex", flexDirection:"column" }}>
             {theaterView === "LOG" ? (
               <>
                 {/* KSA Event Log */}
@@ -692,7 +692,7 @@ const ScreenSituation = ({ live }) => {
               </>
             ) : (
               /* GCC THEATER view */
-              <div style={{ padding:14, display:"flex", flexDirection:"column", gap:6 }}>
+              <div style={{ padding:"8px 10px", display:"flex", flexDirection:"column", gap:3, flex:1, justifyContent:"space-between", overflowY: expandedCountry ? "auto" : "hidden" }}>
                 {getGCCTheaterData().map(g => {
                   const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
                   const confCol = g.confidence==="CONFIRMED"?C.success:"#f97316";
@@ -700,8 +700,8 @@ const ScreenSituation = ({ live }) => {
                   return (
                     <div key={g.code}>
                       <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
-                        style={{ padding:"10px 12px", borderRadius:isExpanded?"4px 4px 0 0":4, background:isExpanded?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}`, cursor:"pointer", transition:"background 0.15s", borderBottom:isExpanded?"none":`1px solid ${C.surfBorder}` }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                        style={{ padding:"6px 10px", borderRadius:isExpanded?"4px 4px 0 0":4, background:isExpanded?"rgba(255,255,255,0.04)":"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}`, borderLeft:`3px solid ${airCol}`, cursor:"pointer", transition:"background 0.15s", borderBottom:isExpanded?"none":`1px solid ${C.surfBorder}` }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                             <span style={{ fontSize:8, color:C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
                             <span style={{ fontSize:10, fontWeight:700, color:C.fg }}>{g.name}</span>
@@ -718,7 +718,7 @@ const ScreenSituation = ({ live }) => {
                             <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${confCol}18`, color:confCol, fontWeight:500 }}>{g.confidence}</span>
                           </div>
                         </div>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:5 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
                           <span style={{ fontSize:8, color:C.muted, flex:1 }}>{g.note}</span>
                           <span style={{ fontSize:7, color:C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
                         </div>
