@@ -247,27 +247,27 @@ const severityColor = severityScore<=40?"#22c55e":severityScore<=60?"#f59e0b":"#
 
 // ─── UI ATOMS ─────────────────────────────────────────────────────────────────
 const FeedTag = ({ feed, loading }) => {
-  if (loading) return <span style={{ fontSize:7, padding:"2px 6px", borderRadius:4, background:"rgba(59,130,246,0.15)", color:C.info, letterSpacing:"0.04em" }} className="cop-pulse">●</span>;
+  if (loading) return <span style={{ fontSize:10, padding:"3px 8px", borderRadius:4, background:"rgba(59,130,246,0.15)", color:C.info, letterSpacing:"0.04em" }} className="cop-pulse">●</span>;
   const map = { "AI+WEB":[C.success,"AI+WEB"], LIVE:[C.success,"LIVE"], CONFIRMED:[C.success,"CONFIRMED"], EST:["#f97316","EST"], GDELT:[C.warning,"GDELT"], STATIC:[C.dim,"STATIC"], IODA:[C.info,"IODA"] };
   const [col, lbl] = map[feed] || [C.muted, feed];
-  return <span style={{ fontSize:7, padding:"2px 6px", borderRadius:4, background:`${col}18`, color:col, letterSpacing:"0.04em", fontWeight:500 }}>{lbl}</span>;
+  return <span style={{ fontSize:10, padding:"3px 8px", borderRadius:4, background:`${col}18`, color:col, letterSpacing:"0.04em", fontWeight:500 }}>{lbl}</span>;
 };
 
 const StatusBadge = ({ s }) => {
   const map = { DEGRADED:C.critical, RESTRICTED:C.warning, DISRUPTED:"#f97316", ELEVATED:C.warning, OPERATIONAL:C.success, CRITICAL:C.critical, CLOSED:C.critical, OPEN:C.success, CLEAR:C.success, ATTENTION:"#f59e0b", ADEQUATE:C.success, UNKNOWN:"#64748b" };
   const col = map[s] || C.muted;
-  return <span style={{ fontSize:8, padding:"2px 8px", borderRadius:4, background:`${col}14`, color:col, border:`1px solid ${col}28`, fontWeight:600, letterSpacing:"0.05em" }}>{s}</span>;
+  return <span style={{ fontSize:11, padding:"3px 10px", borderRadius:4, background:`${col}14`, color:col, border:`1px solid ${col}28`, fontWeight:600, letterSpacing:"0.05em" }}>{s}</span>;
 };
 
 const KpiCard = ({ label, value, change, color, note, feed, loading }) => (
-  <div style={{ flex:1, padding:"10px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, textAlign:"center", minWidth:90, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
-    <div style={{ fontSize:7, color:C.muted, letterSpacing:"0.08em", marginBottom:4, textTransform:"uppercase", fontWeight:500 }}>{label}</div>
+  <div style={{ flex:1, padding:"12px 14px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, textAlign:"center", minWidth:100, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
+    <div style={{ fontSize:10, color:C.muted, letterSpacing:"0.08em", marginBottom:4, textTransform:"uppercase", fontWeight:500 }}>{label}</div>
     {loading
-      ? <div style={{ fontSize:16, fontWeight:700, color:C.info, marginBottom:4 }} className="cop-pulse">…</div>
-      : <div style={{ fontSize:17, fontWeight:700, color:color||C.fg, marginBottom:4, lineHeight:1.1 }}>{value}</div>
+      ? <div style={{ fontSize:20, fontWeight:700, color:C.info, marginBottom:4 }} className="cop-pulse">…</div>
+      : <div style={{ fontSize:22, fontWeight:700, color:color||C.fg, marginBottom:4, lineHeight:1.1 }}>{value}</div>
     }
     <div style={{ display:"flex", justifyContent:"center", gap:5, alignItems:"center", flexWrap:"wrap" }}>
-      {(change||note) && <span style={{ fontSize:7, color:C.dim }}>{change||note}</span>}
+      {(change||note) && <span style={{ fontSize:10, color:C.dim }}>{change||note}</span>}
       <FeedTag feed={feed} loading={loading} />
     </div>
   </div>
@@ -716,12 +716,12 @@ const ScreenSituation = ({ live }) => {
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
                 background:isActive?"#192233":"transparent",
                 borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
-                color:isActive?C.fg:C.muted, fontSize:7, fontWeight:isActive?700:500,
+                color:isActive?C.fg:C.muted, fontSize:10, fontWeight:isActive?700:500,
                 fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
                 display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
               }}>
                 {t==="CUMULATIVE"?"⊞ ":""}{t}
-                {dayStrikes > 0 && <span style={{ fontSize:6, padding:"1px 4px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
+                {dayStrikes > 0 && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
               </button>
             );
           })}
@@ -732,16 +732,16 @@ const ScreenSituation = ({ live }) => {
           {/* Left: Theater Map */}
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
+              <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
               <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                <span style={{ fontSize:8, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
+                <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
                 <FeedTag feed="STATIC" />
                 <div style={{ display:"flex", marginLeft:8, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
                   {[["LOG","KSA EVENT LOG"],["GCC","GCC THEATER"]].map(([k,label])=>(
                     <button key={k} onClick={()=>setTheaterView(k)} style={{
-                      padding:"3px 8px", border:"none", cursor:"pointer",
+                      padding:"4px 10px", border:"none", cursor:"pointer",
                       background:theaterView===k?C.info+"22":"transparent",
-                      color:theaterView===k?C.info:C.dim, fontSize:7, fontWeight:theaterView===k?700:500,
+                      color:theaterView===k?C.info:C.dim, fontSize:10, fontWeight:theaterView===k?700:500,
                       fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
                     }}>{label}</button>
                   ))}
@@ -873,20 +873,20 @@ const ScreenSituation = ({ live }) => {
                          padding: isExpanded ? "8px 10px" : "0 10px",
                        }}>
                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                           <span style={{ fontSize:9, fontWeight:700, color:airCol, letterSpacing:"0.04em" }}>{countryLabel} — Situation Summary</span>
-                           <span onClick={(e)=>{e.stopPropagation();setExpandedCountry(null);}} style={{ fontSize:11, color:C.dim, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>×</span>
-                         </div>
-                         <div style={{ fontSize:8, color:C.fg, lineHeight:1.7 }}>
+                            <span style={{ fontSize:12, fontWeight:700, color:airCol, letterSpacing:"0.04em" }}>{countryLabel} — Situation Summary</span>
+                            <span onClick={(e)=>{e.stopPropagation();setExpandedCountry(null);}} style={{ fontSize:14, color:C.dim, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>×</span>
+                          </div>
+                          <div style={{ fontSize:11, color:C.fg, lineHeight:1.7 }}>
                            {g.code === "SA" ? `${g.strikes} strikes recorded to date targeting Eastern Province oil infrastructure, Riyadh diplomatic quarter, and military airbases. Abqaiq processing facility near-miss on Mar 4. Ras Tanura terminal degraded to 85% capacity. ${g.interceptPct}% intercept rate via Patriot/THAAD demonstrates near-total defense coverage. Airspace remains ${g.airspace.toLowerCase()} with heightened alert across all sectors.`
                            : g.code === "AE" ? `${g.strikes.toLocaleString()} projectiles recorded — heaviest volume in theater. Key impacts at Jebel Ali port, Dubai Terminal 3, and French naval base. ${g.interceptPct}% intercept rate under extreme volume pressure. Dubai and Abu Dhabi airports operating at reduced capacity. Jebel Ali port restricted to military logistics only.`
                            : g.code === "QA" ? `${g.strikes} strikes including 2 ballistic missile impacts at Al Udeid Air Base — critical CENTCOM forward HQ. LNG exports suspended indefinitely, affecting ~25% of global supply. Airspace ${g.airspace.toLowerCase()} — all commercial flights halted. ${g.interceptPct}% intercept rate with notable gaps in coverage.`
                            : g.code === "KW" ? `${g.strikes} strikes targeting Ali Al Salem Air Base and US Embassy compound. US military assets in active relocation to secondary positions. Embassy sustained direct hit — fire damage, 0 KIA confirmed. ${g.interceptPct}% intercept rate. Kuwait requesting additional Patriot battery deployment.`
                            : g.code === "BH" ? `${g.strikes} strikes concentrated on NAVCENT 5th Fleet HQ and Bapco refinery. 5th Fleet operations temporarily relocated to sea-based command. Bapco refinery offline — domestic fuel reserves adequate for 14 days. ${g.interceptPct}% intercept rate — lowest among major GCC states.`
                            : `${g.strikes} strikes — minimal targeting reflecting Oman's mediator status. Duqm Port drone incursion detected. Maintaining diplomatic neutrality in conflict. ${g.interceptPct}% intercept rate with limited engagement. Airspace remains ${g.airspace.toLowerCase()} with heightened monitoring of maritime approaches.`}
-                         </div>
-                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, marginTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
-                           <span style={{ fontSize:7, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
-                           <span style={{ fontSize:7, color:C.dim }}>{g.source}</span>
+                          </div>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, marginTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
+                            <span style={{ fontSize:10, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
+                            <span style={{ fontSize:10, color:C.dim }}>{g.source}</span>
                          </div>
                        </div>
                      </div>
