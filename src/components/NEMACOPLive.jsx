@@ -3,12 +3,17 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body, #root { background: #060b17; color: #d8e6f5; font-family: 'JetBrains Mono','SF Mono','Fira Code',monospace; }
-  @keyframes cop-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  body, #root { background: #060b17; color: #d8e6f5; font-family: 'JetBrains Mono','SF Mono','Fira Code',monospace; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  @keyframes cop-pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
   .cop-pulse { animation: cop-pulse 1.5s ease-in-out infinite; }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1e2d42; border-radius: 4px; }
+  @keyframes cop-fade-in { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
+  .cop-fade-in { animation: cop-fade-in 0.25s ease-out; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #0a1220; }
+  ::-webkit-scrollbar-thumb { background: #1e2d42; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a3d56; }
+  button { transition: all 0.15s ease; }
+  button:hover { filter: brightness(1.15); }
 `;
 const C = {
   bg:'#060b17', surface:'#192233', surfBorder:'#273248',
@@ -205,26 +210,26 @@ const severityColor = severityScore<=40?"#22c55e":severityScore<=60?"#f59e0b":"#
 
 // ─── UI ATOMS ─────────────────────────────────────────────────────────────────
 const FeedTag = ({ feed, loading }) => {
-  if (loading) return <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:"rgba(59,130,246,0.15)", color:C.info }} className="cop-pulse">●</span>;
+  if (loading) return <span style={{ fontSize:7, padding:"2px 6px", borderRadius:4, background:"rgba(59,130,246,0.15)", color:C.info, letterSpacing:"0.04em" }} className="cop-pulse">●</span>;
   const map = { "AI+WEB":[C.success,"AI+WEB"], LIVE:[C.success,"LIVE"], CONFIRMED:[C.success,"CONFIRMED"], EST:["#f97316","EST"], GDELT:[C.warning,"GDELT"], STATIC:[C.dim,"STATIC"], IODA:[C.info,"IODA"] };
   const [col, lbl] = map[feed] || [C.muted, feed];
-  return <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:`${col}18`, color:col }}>{lbl}</span>;
+  return <span style={{ fontSize:7, padding:"2px 6px", borderRadius:4, background:`${col}18`, color:col, letterSpacing:"0.04em", fontWeight:500 }}>{lbl}</span>;
 };
 
 const StatusBadge = ({ s }) => {
   const map = { DEGRADED:C.critical, RESTRICTED:C.warning, DISRUPTED:"#f97316", ELEVATED:C.warning, OPERATIONAL:C.success, CRITICAL:C.critical, CLOSED:C.critical, OPEN:C.success, CLEAR:C.success, ATTENTION:"#f59e0b", ADEQUATE:C.success, UNKNOWN:"#64748b" };
   const col = map[s] || C.muted;
-  return <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${col}18`, color:col, border:`1px solid ${col}33` }}>{s}</span>;
+  return <span style={{ fontSize:8, padding:"2px 8px", borderRadius:4, background:`${col}14`, color:col, border:`1px solid ${col}28`, fontWeight:600, letterSpacing:"0.05em" }}>{s}</span>;
 };
 
 const KpiCard = ({ label, value, change, color, note, feed, loading }) => (
-  <div style={{ flex:1, padding:"7px 8px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, textAlign:"center", minWidth:80 }}>
-    <div style={{ fontSize:7, color:C.muted, letterSpacing:"0.05em", marginBottom:2 }}>{label}</div>
+  <div style={{ flex:1, padding:"10px 12px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, textAlign:"center", minWidth:90, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
+    <div style={{ fontSize:7, color:C.muted, letterSpacing:"0.08em", marginBottom:4, textTransform:"uppercase", fontWeight:500 }}>{label}</div>
     {loading
-      ? <div style={{ fontSize:14, fontWeight:"bold", color:C.info, marginBottom:2 }} className="cop-pulse">…</div>
-      : <div style={{ fontSize:15, fontWeight:"bold", color:color||C.fg, marginBottom:2 }}>{value}</div>
+      ? <div style={{ fontSize:16, fontWeight:700, color:C.info, marginBottom:4 }} className="cop-pulse">…</div>
+      : <div style={{ fontSize:17, fontWeight:700, color:color||C.fg, marginBottom:4, lineHeight:1.1 }}>{value}</div>
     }
-    <div style={{ display:"flex", justifyContent:"center", gap:4, alignItems:"center", flexWrap:"wrap" }}>
+    <div style={{ display:"flex", justifyContent:"center", gap:5, alignItems:"center", flexWrap:"wrap" }}>
       {(change||note) && <span style={{ fontSize:7, color:C.dim }}>{change||note}</span>}
       <FeedTag feed={feed} loading={loading} />
     </div>
