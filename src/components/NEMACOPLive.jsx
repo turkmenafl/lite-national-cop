@@ -1933,23 +1933,23 @@ export default function NEMACOPLive() {
   const fmt = d=>d?`${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`:"--:--";
 
   const TABS = [
-    { label:"SITUATION",       icon:"◉" },
-    { label:"RISK CLUSTERS",   icon:"⬡" },
-    { label:"INFRASTRUCTURE",  icon:"⚙" },
-    { label:"DECISIONS",       icon:"▣" },
-    { label:"ECONOMIC",        icon:"◈" },
-    { label:"MEDIA",           icon:"📡" },
-    { label:"SCENARIOS",       icon:"⚠" },
-    { label:"AI BRIEF",        icon:"🤖" },
+    { label:"SITUATION",              icon:"◉" },
+    { label:"RISK CLUSTERS",          icon:"⬡" },
+    { label:"CRITICAL INFRASTRUCTURE",icon:"⚙" },
+    { label:"CONSEQUENCES",           icon:"◈" },
+    { label:"MEDIA",                  icon:"📡" },
+    { label:"DECISIONS",              icon:"▣" },
+    { label:"SCENARIOS",              icon:"⚠" },
+    { label:"AI BRIEF",              icon:"🤖" },
   ];
 
   const screens = [
     <ScreenSituation    live={live}/>,
     <ScreenRiskClusters live={live}/>,
     <ScreenInfra        live={live}/>,
-    <ScreenDecisions  live={live}/>,
     <ScreenEconomic     live={live}/>,
     <ScreenMedia        live={live}/>,
+    <ScreenDecisions    live={live}/>,
     <ScreenScenarios />,
     <ScreenAIBrief      live={live}/>,
   ];
