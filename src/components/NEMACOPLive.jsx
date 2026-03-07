@@ -4,28 +4,21 @@ import "leaflet/dist/leaflet.css";
 
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
 
-// Sequential AI request queue to avoid Anthropic rate limits
-const aiQueue = [];
-let aiQueueRunning = false;
-const AI_DELAY_MS = 3000; // 3s between AI calls
-
-function enqueueAICall(fn) {
-  return new Promise((resolve, reject) => {
-    aiQueue.push({ fn, resolve, reject });
-    processAIQueue();
-  });
-}
-
-async function processAIQueue() {
-  if (aiQueueRunning) return;
-  aiQueueRunning = true;
-  while (aiQueue.length > 0) {
-    const { fn, resolve, reject } = aiQueue.shift();
-    try { resolve(await fn()); } catch (e) { reject(e); }
-    if (aiQueue.length > 0) await new Promise(r => setTimeout(r, AI_DELAY_MS));
+// Helper: call an async fn with retry on 429
+async function withRetry(fn, maxRetries = 2, baseDelay = 15000) {
+  for (let i = 0; i <= maxRetries; i++) {
+    try { return await fn(); } catch (e) {
+      if (i < maxRetries && e?.message?.includes("429")) {
+        console.warn(`[AI] 429 rate limit, retry ${i+1} in ${baseDelay*(i+1)/1000}s`);
+        await new Promise(r => setTimeout(r, baseDelay * (i + 1)));
+      } else { throw e; }
+    }
   }
-  aiQueueRunning = false;
 }
+// Delay helper
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const AI_GAP = 15000; // 15s gap between AI calls to stay under 30k tokens/min
+let _refreshLock = false; // module-level lock to prevent concurrent refreshes
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -352,6 +345,7 @@ async function fetchFinancial() {
       messages:[{ role:"user", content:"Find current Brent crude price and Saudi TASI index today. Reply ONLY: BRENT:XX.XX BRENTCHG:+X.X% TASI:XXXXX TASICHG:-X.X%" }]
     })
   });
+  if (!res.ok) throw new Error(`API ${res.status}`);
   const data = await res.json();
   const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("") || "";
   return {
@@ -1783,6 +1777,8 @@ export default function NEMACOPLive() {
   });
 
   const refresh = useCallback(async () => {
+    if (_refreshLock) { console.warn("[COP] refresh already in progress, skipping"); return; }
+    _refreshLock = true;
     setRefreshing(true);
     setLive(d=>({...d,
       brent:{...d.brent,loading:true}, tasi:{...d.tasi,loading:true},
@@ -1793,15 +1789,26 @@ export default function NEMACOPLive() {
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
     }));
-    // Non-AI calls run in parallel; AI calls are queued sequentially to avoid rate limits
-    const [eia, opa, gdelt, ioda, pw, fin, gcc, ukmtoRes, ksaStr, ciStat] = await Promise.allSettled([
+    // Non-AI calls run in parallel immediately
+    const [eia, opa, gdelt, ioda, pw] = await Promise.allSettled([
       fetchEIABrent(), fetchOPABrent(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
-      enqueueAICall(fetchFinancial),
-      enqueueAICall(fetchGCCStrikes),
-      enqueueAICall(fetchUKMTO),
-      enqueueAICall(fetchKSAStrikes),
-      enqueueAICall(fetchCIStatus),
     ]);
+
+    // AI calls run sequentially with gaps to stay under Anthropic's 30k tokens/min
+    const fin = await Promise.resolve().then(() => withRetry(fetchFinancial)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    setLive(d=>({...d, tasi:{...d.tasi,loading:false,source:"loading..."}})); // progressive update
+    await delay(AI_GAP);
+
+    const gcc = await Promise.resolve().then(() => withRetry(fetchGCCStrikes)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    await delay(AI_GAP);
+
+    const ukmtoRes = await Promise.resolve().then(() => withRetry(fetchUKMTO)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    await delay(AI_GAP);
+
+    const ksaStr = await Promise.resolve().then(() => withRetry(fetchKSAStrikes)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
+    await delay(AI_GAP);
+
+    const ciStat = await Promise.resolve().then(() => withRetry(fetchCIStatus)).then(v=>({status:"fulfilled",value:v})).catch(e=>({status:"rejected",reason:e}));
     setLive(d=>{
       const n={...d};
       if (opa.status==="fulfilled"&&opa.value) {
@@ -1834,6 +1841,7 @@ export default function NEMACOPLive() {
     });
     setLastRefresh(new Date());
     setRefreshing(false);
+    _refreshLock = false;
   }, []);
 
   useEffect(()=>{refresh();},[refresh]);
