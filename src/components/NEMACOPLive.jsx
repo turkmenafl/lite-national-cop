@@ -360,40 +360,43 @@ const GCCTheater = ({ gcc }) => {
 };
 
 // ─── DAILY DATA DERIVED FROM STRIKES_KSA ──────────────────────────────────────
-const DAILY_ORDER = ["Feb 28","Mar 01","Mar 02","Mar 03","Mar 04"];
-const getDailyBreakdown = () => {
-  const days = {};
-  DAILY_ORDER.forEach(d => { days[d] = { strikes:[], weps:new Set() }; });
-  STRIKES_KSA.forEach(s => {
-    if (days[s.day]) { days[s.day].strikes.push(s); days[s.day].weps.add(s.wep); }
-  });
-  let cumTotal = 0, cumIntercept = 0;
-  return DAILY_ORDER.map((d,i) => {
-    const info = days[d];
-    const count = info.strikes.length;
-    const intercepted = info.strikes.filter(s => !s.status.includes("Hit")).length;
-    cumTotal += count;
-    cumIntercept += intercepted;
-    return { day:d, dayNum:i+1, count, intercepted, interceptPct:count?Math.round((intercepted/count)*100):0, cumTotal, cumInterceptPct:cumTotal?Math.round((cumIntercept/cumTotal)*100):0, weps:[...info.weps], strikes:info.strikes };
-  });
+const getUniqueDays = () => {
+  const days = [...new Set(STRIKES_KSA.map(s => s.day))];
+  days.sort((a, b) => new Date(`2026 ${a}`) - new Date(`2026 ${b}`));
+  return days;
 };
-const DAILY_DATA = getDailyBreakdown();
+const STRIKE_DAYS = getUniqueDays();
+
+// GCC per-day seed data (static estimates distributed across days)
+const GCC_DAILY = {
+  "AE": { total:1276, interceptPct:92, perDay:{ "Feb 28":182, "Mar 01":195, "Mar 02":178, "Mar 03":190, "Mar 04":201, "Mar 05":112, "Mar 06":108, "Mar 07":110 }, note:"Jebel Ali + Dubai T3 + French base hit." },
+  "QA": { total:115,  interceptPct:90, perDay:{ "Feb 28":18, "Mar 01":20, "Mar 02":15, "Mar 03":17, "Mar 04":14, "Mar 05":12, "Mar 06":10, "Mar 07":9 }, note:"Al Udeid 2 BM impacts. LNG suspended." },
+  "KW": { total:484,  interceptPct:88, perDay:{ "Feb 28":72, "Mar 01":78, "Mar 02":65, "Mar 03":70, "Mar 04":74, "Mar 05":45, "Mar 06":42, "Mar 07":38 }, note:"Ali Al Salem struck. US Embassy hit." },
+  "BH": { total:198,  interceptPct:85, perDay:{ "Feb 28":30, "Mar 01":32, "Mar 02":28, "Mar 03":30, "Mar 04":26, "Mar 05":20, "Mar 06":18, "Mar 07":14 }, note:"5th Fleet HQ struck. Bapco refinery hit." },
+  "OM": { total:4,    interceptPct:50, perDay:{ "Feb 28":1, "Mar 01":0, "Mar 02":1, "Mar 03":0, "Mar 04":1, "Mar 05":0, "Mar 06":0, "Mar 07":1 }, note:"Duqm Port drone. Mediator status." },
+};
 
 // ─── SCREEN 1: SITUATION ──────────────────────────────────────────────────────
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
-  const [mapTab, setMapTab] = useState("map");
-  const [selectedDay, setSelectedDay] = useState(null);
+  const [activeDay, setActiveDay] = useState("CUMULATIVE");
 
-  // Get strike markers, highlighting if a day is selected
+  const isCumulative = activeDay === "CUMULATIVE";
+  const filteredStrikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
+
   const getMarkers = () => {
-    if (!selectedDay) {
-      return [{lat:24.69,lng:46.63,s:"high"},{lat:26.27,lng:50.15,s:"high"},{lat:26.64,lng:50.16,s:"critical"},{lat:24.06,lng:47.58,s:"high"},{lat:24.67,lng:46.69,s:"critical"},{lat:25.94,lng:49.68,s:"critical"}];
-    }
-    return STRIKES_KSA.filter(s => s.day === selectedDay).map(s => ({ lat:s.lat, lng:s.lng, s:s.sev, active:true }));
+    const strikes = isCumulative ? STRIKES_KSA : STRIKES_KSA.filter(s => s.day === activeDay);
+    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
   };
 
-  const wepColor = (w) => w==="Ballistic"?C.critical:w==="Cruise"?"#f97316":C.warning;
+  const getGCCForDay = () => {
+    return Object.entries(GCC_DAILY).map(([code, data]) => {
+      const dayCount = isCumulative ? data.total : (data.perDay[activeDay] || 0);
+      return { code, name: code==="AE"?"🇦🇪 UAE":code==="QA"?"🇶🇦 Qatar":code==="KW"?"🇰🇼 Kuwait":code==="BH"?"🇧🇭 Bahrain":"🇴🇲 Oman", strikes:dayCount, interceptPct:data.interceptPct, note:data.note };
+    });
+  };
+
+  const dateTabs = ["CUMULATIVE", ...STRIKE_DAYS];
 
   return (
     <div>
@@ -406,148 +409,113 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
         <KpiCard label="KSA INTERNET" value={live.ioda.value!==null?`${live.ioda.value}%`:"—"} note="vs baseline" color={live.ioda.value!==null&&live.ioda.value<80?C.critical:C.success} feed="IODA" loading={live.ioda.loading} />
       </div>
-      <div style={{ display:"flex", gap:12, marginBottom:14 }}>
-        <div style={{ flex:2, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
-          {/* Mini tabs */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-            <div style={{ display:"flex", gap:0, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
-              {[{k:"map",l:"MAP"},{k:"byday",l:"BY DAY"},{k:"cumul",l:"CUMULATIVE"}].map(t=>(
-                <button key={t.k} onClick={()=>{setMapTab(t.k);if(t.k!=="byday")setSelectedDay(null);}} style={{
-                  padding:"5px 12px", border:"none", cursor:"pointer",
-                  background:mapTab===t.k?"#1e3a5f":C.bg,
-                  color:mapTab===t.k?C.fg:C.muted, fontSize:7, fontWeight:mapTab===t.k?700:500,
-                  fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.08em",
-                }}>{t.l}</button>
-              ))}
-            </div>
-            <FeedTag feed="STATIC" />
-          </div>
 
-          {/* MAP view */}
-          {mapTab==="map" && (
-            <div>
-              <svg viewBox="0 0 360 200" style={{ width:"100%", background:"#060b17", borderRadius:4 }}>
-                <path d="M55,25 L130,20 L155,40 L175,35 L195,55 L240,68 L255,100 L265,130 L255,165 L230,185 L195,195 L150,190 L100,185 L65,165 L45,135 L35,95 L40,60 Z" fill="#1e3a5f44" stroke="#2d5a8e" strokeWidth="1.2"/>
-                <path d="M215,10 L280,8 L310,25 L315,55 L295,75 L270,80 L255,100 L240,68 L220,55 L205,35 Z" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.25)" strokeWidth="0.8"/>
-                <text x="255" y="48" fill="#ef444488" fontSize="7" fontFamily="monospace">IRAN</text>
-                <line x1="260" y1="82" x2="305" y2="78" stroke="#ef4444" strokeWidth="2" strokeDasharray="4,2"/>
-                <text x="268" y="76" fill="#ef4444" fontSize="7" fontFamily="monospace">⛔ HORMUZ D7</text>
-                {[{n:"KSA",x:130,y:110},{n:"UAE",x:255,y:125},{n:"OMAN",x:285,y:150},{n:"QA",x:238,y:95},{n:"BH",x:220,y:85},{n:"KW",x:195,y:65}].map(l=><text key={l.n} x={l.x} y={l.y} fill="#7d8fa3" fontSize="7" fontFamily="monospace" textAnchor="middle">{l.n}</text>)}
-                {getMarkers().map((p,i)=>{
-                  const x=((p.lng-34)/(58-34))*340+10, y=((32-p.lat)/(32-15))*180+10, col=p.s==="critical"?C.critical:C.warning;
-                  const isActive = p.active;
-                  return (<g key={i}>{(p.s==="critical"||isActive)&&<circle cx={x} cy={y} r={isActive?10:8} fill="none" stroke={col} strokeWidth={isActive?1:0.5} opacity="0.4"><animate attributeName="r" values={isActive?"6;14;6":"5;12;5"} dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/></circle>}<circle cx={x} cy={y} r={isActive?4:3} fill={col} opacity={isActive?1:0.9}/></g>);
-                })}
-              </svg>
-              {selectedDay && <div style={{ marginTop:6, fontSize:7, color:C.info }}>● Showing strikes for {selectedDay} — click a day in BY DAY tab</div>}
-            </div>
-          )}
+      {/* ── Date-Tabbed Theater Section ── */}
+      <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", marginBottom:14, overflow:"hidden" }}>
+        {/* Date tabs */}
+        <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
+          {dateTabs.map(t => {
+            const isActive = activeDay === t;
+            const dayStrikes = t==="CUMULATIVE" ? STRIKES_KSA.length : STRIKES_KSA.filter(s=>s.day===t).length;
+            return (
+              <button key={t} onClick={()=>{setActiveDay(t);setSelEvent(null);}} style={{
+                padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
+                background:isActive?"#192233":"transparent",
+                borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
+                color:isActive?C.fg:C.muted, fontSize:7, fontWeight:isActive?700:500,
+                fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
+                display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
+              }}>
+                {t==="CUMULATIVE"?"⊞ ":""}{t}
+                {dayStrikes > 0 && <span style={{ fontSize:6, padding:"1px 4px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
+              </button>
+            );
+          })}
+        </div>
 
-          {/* BY DAY view */}
-          {mapTab==="byday" && (
-            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-              {DAILY_DATA.map(d => {
-                const isSelected = selectedDay === d.day;
-                return (
-                  <div key={d.day} onClick={()=>setSelectedDay(isSelected?null:d.day)} style={{
-                    display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:4, cursor:"pointer",
-                    background:isSelected?"rgba(59,130,246,0.1)":"rgba(255,255,255,0.02)",
-                    border:`1px solid ${isSelected?"rgba(59,130,246,0.3)":C.surfBorder+"40"}`,
-                    transition:"all 0.15s ease",
-                  }}>
-                    <span style={{ fontSize:9, fontWeight:600, color:isSelected?C.info:C.fg, width:46, flexShrink:0 }}>{d.day}</span>
-                    <span style={{ fontSize:8, color:C.dim, width:14, textAlign:"center" }}>D{d.dayNum}</span>
-                    <div style={{ display:"flex", alignItems:"center", gap:3, flex:1 }}>
-                      {d.weps.map(w => (
-                        <span key={w} style={{ fontSize:6, padding:"2px 5px", borderRadius:3, background:`${wepColor(w)}18`, color:wepColor(w), fontWeight:600 }}>{w}</span>
-                      ))}
-                    </div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <span style={{ fontSize:13, fontWeight:700, color:d.count>=3?C.critical:C.warning }}>{d.count}</span>
-                      <span style={{ fontSize:7, color:C.dim }}>events</span>
-                    </div>
-                    <span style={{ fontSize:8, padding:"2px 6px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{d.interceptPct}%</span>
-                  </div>
-                );
-              })}
-              <div style={{ marginTop:4, fontSize:7, color:C.dim }}>Click a row to highlight strikes on MAP tab</div>
-            </div>
-          )}
-
-          {/* CUMULATIVE view */}
-          {mapTab==="cumul" && (
-            <div>
-              {/* Bar chart */}
-              <svg viewBox="0 0 320 140" style={{ width:"100%", background:"#060b17", borderRadius:4 }}>
-                {/* Grid lines */}
-                {[0,1,2,3,4].map(i => (
-                  <g key={i}>
-                    <line x1="40" y1={20+i*25} x2="310" y2={20+i*25} stroke={C.surfBorder} strokeWidth="0.5" opacity="0.4"/>
-                    <text x="36" y={24+i*25} fill={C.dim} fontSize="6" fontFamily="monospace" textAnchor="end">{10-i*2.5>=0?(10-i*2.5).toFixed(0):""}</text>
-                  </g>
-                ))}
-                {/* Bars — daily count */}
-                {DAILY_DATA.map((d,i) => {
-                  const barH = (d.count/4)*100; // max ~4 events/day, scale to 100px
-                  const x = 55 + i*55;
-                  return (
-                    <g key={d.day}>
-                      <rect x={x} y={120-barH} width={28} height={barH} rx={2} fill={d.count>=3?`${C.critical}88`:`${C.warning}66`} />
-                      <text x={x+14} y={118-barH} fill={C.fg} fontSize="8" fontFamily="monospace" textAnchor="middle" fontWeight="bold">{d.count}</text>
-                      <text x={x+14} y={134} fill={C.dim} fontSize="6" fontFamily="monospace" textAnchor="middle">D{d.dayNum}</text>
-                    </g>
-                  );
-                })}
-                {/* Cumulative line */}
-                <polyline
-                  points={DAILY_DATA.map((d,i) => `${69+i*55},${120-(d.cumTotal/10)*100}`).join(" ")}
-                  fill="none" stroke={C.info} strokeWidth="1.5" strokeDasharray="3,2"
-                />
-                {DAILY_DATA.map((d,i) => (
-                  <g key={`cum-${i}`}>
-                    <circle cx={69+i*55} cy={120-(d.cumTotal/10)*100} r={3} fill={C.info} />
-                    <text x={69+i*55} y={120-(d.cumTotal/10)*100-6} fill={C.info} fontSize="7" fontFamily="monospace" textAnchor="middle" fontWeight="bold">{d.cumTotal}</text>
-                  </g>
-                ))}
-                {/* Legend */}
-                <rect x="45" y="2" width="8" height="6" rx="1" fill={`${C.warning}88`}/>
-                <text x="56" y="8" fill={C.dim} fontSize="6" fontFamily="monospace">Daily</text>
-                <line x1="100" y1="5" x2="115" y2="5" stroke={C.info} strokeWidth="1.5" strokeDasharray="3,2"/>
-                <text x="118" y="8" fill={C.dim} fontSize="6" fontFamily="monospace">Cumulative</text>
-              </svg>
-              {/* Intercept rate overlay */}
-              <div style={{ marginTop:8, display:"flex", gap:6 }}>
-                {DAILY_DATA.map(d => (
-                  <div key={d.day} style={{ flex:1, textAlign:"center", padding:"6px 4px", borderRadius:4, background:"rgba(255,255,255,0.02)", border:`1px solid ${C.surfBorder}40` }}>
-                    <div style={{ fontSize:7, color:C.dim, marginBottom:2 }}>D{d.dayNum}</div>
-                    <div style={{ fontSize:11, fontWeight:700, color:d.cumInterceptPct>=90?C.success:C.warning }}>{d.cumInterceptPct}%</div>
-                    <div style={{ fontSize:6, color:C.dim }}>intercept</div>
-                  </div>
-                ))}
+        {/* Map + Right Panel */}
+        <div style={{ display:"flex", gap:0 }}>
+          {/* Left: Theater Map */}
+          <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
+              <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                <span style={{ fontSize:8, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
+                <FeedTag feed="STATIC" />
               </div>
             </div>
-          )}
-        </div>
-        <div style={{ flex:1, background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
-            <FeedTag feed="STATIC" />
+            <svg viewBox="0 0 360 200" style={{ width:"100%", background:"#060b17", borderRadius:4 }}>
+              <path d="M55,25 L130,20 L155,40 L175,35 L195,55 L240,68 L255,100 L265,130 L255,165 L230,185 L195,195 L150,190 L100,185 L65,165 L45,135 L35,95 L40,60 Z" fill="#1e3a5f44" stroke="#2d5a8e" strokeWidth="1.2"/>
+              <path d="M215,10 L280,8 L310,25 L315,55 L295,75 L270,80 L255,100 L240,68 L220,55 L205,35 Z" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.25)" strokeWidth="0.8"/>
+              <text x="255" y="48" fill="#ef444488" fontSize="7" fontFamily="monospace">IRAN</text>
+              <line x1="260" y1="82" x2="305" y2="78" stroke="#ef4444" strokeWidth="2" strokeDasharray="4,2"/>
+              <text x="268" y="76" fill="#ef4444" fontSize="7" fontFamily="monospace">⛔ HORMUZ D7</text>
+              {[{n:"KSA",x:130,y:110},{n:"UAE",x:255,y:125},{n:"OMAN",x:285,y:150},{n:"QA",x:238,y:95},{n:"BH",x:220,y:85},{n:"KW",x:195,y:65}].map(l=><text key={l.n} x={l.x} y={l.y} fill="#7d8fa3" fontSize="7" fontFamily="monospace" textAnchor="middle">{l.n}</text>)}
+              {getMarkers().map((p,i)=>{
+                const x=((p.lng-34)/(58-34))*340+10, y=((32-p.lat)/(32-15))*180+10, col=p.s==="critical"?C.critical:C.warning;
+                return (<g key={i}>{p.s==="critical"&&<circle cx={x} cy={y} r={8} fill="none" stroke={col} strokeWidth="0.5" opacity="0.4"><animate attributeName="r" values="5;12;5" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/></circle>}<circle cx={x} cy={y} r={3} fill={col} opacity="0.9"/></g>);
+              })}
+              {filteredStrikes.length===0 && <text x="180" y="105" fill={C.dim} fontSize="9" fontFamily="monospace" textAnchor="middle">No KSA strikes this day</text>}
+            </svg>
           </div>
-          <div style={{ maxHeight:210, overflowY:"auto", display:"flex", flexDirection:"column", gap:3 }}>
-            {STRIKES_KSA.map(e=>{
-              const col=e.sev==="critical"?C.critical:C.warning;
-              return (
-                <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
-                  style={{ padding:"5px 7px", borderRadius:3, cursor:"pointer", background:selEvent===e.id?`${col}15`:"rgba(255,255,255,0.01)", borderLeft:`2px solid ${col}` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:8, fontWeight:"bold", color:col }}>{e.type}</span>
-                    <span style={{ fontSize:7, color:C.dim }}>{e.time}</span>
-                  </div>
-                  <div style={{ fontSize:8, color:C.fg, marginTop:1 }}>{e.loc}</div>
-                  {selEvent===e.id && <div style={{ fontSize:8, color:e.status.includes("Hit")?C.critical:C.success, marginTop:2 }}>{e.status}</div>}
+
+          {/* Right: Scrollable column */}
+          <div style={{ flex:1, maxHeight:380, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+            {/* KSA Event Log */}
+            <div style={{ padding:14, borderBottom:`1px solid ${C.surfBorder}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                <span style={{ fontSize:9, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
+                <span style={{ fontSize:7, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
+              </div>
+              {filteredStrikes.length === 0 ? (
+                <div style={{ padding:"12px 0", fontSize:8, color:C.dim, textAlign:"center" }}>No KSA strikes recorded for {activeDay}</div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                  {filteredStrikes.map(e => {
+                    const col = e.sev==="critical"?C.critical:C.warning;
+                    return (
+                      <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
+                        style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between" }}>
+                          <span style={{ fontSize:8, fontWeight:700, color:col }}>{e.type}</span>
+                          <span style={{ fontSize:7, color:C.dim }}>{e.time}</span>
+                        </div>
+                        <div style={{ fontSize:8, color:C.fg, marginTop:2 }}>{e.loc}</div>
+                        {selEvent===e.id && <div style={{ fontSize:8, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              )}
+            </div>
+
+            {/* Divider label */}
+            <div style={{ padding:"6px 14px", background:"#0a1628", borderBottom:`1px solid ${C.surfBorder}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:8, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC COUNTRIES</span>
+              <FeedTag feed="STATIC" />
+            </div>
+
+            {/* GCC Country Rows */}
+            <div style={{ padding:14 }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                {getGCCForDay().map(g => {
+                  const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
+                  return (
+                    <div key={g.code} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 9px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
+                      <span style={{ fontSize:9, fontWeight:600, color:C.fg, width:72, flexShrink:0 }}>{g.name}</span>
+                      <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:col }}>{g.strikes.toLocaleString()}</span>
+                        <span style={{ fontSize:7, color:C.dim }}>{isCumulative?"total":"today"}</span>
+                      </div>
+                      <span style={{ fontSize:7, padding:"2px 5px", borderRadius:3, background:`${C.success}14`, color:C.success, fontWeight:600 }}>{g.interceptPct}% ✓</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ marginTop:8, fontSize:7, color:C.dim, lineHeight:1.5 }}>
+                {getGCCForDay().filter(g=>g.strikes>0).slice(0,2).map(g=>g.note).join(" ")}
+              </div>
+            </div>
           </div>
         </div>
       </div>
