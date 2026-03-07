@@ -731,7 +731,7 @@ const ScreenSituation = ({ live }) => {
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
         <KpiCard label="STRIKES KSA"  value="19"     change="+3/24h"                color={C.critical} feed="CONFIRMED" />
         <KpiCard label="INTERCEPTS"   value="96%"    note="Patriot/THAAD"           color={C.success}  feed="CONFIRMED" />
-        <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} />
+        <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
         <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
         <KpiCard label="HORMUZ"       value="Day 7"  note="0 transits / 91 tankers"  color={C.critical} feed="STATIC" />
         <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
