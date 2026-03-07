@@ -1157,6 +1157,9 @@ const ScreenSituation = ({ live }) => {
           ))}
         </div>
       </div>
+
+      {/* MEDIA & SOURCE WATCH — collapsible */}
+      <MediaSourceWatch live={live} />
     </div>
   );
 };
@@ -1618,66 +1621,118 @@ const ScreenEconomic = ({ live }) => (
   </div>
 );
 
-// ─── SCREEN 6: MEDIA & NARRATIVE ─────────────────────────────────────────────
-const ScreenMedia = ({ live }) => (
-  <div>
-    {/* Live signal bar */}
-    <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-      <KpiCard label="GDELT/24H"   value={live.gdelt.loading?"…":`${live.gdelt.value}`}  note="conflict articles (KSA+Iran)"      color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT"  loading={live.gdelt.loading} />
-      <KpiCard label="MISINFO FLAGS" value="12" note="24h · GDELT narrative cluster"   color={C.critical} feed="STATIC" />
-      <KpiCard label="DOMINANT NARRATIVE" value="Escalation" note="Iranian media frame" color={C.warning} feed="STATIC" />
-    </div>
+// ─── MEDIA & SOURCE WATCH (collapsible, used inside Situation tab) ────────────
+const OUTLET_COLORS = { reuters:'#3b82f6', bloomberg:'#06b6d4', economist:'#8b5cf6', cnbc:'#f59e0b', ap:'#10b981', 'al jazeera':'#ef4444', 'oxford economics':'#8b5cf6' };
+const SEED_HEADLINES = [
+  { title:"Gulf shipping crisis deepens as tankers stranded for fifth day", domain:"reuters.com", seendate:"2H AGO", type:"NEWS REPORT" },
+  { title:"Aramco explores oil exports from Red Sea to avoid Hormuz", domain:"bloomberg.com", seendate:"4H AGO", type:"EXCLUSIVE" },
+  { title:"Are Gulf states running out of missile interceptors?", domain:"economist.com", seendate:"6H AGO", type:"ANALYSIS" },
+  { title:"Oil supertanker rates hit all-time high as insurers drop cover", domain:"cnbc.com", seendate:"3H AGO", type:"NEWS REPORT" },
+  { title:"Tourism impacts in Middle East from Iran War", domain:"oxfordeconomics.com", seendate:"5H AGO", type:"RESEARCH BRIEFING" },
+];
 
-    {/* Active narratives */}
-    <div style={{ marginBottom:12 }}>
-      <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>ACTIVE NARRATIVES — Day 7</div>
-      {[
-        { label:"'Saudi coalition strikes imminent'",   severity:"CRITICAL", origin:"Iranian state media (IRNA, Press TV)", reach:"High — picked up Reuters, Al Jazeera", action:"Corrective messaging required within 12h", actionColor:C.critical },
-        { label:"'Hormuz closure hurting Iran most'",   severity:"HIGH",     origin:"Western wire services (AP, Reuters)",   reach:"Medium — accurate but being counter-amplified", action:"Monitor — does not require correction", actionColor:C.success },
-        { label:"'GCC civilian casualties mounting'",   severity:"HIGH",     origin:"Social media + Iranian proxies",         reach:"High — viral in MENA, Europe", action:"Factual rebuttal with MoH data (0 KSA fatalities)", actionColor:C.warning },
-        { label:"'KSA oil infrastructure destroyed'",   severity:"MEDIUM",   origin:"OSINT over-interpretation (Telegram)",   reach:"Low — niche mil-OSINT circles", action:"No action — contained", actionColor:C.success },
-      ].map((n,i)=>{
-        const sc = n.severity==="CRITICAL"?C.critical:n.severity==="HIGH"?C.warning:C.info;
-        return (
-          <div key={i} style={{ marginBottom:6, padding:"10px 12px", borderRadius:"0 4px 4px 0", background:`${sc}06`, border:`1px solid ${sc}22`, borderLeft:`3px solid ${sc}` }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
-              <span style={{ fontSize:10, fontWeight:"600", color:C.fg }}>"{n.label}"</span>
-              <span style={{ fontSize:7, padding:"1px 6px", borderRadius:3, background:`${sc}22`, color:sc }}>{n.severity}</span>
+const getOutletFromDomain = (domain) => {
+  const d = (domain||"").toLowerCase();
+  if (d.includes("reuters")) return "REUTERS";
+  if (d.includes("bloomberg")) return "BLOOMBERG";
+  if (d.includes("economist")) return "ECONOMIST";
+  if (d.includes("cnbc")) return "CNBC";
+  if (d.includes("apnews")||d.includes("ap.org")) return "AP";
+  if (d.includes("aljazeera")) return "AL JAZEERA";
+  if (d.includes("oxford")) return "OXFORD ECONOMICS";
+  return domain?.split(".")[0]?.toUpperCase()||"OTHER";
+};
+const getOutletColor = (outlet) => {
+  const key = outlet.toLowerCase();
+  return OUTLET_COLORS[key] || '#6b7280';
+};
+const getContentType = (title) => {
+  const t = (title||"").toLowerCase();
+  if (t.includes("analysis")||t.includes("opinion")) return "ANALYSIS";
+  if (t.includes("live")) return "LIVE BLOG";
+  return "NEWS REPORT";
+};
+const timeAgo = (dateStr) => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/, "$1-$2-$3T$4:$5:$6Z"));
+    const mins = Math.round((Date.now()-d.getTime())/60000);
+    if (mins<60) return `${mins}M AGO`;
+    if (mins<1440) return `${Math.round(mins/60)}H AGO`;
+    return `${Math.round(mins/1440)}D AGO`;
+  } catch { return ""; }
+};
+
+const MediaSourceWatch = ({ live }) => {
+  const [open, setOpen] = useState(false);
+
+  const gdeltArticles = live.gdelt.articles || [];
+  const headlines = gdeltArticles.length > 0
+    ? gdeltArticles.slice(0,5).map(a => ({
+        title: a.title || a.Title || "",
+        domain: a.domain || a.Domain || a.source_name || "",
+        seendate: timeAgo(a.seendate || a.Seendate || ""),
+        type: getContentType(a.title || a.Title || ""),
+      }))
+    : SEED_HEADLINES;
+
+  return (
+    <div style={{ marginTop:12 }}>
+      {/* Header bar */}
+      <div onClick={()=>setOpen(!open)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:C.surface, borderBottom:`1px solid ${C.surfBorder}`, borderRadius: open?"6px 6px 0 0":"6px", cursor:"pointer" }}>
+        <span style={{ fontSize:13, fontWeight:700, color:C.fg, letterSpacing:"0.06em" }}>📡 MEDIA & SOURCE WATCH</span>
+        <span style={{ fontSize:14, color:C.dim }}>{open?"▾":"▸"}</span>
+      </div>
+
+      {open && (
+        <div style={{ background:C.surface, borderRadius:"0 0 6px 6px", border:`1px solid ${C.surfBorder}`, borderTop:"none", padding:14 }} className="cop-fade-in">
+
+          {/* SUB-SECTION A: LIVE HEADLINES */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <span style={{ fontSize:11, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em" }}>LIVE HEADLINES</span>
+              <FeedTag feed={gdeltArticles.length>0?"GDELT":"STATIC"} loading={live.gdelt.loading} />
             </div>
-            <div style={{ fontSize:8, color:C.muted, marginBottom:3 }}>Origin: {n.origin}</div>
-            <div style={{ fontSize:8, color:C.muted, marginBottom:5 }}>Reach: {n.reach}</div>
-            <div style={{ fontSize:8, color:n.actionColor }}>▸ {n.action}</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              {headlines.map((h,i) => (
+                <div key={i} style={{ background:C.bg, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:"10px 12px", ...(i===headlines.length-1 && headlines.length%2!==0 ? {gridColumn:"1/-1"} : {}) }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                    <span style={{ fontSize:10, padding:"2px 6px", borderRadius:3, background:`${getOutletColor(getOutletFromDomain(h.domain))}22`, color:getOutletColor(getOutletFromDomain(h.domain)), fontWeight:600 }}>{getOutletFromDomain(h.domain)}</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{h.seendate}</span>
+                  </div>
+                  <div style={{ fontSize:12, color:C.fg, lineHeight:1.5, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{h.title}</div>
+                  <div style={{ fontSize:10, color:C.dim, marginTop:4 }}>{h.type}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        );
-      })}
-    </div>
 
-    {/* Media breakdown */}
-    <div>
-      <div style={{ fontSize:10, fontWeight:"bold", color:C.fg, marginBottom:8 }}>MEDIA ENVIRONMENT BREAKDOWN</div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-        {[
-          { label:"Tone (GDELT/24h)", items:[["Negative/conflict",`${Math.round((live.gdelt.value||20)*0.7)}`,"#ef4444"],["Neutral/factual",`${Math.round((live.gdelt.value||20)*0.2)}`,"#7d8fa3"],["Positive/de-escalation",`${Math.round((live.gdelt.value||20)*0.1)}`,"#22c55e"]], feed:"GDELT" },
-          { label:"Source breakdown (STATIC)", items:[["Western wire (AP/Reuters/BBC)","42%","#3b82f6"],["Gulf state media (SPA/WAM/QNA)","28%","#6366f1"],["Iranian state (IRNA/PressTV)","18%","#ef4444"],["Social/Telegram/OSINT","12%","#f59e0b"]], feed:"STATIC" },
-        ].map((panel,i)=>(
-          <div key={i} style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:10 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-              <span style={{ fontSize:9, fontWeight:"bold", color:C.fg }}>{panel.label}</span>
-              <FeedTag feed={panel.feed} loading={panel.feed==="GDELT"&&live.gdelt.loading}/>
+          {/* SUB-SECTION B: NARRATIVE SIGNAL */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <span style={{ fontSize:11, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em" }}>NARRATIVE SIGNAL</span>
+              <FeedTag feed="STATIC" />
             </div>
-            {panel.items.map(([label,val,col],j)=>(
-              <div key={j} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
-                <span style={{ fontSize:8, color:C.muted }}>{label}</span>
-                <span style={{ fontSize:9, fontWeight:"bold", color:col }}>{val}</span>
+            {[
+              { icon:"🌐", label:"INTERNATIONAL FRAME", value:"Economic shock + Hormuz closure dominating. Ceasefire speculation emerging." },
+              { icon:"📺", label:"ARABIC MEDIA FRAME", value:"GCC resilience narrative. Saudi MoD statements prominent. Civilian impact in focus." },
+            ].map((row,i)=>(
+              <div key={i} style={{ padding:"6px 0", borderBottom:i===0?`1px solid ${C.surfBorder}30`:"none" }}>
+                <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>{row.icon} {row.label}</div>
+                <div style={{ fontSize:12, color:C.fg, lineHeight:1.5 }}>{row.value}</div>
               </div>
             ))}
           </div>
-        ))}
-      </div>
-      <div style={{ marginTop:8, fontSize:7, color:C.dim }}>SOURCES: GDELT DOC 2.0 API (live 15min) · UANI narrative monitor (daily) · Claude API semantic analysis · STATIC classifications</div>
+
+          {/* SUB-SECTION C: SOURCE TRANSPARENCY FOOTER */}
+          <div style={{ borderTop:`1px solid ${C.surfBorder}`, padding:"8px 0 0", fontSize:10, color:C.dim, lineHeight:1.5 }}>
+            SOURCES ACTIVE: GDELT (live) · OPA (live) · EIA (Mar 02 baseline) · UKMTO Advisory 003-26 (Mar 01) · Reuters · Bloomberg · The Economist · Oxford Economics — All published 03–07 Mar 2026
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // ─── SCREEN 7: SCENARIOS ──────────────────────────────────────────────────────
 const ScreenScenarios = () => {
