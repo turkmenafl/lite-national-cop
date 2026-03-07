@@ -259,13 +259,14 @@ const StatusBadge = ({ s }) => {
   return <span style={{ fontSize:11, padding:"3px 10px", borderRadius:4, background:`${col}14`, color:col, border:`1px solid ${col}28`, fontWeight:600, letterSpacing:"0.05em" }}>{s}</span>;
 };
 
-const KpiCard = ({ label, value, change, color, note, feed, loading }) => (
+const KpiCard = ({ label, value, change, color, note, feed, loading, secondary, secondaryColor }) => (
   <div style={{ flex:1, padding:"12px 14px", background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, textAlign:"center", minWidth:100, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
     <div style={{ fontSize:10, color:C.muted, letterSpacing:"0.08em", marginBottom:4, textTransform:"uppercase", fontWeight:500 }}>{label}</div>
     {loading
       ? <div style={{ fontSize:20, fontWeight:700, color:C.info, marginBottom:4 }} className="cop-pulse">…</div>
       : <div style={{ fontSize:22, fontWeight:700, color:color||C.fg, marginBottom:4, lineHeight:1.1 }}>{value}</div>
     }
+    {secondary && !loading && <div style={{ fontSize:9, color:secondaryColor||C.warning, fontWeight:600, marginBottom:4, lineHeight:1.2 }}>{secondary}</div>}
     <div style={{ display:"flex", justifyContent:"center", gap:5, alignItems:"center", flexWrap:"wrap" }}>
       {(change||note) && <span style={{ fontSize:10, color:C.dim }}>{change||note}</span>}
       <FeedTag feed={feed} loading={loading} />
@@ -298,6 +299,13 @@ async function fetchEIABrent() {
     date: data[0].period,
     change: `${chg >= 0 ? "+" : ""}${chgPct}% vs prev`,
   };
+}
+
+async function fetchOPABrent() {
+  const res = await fetch("https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD",
+    { headers: { "Authorization": "Token bc3ffc405ed720d193e704e433799501fc7723854ed727a9b0b11228f5225d6c" }});
+  const json = await res.json();
+  return json.data.price;
 }
 
 async function fetchFinancial() {
@@ -723,7 +731,7 @@ const ScreenSituation = ({ live }) => {
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
         <KpiCard label="STRIKES KSA"  value="19"     change="+3/24h"                color={C.critical} feed="CONFIRMED" />
         <KpiCard label="INTERCEPTS"   value="96%"    note="Patriot/THAAD"           color={C.success}  feed="CONFIRMED" />
-        <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} />
+        <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
         <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
         <KpiCard label="HORMUZ"       value="Day 7"  note="0 transits / 91 tankers"  color={C.critical} feed="STATIC" />
         <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
@@ -1180,7 +1188,7 @@ const ScreenEconomic = ({ live }) => (
   <div>
     {/* Live financial KPIs */}
     <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-      <KpiCard label="BRENT CRUDE" value={live.brent.value} change={live.brent.change} color={C.critical} feed={live.brent.source} loading={live.brent.loading} />
+      <KpiCard label="BRENT CRUDE" value={live.brent.value} change={live.brent.change} color={C.critical} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
       <KpiCard label="TASI INDEX"  value={live.tasi.value}  change={live.tasi.change}  color={C.critical} feed={live.tasi.source}  loading={live.tasi.loading} />
       <KpiCard label="DAILY COST"  value="$4.2B" note="Hormuz Day 7"      color={C.critical} feed="STATIC" />
       <KpiCard label="CUMULATIVE"  value="~$29B" note="7 days (est)"      color={C.critical} feed="STATIC" />
@@ -1495,12 +1503,25 @@ export default function NEMACOPLive() {
       gdelt:{...d.gdelt,loading:true}, ioda:{...d.ioda,loading:true},
       gcc:{...d.gcc,loading:true,error:false},
     }));
-    const [eia, fin, gdelt, ioda, gcc] = await Promise.allSettled([
-      fetchEIABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes()
+    const [eia, opa, fin, gdelt, ioda, gcc] = await Promise.allSettled([
+      fetchEIABrent(), fetchOPABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes()
     ]);
     setLive(d=>{
       const n={...d};
-      if (eia.status==="fulfilled") {
+      if (opa.status==="fulfilled"&&opa.value) {
+        const opaPrice = opa.value;
+        const eiaBase = eia.status==="fulfilled" ? eia.value.price : null;
+        const premium = eiaBase ? +(opaPrice - eiaBase).toFixed(2) : null;
+        const premiumPct = eiaBase ? +(((opaPrice - eiaBase) / eiaBase) * 100).toFixed(1) : null;
+        const eiaChg = eia.status==="fulfilled" ? eia.value.change : null;
+        n.brent={
+          value:`$${opaPrice.toFixed(2)}`,
+          change: eiaChg || d.brent.change,
+          source:"OPA+EIA",
+          loading:false,
+          secondary: premium!==null ? `CONFLICT PREMIUM +$${premium.toFixed(2)} / +${premiumPct}%` : null,
+        };
+      } else if (eia.status==="fulfilled") {
         n.brent={value:`$${eia.value.price.toFixed(2)}`,change:eia.value.change,source:"EIA",loading:false};
       } else { n.brent={...d.brent,source:"STATIC",loading:false}; }
       if (fin.status==="fulfilled"&&fin.value.tasi) {
