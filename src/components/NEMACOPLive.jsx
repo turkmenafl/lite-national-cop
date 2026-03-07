@@ -327,19 +327,36 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers }) => {
       tileSize: 256,
       detectRetina: true,
     }).addTo(map);
-    // Eastern Province rectangle
-    L.rectangle([[21.5, 46.5], [29.5, 55.5]], {
-      color: "rgba(239,68,68,0.5)", weight: 0.8,
-      fillColor: "rgba(239,68,68,0.12)", fillOpacity: 1,
-    }).addTo(map);
-    // Eastern Province label
-    L.marker([28.8, 51], {
-      icon: L.divIcon({
-        className: "",
-        html: '<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',
-        iconSize: [0, 0], iconAnchor: [-5, 5],
-      }),
-    }).addTo(map);
+    // Eastern Province highlight from GeoJSON
+    fetch("/data/sa-provinces.geojson")
+      .then(r => r.json())
+      .then(data => {
+        const epFeature = data.features.find(f => {
+          const props = f.properties || {};
+          const name = (props.shapeName || props.name || props.NAME || props.NAME_1 || props.admin1Name || "").toLowerCase();
+          return name.includes("eastern") || name.includes("sharqiyah") || name.includes("ash sharqiy");
+        });
+        if (epFeature && mapRef.current) {
+          L.geoJSON(epFeature, {
+            style: {
+              fillColor: "rgba(239,68,68,0.12)",
+              fillOpacity: 1,
+              color: "#ef4444",
+              opacity: 0.3,
+              weight: 1.2,
+            },
+          }).addTo(mapRef.current);
+          // Eastern Province label
+          L.marker([28.8, 51], {
+            icon: L.divIcon({
+              className: "",
+              html: '<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',
+              iconSize: [0, 0], iconAnchor: [-5, 5],
+            }),
+          }).addTo(mapRef.current);
+        }
+      })
+      .catch(() => {});
     // Hormuz dashed line
     L.polyline([[26.6, 56.3], [27.2, 56.3]], {
       color: "#ef4444", weight: 2, dashArray: "5,3",
