@@ -1495,8 +1495,8 @@ export default function NEMACOPLive() {
       gdelt:{...d.gdelt,loading:true}, ioda:{...d.ioda,loading:true},
       gcc:{...d.gcc,loading:true,error:false},
     }));
-    const [fin, gdelt, ioda, gcc] = await Promise.allSettled([
-      fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes()
+    const [eia, fin, gdelt, ioda, gcc] = await Promise.allSettled([
+      fetchEIABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes()
     ]);
     setLive(d=>{
       const n={...d};
