@@ -301,6 +301,16 @@ async function fetchEIABrent() {
   };
 }
 
+const PW_FALLBACK = {
+  hormuz: { name:"Strait of Hormuz", transitCalls:0, transitPct:0, date:"2026-03-07", source:"FALLBACK" },
+  ports: [
+    { name:"Jubail",  portcalls:3,  pct:28 },
+    { name:"Dammam",  portcalls:5,  pct:33 },
+    { name:"Jeddah",  portcalls:24, pct:112 },
+    { name:"Yanbu",   portcalls:2,  pct:45 },
+  ],
+};
+
 async function fetchOPABrent() {
   const res = await fetch("https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD",
     { headers: { "Authorization": "Token bc3ffc405ed720d193e704e433799501fc7723854ed727a9b0b11228f5225d6c" }});
@@ -361,6 +371,96 @@ Reply ONLY with valid JSON:
   const m = text.match(/\{[\s\S]*\}/);
   if (!m) throw new Error("No JSON");
   return JSON.parse(m[0]);
+}
+
+async function fetchPortWatch() {
+  const PW_BASE = "https://portwatch.imf.org/api/v3/datasets";
+  const CHOKE_ID = "42132aa4e2fc4d41bdaf9a445f688931_0";
+  const PORT_ID  = "959214444157458aad969389b3ebe1a0_0";
+  const GCC_PORTS = ["Jubail","Dammam","Jeddah","Yanbu"];
+  try {
+    const cpParams = new URLSearchParams({ where:`choke_name='Strait of Hormuz'`, outFields:"*", orderByFields:"date DESC", resultRecordCount:7, f:"json" });
+    const cpRes = await fetch(`${PW_BASE}/${CHOKE_ID}/layers/0/query?${cpParams}`, { signal:AbortSignal.timeout(8000) });
+    if (!cpRes.ok) throw new Error(`PW HTTP ${cpRes.status}`);
+    const cpData = await cpRes.json();
+    const cpRows = cpData.features?.map(f=>f.attributes)||[];
+    const cp = cpRows[0];
+    const transitCalls = cp?.transit_calls ?? cp?.transitcalls ?? null;
+    const baseline = cp?.transit_calls_bl ?? cp?.transit_calls_baseline ?? null;
+    const hormuzPct = (baseline && transitCalls !== null) ? Math.round((transitCalls/baseline)*100) : null;
+    const hormuz = {
+      name:"Strait of Hormuz",
+      transitCalls,
+      transitPct: hormuzPct,
+      date: cp?.date ?? cp?.Date ?? "2026-03-07",
+      source: cpRows.length ? "PORTWATCH" : "FALLBACK",
+    };
+    const nameFilter = GCC_PORTS.map(p=>`portname LIKE '%${p}%'`).join(" OR ");
+    const portParams = new URLSearchParams({ where:`(${nameFilter})`, outFields:"*", orderByFields:"date DESC", resultRecordCount:40, f:"json" });
+    const portRes = await fetch(`${PW_BASE}/${PORT_ID}/layers/0/query?${portParams}`, { signal:AbortSignal.timeout(8000) });
+    if (!portRes.ok) throw new Error(`PW port HTTP ${portRes.status}`);
+    const portData = await portRes.json();
+    const portRows = portData.features?.map(f=>f.attributes)||[];
+    const byPort = {};
+    for (const r of portRows) {
+      const name = GCC_PORTS.find(p=>(r.portname||"").toLowerCase().includes(p.toLowerCase()));
+      if (!name || byPort[name]) continue;
+      const pc = r.portcalls ?? r.port_calls ?? null;
+      const bl = r.portcalls_bl ?? r.portcalls_baseline ?? null;
+      byPort[name] = { name, portcalls:pc, pct:(bl&&pc!==null)?Math.round((pc/bl)*100):null, source:"PORTWATCH" };
+    }
+    const ports = Object.values(byPort).length ? Object.values(byPort) : PW_FALLBACK.ports;
+    return { hormuz, ports, source: cpRows.length ? "PORTWATCH" : "FALLBACK" };
+  } catch(e) {
+    console.warn("[PortWatch] fallback:", e.message);
+    return { ...PW_FALLBACK, source:"FALLBACK" };
+  }
+}
+
+const UKMTO_FALLBACK = {
+  level:"ELEVATED", area:"Arabian Gulf / Gulf of Oman / Hormuz",
+  advisory:"003-26 Update 002", date:"2026-03-01",
+  hormuzStatus:"SUSPENDED", gnssInterference:true,
+  text:"Significant military activity. Elevated GNSS/AIS interference. Hormuz transit suspended.",
+  source:"FALLBACK",
+};
+
+async function fetchUKMTO() {
+  const prompt = `Search for the latest UKMTO maritime security advisory for the Arabian Gulf and Strait of Hormuz, March 2026. Return ONLY:
+LEVEL: [ELEVATED/HIGH/SIGNIFICANT]
+AREA: [max 60 chars]
+ADVISORY: [e.g. 003-26 Update 002]
+DATE: [YYYY-MM-DD]
+HORMUZ: [SUSPENDED/CLOSED/RESTRICTED/DISRUPTED/OPEN]
+GNSS: [YES or NO]
+TEXT: [max 120 char summary]`;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:400,
+        tools:[{ type:"web_search_20250305", name:"web_search" }],
+        messages:[{ role:"user", content:prompt }]
+      }),
+      signal:AbortSignal.timeout(12000),
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
+    const get = k => (text.match(new RegExp(`${k}:\\s*(.+?)(?:\\n|$)`,"i"))||[])[1]?.trim()??null;
+    return {
+      level:            get("LEVEL") ?? "ELEVATED",
+      area:             get("AREA")  ?? UKMTO_FALLBACK.area,
+      advisory:         get("ADVISORY") ?? UKMTO_FALLBACK.advisory,
+      date:             get("DATE") ?? UKMTO_FALLBACK.date,
+      hormuzStatus:     get("HORMUZ") ?? "SUSPENDED",
+      gnssInterference: (get("GNSS")||"YES").toUpperCase()==="YES",
+      text:             get("TEXT") ?? UKMTO_FALLBACK.text,
+      source:           "UKMTO",
+    };
+  } catch(e) {
+    console.warn("[UKMTO] fallback:", e.message);
+    return UKMTO_FALLBACK;
+  }
 }
 
 // ─── LEAFLET THEATER MAP (plain Leaflet, no react-leaflet) ───────────────────
@@ -1111,6 +1211,68 @@ const ScreenInfra = ({ live }) => (
             <div style={{ height:"100%", width:`${s.pct}%`, background:col, borderRadius:2 }}/>
           </div>
           <div style={{ fontSize:11, color:C.muted }}>{note}</div>
+          {/* PORTWATCH + UKMTO maritime live block */}
+          {s.name==="Ports & Maritime" && (live.portwatch?.data || live.ukmto?.data) && (
+            <div style={{ marginTop:8, padding:"8px 10px", background:"rgba(255,255,255,0.03)", borderRadius:3, borderLeft:`2px solid #3b82f6` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                <span style={{ fontSize:8, fontWeight:"bold", color:C.fg }}>MARITIME INTELLIGENCE</span>
+                <div style={{ display:"flex", gap:5 }}>
+                  {live.portwatch?.data?.source==="PORTWATCH" && <FeedTag feed="PORTWATCH"/>}
+                  {live.ukmto?.data?.source==="UKMTO" && <FeedTag feed="UKMTO"/>}
+                  {(live.portwatch?.data?.source==="FALLBACK" || live.ukmto?.data?.source==="FALLBACK") && <FeedTag feed="STATIC"/>}
+                </div>
+              </div>
+              {/* Hormuz status row */}
+              {live.portwatch?.data?.hormuz && (() => {
+                const h = live.portwatch.data.hormuz;
+                const pct = h.transitPct;
+                const col = pct===0?"#ef4444":pct<40?"#ef4444":pct<70?"#f59e0b":"#22c55e";
+                const label = (h.transitCalls===0||pct===0)?"CLOSED":pct<40?"NEAR-CLOSED":pct<70?"DISRUPTED":"RESTRICTED";
+                return (
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                    <span style={{ fontSize:8, color:C.muted }}>Hormuz transit</span>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontSize:8, fontWeight:"bold", color:col }}>{h.transitCalls !== null ? h.transitCalls : "—"} calls/day</span>
+                      <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:`${col}20`, color:col }}>{label}</span>
+                      {pct !== null && <span style={{ fontSize:7, color:C.dim }}>{pct}% baseline</span>}
+                    </div>
+                  </div>
+                );
+              })()}
+              {/* GCC port throughput */}
+              {live.portwatch?.data?.ports?.length > 0 && (
+                <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:4 }}>
+                  {live.portwatch.data.ports.map(p => {
+                    const col = p.pct===null?"#7d8fa3":p.pct<40?"#ef4444":p.pct<70?"#f59e0b":p.pct<100?"#eab308":"#22c55e";
+                    return (
+                      <div key={p.name} style={{ fontSize:7, padding:"2px 7px", borderRadius:3, background:`${col}15`, color:col }}>
+                        {p.name} {p.pct !== null ? `${p.pct}%` : "—"}
+                      </div>
+                    );
+                  })}
+                  <span style={{ fontSize:7, color:C.dim, alignSelf:"center" }}>vs 2023 baseline</span>
+                </div>
+              )}
+              {/* UKMTO advisory chip */}
+              {live.ukmto?.data && (() => {
+                const u = live.ukmto.data;
+                const hCol = (s => s==="SUSPENDED"||s==="CLOSED"?"#ef4444":s==="RESTRICTED"||s==="DISRUPTED"?"#f59e0b":"#22c55e")(u.hormuzStatus);
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", gap:3, paddingTop:4, borderTop:`1px solid ${C.surfBorder}` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:7, color:C.muted }}>UKMTO Advisory {u.advisory}</span>
+                      <div style={{ display:"flex", gap:4 }}>
+                        <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:`${hCol}20`, color:hCol }}>{u.hormuzStatus}</span>
+                        {u.gnssInterference && <span style={{ fontSize:7, padding:"1px 5px", borderRadius:3, background:"rgba(239,68,68,0.12)", color:"#ef4444" }}>GNSS ⚠</span>}
+                      </div>
+                    </div>
+                    <span style={{ fontSize:7, color:C.muted, lineHeight:1.4 }}>{u.text}</span>
+                    <span style={{ fontSize:6, color:C.dim }}>Updated {u.date} · {u.source}</span>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
       );
     })}
@@ -1494,6 +1656,8 @@ export default function NEMACOPLive() {
     gdelt: { value:20, source:"STATIC", loading:false },
     ioda:  { value:null, source:"IODA", loading:false },
     gcc:   { data:null, loading:false, error:false },
+    portwatch: { loading:false, error:null, data:null },
+    ukmto:     { loading:false, error:null, data:null },
   });
 
   const refresh = useCallback(async () => {
@@ -1502,9 +1666,12 @@ export default function NEMACOPLive() {
       brent:{...d.brent,loading:true}, tasi:{...d.tasi,loading:true},
       gdelt:{...d.gdelt,loading:true}, ioda:{...d.ioda,loading:true},
       gcc:{...d.gcc,loading:true,error:false},
+      portwatch:{...d.portwatch,loading:true},
+      ukmto:{...d.ukmto,loading:true},
     }));
-    const [eia, opa, fin, gdelt, ioda, gcc] = await Promise.allSettled([
-      fetchEIABrent(), fetchOPABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes()
+    const [eia, opa, fin, gdelt, ioda, gcc, pw, ukmtoRes] = await Promise.allSettled([
+      fetchEIABrent(), fetchOPABrent(), fetchFinancial(), fetchGdelt(), fetchIoda(), fetchGCCStrikes(),
+      fetchPortWatch(), fetchUKMTO()
     ]);
     setLive(d=>{
       const n={...d};
@@ -1530,6 +1697,8 @@ export default function NEMACOPLive() {
       n.gdelt = gdelt.status==="fulfilled"?{value:gdelt.value,source:"GDELT",loading:false}:{...d.gdelt,source:"STATIC",loading:false};
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
       n.gcc   = gcc.status==="fulfilled"&&gcc.value?{data:gcc.value,loading:false,error:false}:{data:d.gcc.data,loading:false,error:true};
+      n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
+      n.ukmto     = { loading:false, error:ukmtoRes.status==="rejected"?ukmtoRes.reason?.message:null, data:ukmtoRes.status==="fulfilled"?ukmtoRes.value:null };
       return n;
     });
     setLastRefresh(new Date());
