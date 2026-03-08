@@ -83,21 +83,25 @@ function makeSparklineSvg(daily, color) {
 }
 
 const STRIKES_KSA = [
-  { id: 1,  date: '2026-03-07', time: '09:30', type: 'Ballistic Missile', count: 1,  location: 'Abqaiq vicinity — 2nd attempt',        lat: 25.93, lng: 49.67, severity: 'critical' },
-  { id: 2,  date: '2026-03-07', time: '01:15', type: 'Drone',             count: 6,  location: 'Ras Tanura 3rd attempt',               lat: 26.64, lng: 50.16, severity: 'critical' },
-  { id: 3,  date: '2026-03-06', time: '14:20', type: 'Cruise Missile',    count: 1,  location: 'Riyadh airspace',                      lat: 24.69, lng: 46.72, severity: 'critical' },
-  { id: 4,  date: '2026-03-06', time: '03:45', type: 'Ballistic Missile', count: 1,  location: 'Eastern Province — Al-Kharj corridor', lat: 24.15, lng: 47.32, severity: 'critical' },
-  { id: 5,  date: '2026-03-05', time: '22:10', type: 'Drone',             count: 2,  location: 'Jubail Industrial City',               lat: 27.00, lng: 49.66, severity: 'warning'  },
-  { id: 6,  date: '2026-03-04', time: '04:15', type: 'Drone',             count: 4,  location: 'Yanbu Port / Refinery',                lat: 24.09, lng: 38.06, severity: 'warning'  },
-  { id: 7,  date: '2026-03-04', time: '01:30', type: 'Ballistic Missile', count: 1,  location: 'Abqaiq Processing vicinity',           lat: 25.93, lng: 49.67, severity: 'critical' },
-  { id: 8,  date: '2026-03-03', time: '19:20', type: 'Drone',             count: 3,  location: 'Riyadh — Embassy area',                lat: 24.71, lng: 46.68, severity: 'warning'  },
-  { id: 9,  date: '2026-03-03', time: '06:45', type: 'Cruise Missile',    count: 1,  location: 'Eastern Province Oil Infra',           lat: 26.30, lng: 50.20, severity: 'critical' },
-  { id: 10, date: '2026-03-02', time: '14:00', type: 'Drone',             count: 9,  location: 'KSA Airspace — multi-vector',          lat: 24.90, lng: 46.80, severity: 'warning'  },
-  { id: 11, date: '2026-03-01', time: '08:40', type: 'Drone',             count: 2,  location: 'Diplomatic Quarter 2nd wave',          lat: 24.69, lng: 46.63, severity: 'warning'  },
-  { id: 12, date: '2026-03-01', time: '03:15', type: 'Drone',             count: 2,  location: 'US Embassy — Riyadh',                  lat: 24.69, lng: 46.68, severity: 'warning'  },
-  { id: 13, date: '2026-02-28', time: '15:10', type: 'Drone',             count: 5,  location: 'Ras Tanura Oil Terminal',              lat: 26.64, lng: 50.16, severity: 'critical' },
-  { id: 14, date: '2026-02-28', time: '14:35', type: 'Ballistic Missile', count: 1,  location: 'King Abdulaziz Air Base, EP',          lat: 26.27, lng: 50.15, severity: 'critical' },
-  { id: 15, date: '2026-02-28', time: '14:20', type: 'Ballistic Missile', count: 1,  location: 'Riyadh — Diplomatic Quarter',          lat: 24.69, lng: 46.63, severity: 'critical' },
+  { id: 1,  date: '2026-03-07', time: '09:30', type: 'Ballistic Missile', count: 1,  location: 'Abqaiq vicinity — 2nd attempt',        lat: 25.93, lng: 49.67, severity: 'critical', locationKnown: true },
+  { id: 2,  date: '2026-03-07', time: '01:15', type: 'Drone',             count: 6,  location: 'Ras Tanura 3rd attempt',               lat: 26.64, lng: 50.16, severity: 'critical', locationKnown: true },
+  { id: 3,  date: '2026-03-06', time: '14:20', type: 'Cruise Missile',    count: 1,  location: 'Riyadh airspace',                      lat: 24.69, lng: 46.72, severity: 'critical', locationKnown: true },
+  { id: 4,  date: '2026-03-06', time: '03:45', type: 'Ballistic Missile', count: 1,  location: 'Eastern Province — Al-Kharj corridor', lat: 24.15, lng: 47.32, severity: 'critical', locationKnown: true },
+  { id: 5,  date: '2026-03-05', time: '22:10', type: 'Drone',             count: 2,  location: 'Jubail Industrial City',               lat: 27.00, lng: 49.66, severity: 'warning',  locationKnown: true },
+  { id: 6,  date: '2026-03-04', time: '04:15', type: 'Drone',             count: 4,  location: 'Yanbu Port / Refinery',                lat: 24.09, lng: 38.06, severity: 'warning',  locationKnown: true },
+  { id: 7,  date: '2026-03-04', time: '01:30', type: 'Ballistic Missile', count: 1,  location: 'Abqaiq Processing vicinity',           lat: 25.93, lng: 49.67, severity: 'critical', locationKnown: true },
+  { id: 8,  date: '2026-03-03', time: '19:20', type: 'Drone',             count: 3,  location: 'Riyadh — Embassy area',                lat: 24.71, lng: 46.68, severity: 'warning',  locationKnown: true },
+  { id: 9,  date: '2026-03-03', time: '06:45', type: 'Cruise Missile',    count: 1,  location: 'Eastern Province Oil Infra',           lat: 26.30, lng: 50.20, severity: 'critical', locationKnown: true },
+  { id: 10, date: '2026-03-02', time: '14:00', type: 'Drone',             count: 9,  location: 'KSA Airspace — multi-vector',          lat: 24.90, lng: 46.80, severity: 'warning',  locationKnown: true },
+  { id: 11, date: '2026-03-01', time: '08:40', type: 'Drone',             count: 2,  location: 'Diplomatic Quarter 2nd wave',          lat: 24.69, lng: 46.63, severity: 'warning',  locationKnown: true },
+  { id: 12, date: '2026-03-01', time: '03:15', type: 'Drone',             count: 2,  location: 'US Embassy — Riyadh',                  lat: 24.69, lng: 46.68, severity: 'warning',  locationKnown: true },
+  { id: 13, date: '2026-02-28', time: '15:10', type: 'Drone',             count: 5,  location: 'Ras Tanura Oil Terminal',              lat: 26.64, lng: 50.16, severity: 'critical', locationKnown: true },
+  { id: 14, date: '2026-02-28', time: '14:35', type: 'Ballistic Missile', count: 1,  location: 'King Abdulaziz Air Base, EP',          lat: 26.27, lng: 50.15, severity: 'critical', locationKnown: true },
+  { id: 15, date: '2026-02-28', time: '14:20', type: 'Ballistic Missile', count: 1,  location: 'Riyadh — Diplomatic Quarter',          lat: 24.69, lng: 46.63, severity: 'critical', locationKnown: true },
+  { id: 16, date: '2026-03-07', time: '06:00', type: 'Drone',             count: 1,  location: 'Location unverified — Saudi MoD confirmed', lat: 24.0, lng: 45.0, severity: 'warning', locationKnown: false },
+  { id: 17, date: '2026-03-05', time: '12:00', type: 'Missile',           count: 1,  location: 'Location unverified — Saudi MoD confirmed', lat: 24.0, lng: 45.0, severity: 'warning', locationKnown: false },
+  { id: 18, date: '2026-03-04', time: '18:00', type: 'Drone',             count: 1,  location: 'Location unverified — Saudi MoD confirmed', lat: 24.0, lng: 45.0, severity: 'warning', locationKnown: false },
+  { id: 19, date: '2026-03-02', time: '08:00', type: 'Drone',             count: 1,  location: 'Location unverified — Saudi MoD confirmed', lat: 24.0, lng: 45.0, severity: 'warning', locationKnown: false },
 ];
 
 const CI_SECTORS = [
@@ -679,16 +683,23 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       // KSA EVENT LOG — only KSA markers
       const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
       markers.forEach(p => {
-        const col = p.s === "critical" ? C.critical : C.warning;
+        const isUnverified = p.locationKnown === false;
+        const col = isUnverified ? "#6b7280" : (p.s === "critical" ? C.critical : C.warning);
+        const markerHtml = isUnverified
+          ? `<div style="width:10px;height:10px;border-radius:50%;border:2px dashed #6b7280;background:rgba(107,114,128,0.25);opacity:0.8"></div>`
+          : p.s === "critical"
+            ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+            : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`;
         const m = L.marker([p.lat, p.lng], {
           icon: L.divIcon({
             className: "",
-            html: p.s === "critical"
-              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`,
+            html: markerHtml,
             iconSize: [14, 14], iconAnchor: [7, 7],
           }),
         }).addTo(map);
+        if (isUnverified) {
+          m.bindTooltip("⚠ LOC UNVERIFIED — Saudi MoD confirmed", { className: "cop-popup", direction: "top", offset: [0, -8] });
+        }
         layersRef.current.push(m);
       });
       if (filteredStrikes.length === 0) {
@@ -905,7 +916,7 @@ const ScreenSituation = ({ live }) => {
 
   const getMarkers = () => {
     const strikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
-    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev || s.severity }));
+    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev || s.severity, locationKnown: s.locationKnown !== false }));
   };
 
   // Build GCC theater data (all 6 countries) with per-day filtering
@@ -1018,7 +1029,7 @@ const ScreenSituation = ({ live }) => {
                               <span style={{ fontSize:11, fontWeight:700, color:col }}>{typeLabel}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{loc}</div>
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{loc}{e.locationKnown === false && <span style={{ fontSize:9, background:"#1e293b", color:"#6b7280", border:"1px solid #374151", borderRadius:2, padding:"1px 4px", marginLeft:6 }}>LOC UNVERIFIED</span>}</div>
                             {selEvent===e.id && e.status && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
                           </div>
                         );
