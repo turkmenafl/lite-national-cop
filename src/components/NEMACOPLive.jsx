@@ -1601,6 +1601,12 @@ const ScreenDecisions = ({ live }) => {
   return (
     <div>
       <DecisionTable live={live} />
+      {/* Source attribution */}
+      <div style={{ marginTop:12, display:"flex", gap:5, flexWrap:"wrap", justifyContent:"center" }}>
+        {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
+          <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
+        ))}
+      </div>
     </div>
   );
 };
@@ -1687,6 +1693,12 @@ const ScreenEconomic = ({ live }) => (
         ))}
       </div>
       <div style={{ marginTop:6, fontSize:10, color:C.dim }}>SOURCES: AI scenario modeling · Yahoo Finance · PortWatch · STATIC</div>
+    </div>
+    {/* Source attribution */}
+    <div style={{ marginTop:12, display:"flex", gap:5, flexWrap:"wrap", justifyContent:"center" }}>
+      {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
+        <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
+      ))}
     </div>
   </div>
 );
