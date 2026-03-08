@@ -312,29 +312,33 @@ const KpiCard = ({ label, value, change, color, note, feed, loading, secondary, 
 
 // ─── FETCHERS ─────────────────────────────────────────────────────────────────
 async function fetchEIABrent() {
-  const EIA_KEY = "XvGcVy2EN7a827x0Jl7XUzGTQ290vJrws545UZZ6";
-  const params = new URLSearchParams({
-    api_key: EIA_KEY,
-    frequency: "daily",
-    "data[0]": "value",
-    "facets[series][]": "RBRTE",
-    "sort[0][column]": "period",
-    "sort[0][direction]": "desc",
-    length: "5",
-  });
-  const res = await fetch(`https://api.eia.gov/v2/petroleum/pri/spt/data/?${params}`);
-  const json = await res.json();
-  const data = json?.response?.data ?? [];
-  if (!data.length) throw new Error("EIA no data");
-  const price = parseFloat(data[0].value);
-  const prev  = data[1] ? parseFloat(data[1].value) : price;
-  const chg   = +(price - prev).toFixed(2);
-  const chgPct = +(((chg) / prev) * 100).toFixed(1);
-  return {
-    price,
-    date: data[0].period,
-    change: `${chg >= 0 ? "+" : ""}${chgPct}% vs prev`,
-  };
+  try {
+    const EIA_KEY = process.env.REACT_APP_EIA_API_KEY;
+    if (!EIA_KEY) return null;
+    const params = new URLSearchParams({
+      api_key: EIA_KEY,
+      frequency: "daily",
+      "data[0]": "value",
+      "facets[series][]": "RBRTE",
+      "sort[0][column]": "period",
+      "sort[0][direction]": "desc",
+      length: "5",
+    });
+    const res = await fetch(`https://api.eia.gov/v2/petroleum/pri/spt/data/?${params}`);
+    const json = await res.json();
+    const data = json?.response?.data ?? [];
+    if (!data.length) return null;
+    const price = parseFloat(data[0].value);
+    const prev  = data[1] ? parseFloat(data[1].value) : price;
+    const chg   = +(price - prev).toFixed(2);
+    const chgPct = +(((chg) / prev) * 100).toFixed(1);
+    return {
+      price,
+      date: data[0].period,
+      change: `${chg >= 0 ? "+" : ""}${chgPct}% vs prev`,
+      source: 'EIA',
+    };
+  } catch { return null; }
 }
 
 const PW_FALLBACK = {
@@ -347,11 +351,16 @@ const PW_FALLBACK = {
   ],
 };
 
-async function fetchOPABrent() {
-  const res = await fetch("https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD",
-    { headers: { "Authorization": "Token bc3ffc405ed720d193e704e433799501fc7723854ed727a9b0b11228f5225d6c" }});
-  const json = await res.json();
-  return json.data.price;
+async function fetchOilPriceAPI() {
+  try {
+    const OPA_KEY = process.env.REACT_APP_OILPRICE_API_KEY;
+    if (!OPA_KEY) return null;
+    const res = await fetch("https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD",
+      { headers: { "Authorization": `Token ${OPA_KEY}` } });
+    const json = await res.json();
+    if (!json?.data?.price) return null;
+    return { price: json.data.price, updatedAt: json.data.created_at || null, source: 'OPA' };
+  } catch { return null; }
 }
 
 async function fetchFinancial() {
@@ -1992,7 +2001,7 @@ export default function NEMACOPLive() {
 
     // Fetch non-AI feeds + AI cache in parallel
     const [eia, opa, gdelt, ioda, pw, cacheRes] = await Promise.allSettled([
-      fetchEIABrent(), fetchOPABrent(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
+      fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
     ]);
 
@@ -2009,21 +2018,23 @@ export default function NEMACOPLive() {
 
     setLive(d=>{
       const n={...d};
-      if (opa.status==="fulfilled"&&opa.value) {
-        const opaPrice = opa.value;
-        const eiaBase = eia.status==="fulfilled" ? eia.value.price : null;
+      const opaResult = opa.status==="fulfilled" ? opa.value : null;
+      const eiaResult = eia.status==="fulfilled" ? eia.value : null;
+      if (opaResult?.price) {
+        const opaPrice = opaResult.price;
+        const eiaBase = eiaResult?.price ?? null;
         const premium = eiaBase ? +(opaPrice - eiaBase).toFixed(2) : null;
         const premiumPct = eiaBase ? +(((opaPrice - eiaBase) / eiaBase) * 100).toFixed(1) : null;
-        const eiaChg = eia.status==="fulfilled" ? eia.value.change : null;
+        const eiaChg = eiaResult?.change ?? null;
         n.brent={
           value:`$${opaPrice.toFixed(2)}`,
           change: eiaChg || d.brent.change,
-          source:"OPA+EIA",
+          source:"OPA",
           loading:false,
-          secondary: premium!==null ? `CONFLICT PREMIUM +$${premium.toFixed(2)} / +${premiumPct}%` : null,
+          secondary: eiaBase!==null ? `EIA baseline $${eiaBase.toFixed(2)}${premium!==null?` · CONFLICT PREMIUM +$${premium.toFixed(2)} / +${premiumPct}%`:''}` : null,
         };
-      } else if (eia.status==="fulfilled") {
-        n.brent={value:`$${eia.value.price.toFixed(2)}`,change:eia.value.change,source:"EIA",loading:false};
+      } else if (eiaResult?.price) {
+        n.brent={value:`$${eiaResult.price.toFixed(2)}`,change:eiaResult.change,source:"EIA",loading:false,secondary:null};
       } else { n.brent={...d.brent,source:"STATIC",loading:false}; }
 
       // AI feeds from cache
@@ -2044,11 +2055,28 @@ export default function NEMACOPLive() {
       n.ukmto = { loading:false, error:null, data:ukmtoData||null };
 
       const ksaData = cache.ksa_strikes;
-      const isValidKsa = (data) =>
-        Array.isArray(data) &&
-        data.length > 0 &&
-        data.every(e => typeof e.lat === 'number' && typeof e.lng === 'number');
-      n.ksaStrikes = { loading:false, error:null, data: isValidKsa(ksaData) ? ksaData : null };
+      let mergedKsa = null;
+      if (Array.isArray(ksaData) && ksaData.length > 0) {
+        const isCentroidPlaceholder = (event) => {
+          const latBad = event.lat == null || event.lat === 24.0;
+          const lngBad = event.lng == null || event.lng === 45.0;
+          return latBad && lngBad;
+        };
+        const validCache = {};
+        for (const event of ksaData) {
+          if (isCentroidPlaceholder(event)) {
+            console.warn('ksa_strikes cache: skipping centroid placeholder', event);
+          } else if (typeof event.lat === 'number' && typeof event.lng === 'number' && event.id != null) {
+            validCache[event.id] = event;
+          }
+        }
+        if (Object.keys(validCache).length > 0) {
+          mergedKsa = STRIKES_KSA.map(seed =>
+            validCache[seed.id] ? { ...seed, ...validCache[seed.id] } : seed
+          );
+        }
+      }
+      n.ksaStrikes = { loading:false, error:null, data: mergedKsa };
 
       const ciData = cache.ci_status;
       n.ciStatus = { loading:false, error:null, data:ciData||null };
