@@ -1046,7 +1046,7 @@ const ScreenSituation = ({ live }) => {
                   </div>
                 </div>
                 {/* Scrollable event list */}
-                <div style={{ flex:1, overflowY:"auto", minHeight:0, padding:"0 14px 14px 14px" }}>
+                <div style={{ maxHeight:520, overflowY:"auto", padding:"0 14px 14px 14px" }}>
                   {filteredStrikes.length === 0 ? (
                     <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {activeDay}</div>
                   ) : (
