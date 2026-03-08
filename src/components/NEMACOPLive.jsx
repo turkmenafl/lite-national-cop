@@ -1035,7 +1035,7 @@ const ScreenSituation = ({ live }) => {
           </div>
 
           {/* Right column */}
-          <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, height:0, overflow:"hidden" }}>
             {theaterView === "LOG" ? (
               <>
                 {/* KSA Event Log header */}
