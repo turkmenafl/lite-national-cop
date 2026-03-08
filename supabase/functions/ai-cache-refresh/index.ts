@@ -10,6 +10,25 @@ const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const AI_GAP_MS = 20_000; // 20s between calls
 const MAX_RETRIES = 1;
 
+// ─── Scenario context injection ─────────────────────────────────────────────
+const CONFLICT_START = new Date('2026-02-28T00:00:00Z');
+
+function getScenarioContext(): string {
+  const now = new Date();
+  const day = Math.max(1, Math.ceil((now.getTime() - CONFLICT_START.getTime()) / (1000 * 60 * 60 * 24)));
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  return (
+    `You are an intelligence analyst supporting the Saudi National Emergency Management Authority (NEMA) during the Iran-GCC conflict. ` +
+    `Current scenario: Day ${day}, ${dateStr}. ` +
+    `The conflict began 28 February 2026 when Iran launched coordinated missile and drone attacks across GCC states. ` +
+    `Key facts: Strait of Hormuz closed Day 5, still closed. 19 confirmed projectile attacks on KSA. ` +
+    `Brent crude at $92.69 (+42% above pre-conflict baseline of $65). TASI at 10,776 (-10% since conflict). ` +
+    `6 CI sectors affected: Oil & Gas DEGRADED, Airports RESTRICTED, Ports DISRUPTED, Water OPERATIONAL, Power ELEVATED, Telecom ELEVATED. ` +
+    `Your role: provide direct, evidence-based analysis for ministerial decision-making. ` +
+    `Be specific, cite numbers, avoid generic statements. Respond in the same language as the question.`
+  );
+}
+
 // ─── Prompts for each feed ───────────────────────────────────────────────────
 
 const PROMPTS: Record<string, { prompt: string; max_tokens: number; parse: (text: string) => unknown }> = {
@@ -109,7 +128,15 @@ Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP
   },
 };
 
-async function callAnthropic(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
+async function callAnthropic(apiKey: string, prompt: string, maxTokens: number, system?: string): Promise<string> {
+  const body: Record<string, unknown> = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: maxTokens,
+    tools: [{ type: "web_search_20250305", name: "web_search" }],
+    messages: [{ role: "user", content: prompt }],
+  };
+  if (system) body.system = system;
+
   const res = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
@@ -117,12 +144,7 @@ async function callAnthropic(apiKey: string, prompt: string, maxTokens: number):
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: maxTokens,
-      tools: [{ type: "web_search_20250305", name: "web_search" }],
-      messages: [{ role: "user", content: prompt }],
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -184,10 +206,10 @@ async function fetchBrentDirect(): Promise<{ price: number; source: string; upda
   return null;
 }
 
-async function callWithRetry(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
+async function callWithRetry(apiKey: string, prompt: string, maxTokens: number, system?: string): Promise<string> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      return await callAnthropic(apiKey, prompt, maxTokens);
+      return await callAnthropic(apiKey, prompt, maxTokens, system);
     } catch (e) {
       if (attempt < MAX_RETRIES && e instanceof Error && e.message.includes("429")) {
         console.warn(`Rate limited, retrying in ${AI_GAP_MS * 2 / 1000}s...`);
@@ -246,7 +268,7 @@ serve(async (req) => {
         }
 
         console.log(`[${key}] Calling Anthropic...`);
-        const text = await callWithRetry(ANTHROPIC_API_KEY, config.prompt, config.max_tokens);
+        const text = await callWithRetry(ANTHROPIC_API_KEY, config.prompt, config.max_tokens, getScenarioContext());
         const rawParsed = config.parse(text);
 
         // Merge direct Brent price into financial result when available

@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
 import { STRIKES_KSA } from './data/strikes';
+import { getScenarioContext, getScenarioDayCount } from '../context/scenarioContext';
 
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
 
@@ -1924,7 +1925,9 @@ const ScreenAIBrief = ({ live }) => {
   const [chatLoading, setChatLoading] = useState(false);
   const chatRef = useRef(null);
 
-  const ctx = `You are NEMA AI advising Saudi Minister of Interior. Day 7 Iran-GCC conflict (Feb 28–Mar 7 2026). Live data: Brent ${live.brent.value} (${live.brent.change}), TASI ${live.tasi.value}, Hormuz closed Day 7, 91 tankers holding, ~$4.2B/day impact, KSA 19 strikes 96% intercept, UAE 1276 projectiles, Qatar LNG halted + airspace closed, Ras Tanura 85%, Abqaiq near-miss Mar 4. KSA reserves: wheat 45d, rice 38d, medical 30d at 55%, fuel 60d. GDELT: ${live.gdelt.value}/24h conflict articles. IODA KSA connectivity: ${live.ioda.value!==null?live.ioda.value+"% baseline":"unavailable"}. Be concise, executive-grade, no preamble.`;
+  const scenarioCtx = getScenarioContext();
+  const dayNum = getScenarioDayCount();
+  const ctx = `${scenarioCtx}\n\nLive data overlay: Brent ${live.brent.value} (${live.brent.change}), TASI ${live.tasi.value}, Hormuz closed Day ${dayNum}, 91 tankers holding, ~$4.2B/day impact, KSA 19 strikes 96% intercept, UAE 1276 projectiles, Qatar LNG halted + airspace closed, Ras Tanura 85%, Abqaiq near-miss Mar 4. KSA reserves: wheat 45d, rice 38d, medical 30d at 55%, fuel 60d. GDELT: ${live.gdelt.value}/24h conflict articles. IODA KSA connectivity: ${live.ioda.value!==null?live.ioda.value+"% baseline":"unavailable"}. Be concise, executive-grade, no preamble.`;
 
   const generateBrief = async () => {
     setLoading(true); setBrief(null);
@@ -1966,7 +1969,7 @@ const ScreenAIBrief = ({ live }) => {
           <span style={{ fontSize:12, fontWeight:"bold", color:C.fg }}>▣ EXECUTIVE SITUATION BRIEF</span>
           <FeedTag feed="LIVE" />
         </div>
-        <div style={{ fontSize:11, color:C.dim, marginBottom:8 }}>Brent {live.brent.value} · TASI {live.tasi.value} · GDELT {live.gdelt.value}/24h · Day 7 injected live</div>
+        <div style={{ fontSize:11, color:C.dim, marginBottom:8 }}>Brent {live.brent.value} · TASI {live.tasi.value} · GDELT {live.gdelt.value}/24h · Day {dayNum} injected live</div>
         {!brief&&!loading&&<button onClick={generateBrief} style={{ padding:"8px 16px", background:"rgba(59,130,246,0.12)", border:"1px solid rgba(59,130,246,0.25)", borderRadius:3, color:C.info, fontSize:12, cursor:"pointer", fontFamily:"JetBrains Mono,monospace" }}>▣ GENERATE BRIEF</button>}
         {loading&&<div style={{ fontSize:12, color:C.muted }}><span className="cop-pulse">●</span> Generating from live data…</div>}
         {brief&&<div>
