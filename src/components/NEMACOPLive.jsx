@@ -2115,7 +2115,7 @@ export default function NEMACOPLive() {
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:38,height:38,borderRadius:6,background:"linear-gradient(135deg,#1e40af,#1e3a8a)",border:"1px solid #3b82f644",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 0 20px rgba(59,130,246,0.15)"}}>⬡</div>
             <div>
-              <div style={{fontSize:16,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>National Common Operating Picture</div>
+              <div style={{fontSize:16,fontWeight:700,letterSpacing:"0.14em",color:C.fg}}>NATIONAL COMMON OPERATING PICTURE</div>
               <div style={{fontSize:10,color:C.dim,letterSpacing:"0.1em",marginTop:2}}>MINISTER VIEW · LIVE DEMO</div>
             </div>
           </div>
