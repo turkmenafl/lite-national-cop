@@ -884,11 +884,11 @@ const DATE_TABS = [
 
 // GCC per-day seed data (static estimates distributed across days)
 const GCC_DAILY = {
-  "AE": { total:1276, interceptPct:92, perDay:{ "Feb 28":182, "Mar 01":195, "Mar 02":178, "Mar 03":190, "Mar 04":201, "Mar 05":112, "Mar 06":108, "Mar 07":110 }, note:"Jebel Ali + Dubai T3 + French base hit." },
-  "QA": { total:115,  interceptPct:90, perDay:{ "Feb 28":18, "Mar 01":20, "Mar 02":15, "Mar 03":17, "Mar 04":14, "Mar 05":12, "Mar 06":10, "Mar 07":9 }, note:"Al Udeid 2 BM impacts. LNG suspended." },
-  "KW": { total:484,  interceptPct:88, perDay:{ "Feb 28":72, "Mar 01":78, "Mar 02":65, "Mar 03":70, "Mar 04":74, "Mar 05":45, "Mar 06":42, "Mar 07":38 }, note:"Ali Al Salem struck. US Embassy hit." },
-  "BH": { total:198,  interceptPct:85, perDay:{ "Feb 28":30, "Mar 01":32, "Mar 02":28, "Mar 03":30, "Mar 04":26, "Mar 05":20, "Mar 06":18, "Mar 07":14 }, note:"5th Fleet HQ struck. Bapco refinery hit." },
-  "OM": { total:4,    interceptPct:50, perDay:{ "Feb 28":1, "Mar 01":0, "Mar 02":1, "Mar 03":0, "Mar 04":1, "Mar 05":0, "Mar 06":0, "Mar 07":1 }, note:"Duqm Port drone. Mediator status." },
+  "AE": { total:1276, interceptPct:92, perDay:{ "2026-02-28":182, "2026-03-01":195, "2026-03-02":178, "2026-03-03":190, "2026-03-04":201, "2026-03-05":112, "2026-03-06":108, "2026-03-07":110 }, note:"Jebel Ali + Dubai T3 + French base hit." },
+  "QA": { total:115,  interceptPct:90, perDay:{ "2026-02-28":18, "2026-03-01":20, "2026-03-02":15, "2026-03-03":17, "2026-03-04":14, "2026-03-05":12, "2026-03-06":10, "2026-03-07":9 }, note:"Al Udeid 2 BM impacts. LNG suspended." },
+  "KW": { total:484,  interceptPct:88, perDay:{ "2026-02-28":72, "2026-03-01":78, "2026-03-02":65, "2026-03-03":70, "2026-03-04":74, "2026-03-05":45, "2026-03-06":42, "2026-03-07":38 }, note:"Ali Al Salem struck. US Embassy hit." },
+  "BH": { total:198,  interceptPct:85, perDay:{ "2026-02-28":30, "2026-03-01":32, "2026-03-02":28, "2026-03-03":30, "2026-03-04":26, "2026-03-05":20, "2026-03-06":18, "2026-03-07":14 }, note:"5th Fleet HQ struck. Bapco refinery hit." },
+  "OM": { total:4,    interceptPct:50, perDay:{ "2026-02-28":1, "2026-03-01":0, "2026-03-02":1, "2026-03-03":0, "2026-03-04":1, "2026-03-05":0, "2026-03-06":0, "2026-03-07":1 }, note:"Duqm Port drone. Mediator status." },
 };
 
 // ─── SCREEN 1: SITUATION ──────────────────────────────────────────────────────
