@@ -150,7 +150,7 @@ const CI_SECTORS = [
 // Risk Clusters — badges STATIC per handover decision (live signals appear inline as evidence only)
 const CLUSTERS = [
   {
-    id:"nat", label:"Natural", icon:"🌊", color:"#22c55e", status:"CLEAR", risks:1, active:0, elevated:0,
+    id:"nat", label:"T1 · Natural", icon:"🌊", color:"#22c55e", status:"CLEAR", risks:1, active:0, elevated:0,
     agencies:["PME","Civil Defense","SWCC","Aramco"],
     decisions:[],
     riskItems:[{
