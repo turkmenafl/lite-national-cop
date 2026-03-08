@@ -161,7 +161,7 @@ const CLUSTERS = [
     }],
   },
   {
-    id:"hlth", label:"Health", icon:"🏥", color:"#f59e0b", status:"ELEVATED", risks:1, active:0, elevated:1,
+    id:"hlth", label:"T2 · Health", icon:"🏥", color:"#f59e0b", status:"ELEVATED", risks:1, active:0, elevated:1,
     agencies:["MoH","Red Crescent"],
     decisions:[{ title:"Hospital surge protocol activation", window:"72h", severity:"medium" }],
     riskItems:[{
@@ -172,7 +172,7 @@ const CLUSTERS = [
     }],
   },
   {
-    id:"infra", label:"Infrastructure", icon:"⬡", color:"#ef4444", status:"CRITICAL", risks:5, active:2, elevated:1,
+    id:"infra", label:"T3 · Infrastructure", icon:"⬡", color:"#ef4444", status:"CRITICAL", risks:5, active:2, elevated:1,
     agencies:["SEC","SWCC","Civil Defense","GACA","Ports Authority","CITC"],
     decisions:[
       { title:"Deploy containment booms — Jubail Desal intake", window:"6h",  severity:"critical" },
@@ -210,7 +210,7 @@ const CLUSTERS = [
     ],
   },
   {
-    id:"sec", label:"Security", icon:"⊕", color:"#ef4444", status:"CRITICAL", risks:4, active:3, elevated:1,
+    id:"sec", label:"T4 · Security", icon:"⊕", color:"#ef4444", status:"CRITICAL", risks:4, active:3, elevated:1,
     agencies:["MoD","SANG","Border Guard","NCA","State Security"],
     decisions:[
       { title:"Abqaiq perimeter reinforcement",              window:"24h", severity:"high" },
@@ -243,7 +243,7 @@ const CLUSTERS = [
     ],
   },
   {
-    id:"socio", label:"Socioeconomic", icon:"◈", color:"#ef4444", status:"CRITICAL", risks:3, active:2, elevated:1,
+    id:"socio", label:"T5 · Socioeconomic", icon:"◈", color:"#ef4444", status:"CRITICAL", risks:3, active:2, elevated:1,
     agencies:["MoFA","SAMA","MoC","SAGO"],
     decisions:[
       { title:"Corrective media messaging — 'Saudi strikes imminent' narrative", window:"12h", severity:"high" },
