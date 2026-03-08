@@ -1746,7 +1746,7 @@ const timeAgo = (seendate) => {
 };
 
 const MediaSourceWatch = ({ live }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const gdeltArticles = live.gdelt.articles || [];
   const headlines = gdeltArticles.length > 0
