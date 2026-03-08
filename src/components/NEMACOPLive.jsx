@@ -948,10 +948,10 @@ const ScreenSituation = ({ live }) => {
         {/* Date tabs */}
         <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           {dateTabs.map(t => {
-            const isActive = activeDay === t.dayKey;
-            const dayStrikes = t.dayKey==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>s.day===t.dayKey).length;
+            const isActive = activeDay === t.id;
+            const dayStrikes = t.id==="cumulative" ? strikeData.length : strikeData.filter(s=>s.date===t.id).length;
             return (
-              <button key={t.dayKey} onClick={()=>{setActiveDay(t.dayKey);setSelEvent(null);}} style={{
+              <button key={t.id} onClick={()=>{setActiveDay(t.id);setSelEvent(null);}} style={{
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
                 background:isActive?"#192233":"transparent",
                 borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
@@ -959,7 +959,7 @@ const ScreenSituation = ({ live }) => {
                 fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
                 display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
               }}>
-                {t.dayKey==="CUMULATIVE"?"⊞ ":""}{t.label}
+                {t.id==="cumulative"?"⊞ ":""}{t.label}
                 {dayStrikes > 0 && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
               </button>
             );
