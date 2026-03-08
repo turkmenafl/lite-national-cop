@@ -2089,9 +2089,9 @@ export default function NEMACOPLive() {
     { label:"SITUATION",              icon:"◉" },
     { label:"RISK CLUSTERS",          icon:"⬡" },
     { label:"CRITICAL INFRASTRUCTURE",icon:"⚙" },
-    { label:"CONSEQUENCES",           icon:"◈" },
-    { label:"DECISIONS",              icon:"▣" },
+    { label:"IMPACT",                 icon:"◈" },
     { label:"SCENARIOS",              icon:"⚠" },
+    { label:"DECISIONS",              icon:"▣" },
     { label:"AI BRIEF",              icon:"🤖" },
   ];
 
@@ -2100,8 +2100,8 @@ export default function NEMACOPLive() {
     <ScreenRiskClusters live={live}/>,
     <ScreenInfra        live={live}/>,
     <ScreenEconomic     live={live}/>,
-    <ScreenDecisions    live={live}/>,
     <ScreenScenarios />,
+    <ScreenDecisions    live={live}/>,
     <ScreenAIBrief      live={live}/>,
   ];
 
