@@ -910,7 +910,7 @@ const ScreenSituation = ({ live }) => {
 
   // Build GCC theater data (all 6 countries) with per-day filtering
   const getGCCTheaterData = () => {
-    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.day===activeDay).length;
+    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.date===activeDay).length;
     const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
     const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
     Object.entries(GCC_DAILY).forEach(([code, data]) => {
