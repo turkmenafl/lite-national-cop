@@ -868,57 +868,49 @@ const GCCTheater = ({ gcc }) => {
   );
 };
 
-// ─── DAILY DATA DERIVED FROM STRIKES_KSA ──────────────────────────────────────
-const getUniqueDays = () => {
-  const days = [...new Set(STRIKES_KSA.map(s => s.day))];
-  days.sort((a, b) => new Date(`2026 ${a}`) - new Date(`2026 ${b}`));
-  return days;
-};
-const STRIKE_DAYS = getUniqueDays();
-
-// Format "Mar 07" → "03/07"
-const dayToTabLabel = (day) => {
-  if (day === "CUMULATIVE") return "CUMULATIVE";
-  const d = new Date(`2026 ${day}`);
-  if (isNaN(d.getTime())) return day;
-  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-};
-// Reverse lookup: tab label back to day key
-const tabLabelToDay = {};
-STRIKE_DAYS.forEach(d => { tabLabelToDay[dayToTabLabel(d)] = d; });
-tabLabelToDay["CUMULATIVE"] = "CUMULATIVE";
-// Add Mar 08 tab
-const DATE_TAB_ENTRIES = [...STRIKE_DAYS.map(d => ({ label: dayToTabLabel(d), dayKey: d })), { label: "03/08", dayKey: "Mar 08" }];
+// ─── DATE TABS (static canonical list) ─────────────────────────────────────────
+const DATE_TABS = [
+  { id: 'cumulative', label: 'CUMULATIVE' },
+  { id: '2026-02-28', label: '02/28' },
+  { id: '2026-03-01', label: '03/01' },
+  { id: '2026-03-02', label: '03/02' },
+  { id: '2026-03-03', label: '03/03' },
+  { id: '2026-03-04', label: '03/04' },
+  { id: '2026-03-05', label: '03/05' },
+  { id: '2026-03-06', label: '03/06' },
+  { id: '2026-03-07', label: '03/07' },
+  { id: '2026-03-08', label: '03/08' },
+];
 
 // GCC per-day seed data (static estimates distributed across days)
 const GCC_DAILY = {
-  "AE": { total:1276, interceptPct:92, perDay:{ "Feb 28":182, "Mar 01":195, "Mar 02":178, "Mar 03":190, "Mar 04":201, "Mar 05":112, "Mar 06":108, "Mar 07":110 }, note:"Jebel Ali + Dubai T3 + French base hit." },
-  "QA": { total:115,  interceptPct:90, perDay:{ "Feb 28":18, "Mar 01":20, "Mar 02":15, "Mar 03":17, "Mar 04":14, "Mar 05":12, "Mar 06":10, "Mar 07":9 }, note:"Al Udeid 2 BM impacts. LNG suspended." },
-  "KW": { total:484,  interceptPct:88, perDay:{ "Feb 28":72, "Mar 01":78, "Mar 02":65, "Mar 03":70, "Mar 04":74, "Mar 05":45, "Mar 06":42, "Mar 07":38 }, note:"Ali Al Salem struck. US Embassy hit." },
-  "BH": { total:198,  interceptPct:85, perDay:{ "Feb 28":30, "Mar 01":32, "Mar 02":28, "Mar 03":30, "Mar 04":26, "Mar 05":20, "Mar 06":18, "Mar 07":14 }, note:"5th Fleet HQ struck. Bapco refinery hit." },
-  "OM": { total:4,    interceptPct:50, perDay:{ "Feb 28":1, "Mar 01":0, "Mar 02":1, "Mar 03":0, "Mar 04":1, "Mar 05":0, "Mar 06":0, "Mar 07":1 }, note:"Duqm Port drone. Mediator status." },
+  "AE": { total:1276, interceptPct:92, perDay:{ "2026-02-28":182, "2026-03-01":195, "2026-03-02":178, "2026-03-03":190, "2026-03-04":201, "2026-03-05":112, "2026-03-06":108, "2026-03-07":110 }, note:"Jebel Ali + Dubai T3 + French base hit." },
+  "QA": { total:115,  interceptPct:90, perDay:{ "2026-02-28":18, "2026-03-01":20, "2026-03-02":15, "2026-03-03":17, "2026-03-04":14, "2026-03-05":12, "2026-03-06":10, "2026-03-07":9 }, note:"Al Udeid 2 BM impacts. LNG suspended." },
+  "KW": { total:484,  interceptPct:88, perDay:{ "2026-02-28":72, "2026-03-01":78, "2026-03-02":65, "2026-03-03":70, "2026-03-04":74, "2026-03-05":45, "2026-03-06":42, "2026-03-07":38 }, note:"Ali Al Salem struck. US Embassy hit." },
+  "BH": { total:198,  interceptPct:85, perDay:{ "2026-02-28":30, "2026-03-01":32, "2026-03-02":28, "2026-03-03":30, "2026-03-04":26, "2026-03-05":20, "2026-03-06":18, "2026-03-07":14 }, note:"5th Fleet HQ struck. Bapco refinery hit." },
+  "OM": { total:4,    interceptPct:50, perDay:{ "2026-02-28":1, "2026-03-01":0, "2026-03-02":1, "2026-03-03":0, "2026-03-04":1, "2026-03-05":0, "2026-03-06":0, "2026-03-07":1 }, note:"Duqm Port drone. Mediator status." },
 };
 
 // ─── SCREEN 1: SITUATION ──────────────────────────────────────────────────────
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
-  const [activeDay, setActiveDay] = useState("CUMULATIVE");
+  const [activeDay, setActiveDay] = useState("cumulative");
   const [theaterView, setTheaterView] = useState("LOG");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
 
-  const isCumulative = activeDay === "CUMULATIVE";
+  const isCumulative = activeDay === "cumulative";
   const strikeData = live.ksaStrikes?.data || STRIKES_KSA;
-  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
+  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
 
   const getMarkers = () => {
-    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
-    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
+    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
+    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev || s.severity }));
   };
 
   // Build GCC theater data (all 6 countries) with per-day filtering
   const getGCCTheaterData = () => {
-    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.day===activeDay).length;
+    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.date===activeDay).length;
     const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
     const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
     Object.entries(GCC_DAILY).forEach(([code, data]) => {
@@ -937,7 +929,7 @@ const ScreenSituation = ({ live }) => {
     });
   };
 
-  const dateTabs = [{ label: "CUMULATIVE", dayKey: "CUMULATIVE" }, ...DATE_TAB_ENTRIES];
+  const dateTabs = DATE_TABS;
 
   return (
     <div>
@@ -956,10 +948,10 @@ const ScreenSituation = ({ live }) => {
         {/* Date tabs */}
         <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           {dateTabs.map(t => {
-            const isActive = activeDay === t.dayKey;
-            const dayStrikes = t.dayKey==="CUMULATIVE" ? strikeData.length : strikeData.filter(s=>s.day===t.dayKey).length;
+            const isActive = activeDay === t.id;
+            const dayStrikes = t.id==="cumulative" ? strikeData.length : strikeData.filter(s=>s.date===t.id).length;
             return (
-              <button key={t.dayKey} onClick={()=>{setActiveDay(t.dayKey);setSelEvent(null);}} style={{
+              <button key={t.id} onClick={()=>{setActiveDay(t.id);setSelEvent(null);}} style={{
                 padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
                 background:isActive?"#192233":"transparent",
                 borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
@@ -967,7 +959,7 @@ const ScreenSituation = ({ live }) => {
                 fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
                 display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
               }}>
-                {t.dayKey==="CUMULATIVE"?"⊞ ":""}{t.label}
+                {t.id==="cumulative"?"⊞ ":""}{t.label}
                 {dayStrikes > 0 && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
               </button>
             );
@@ -1011,20 +1003,23 @@ const ScreenSituation = ({ live }) => {
                 {/* Scrollable event list */}
                 <div style={{ flex:1, overflowY:"auto", minHeight:0, padding:"0 14px 14px 14px" }}>
                   {filteredStrikes.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {dayToTabLabel(activeDay)}</div>
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                       {filteredStrikes.map(e => {
-                        const col = e.sev==="critical"?C.critical:C.warning;
+                        const sev = e.sev || e.severity;
+                        const col = sev==="critical"?C.critical:C.warning;
+                        const loc = e.loc || e.location;
+                        const typeLabel = e.count && e.count > 1 ? `${e.type} (${e.count}x)` : e.type;
                         return (
                           <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{typeLabel}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                            {selEvent===e.id && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{loc}</div>
+                            {selEvent===e.id && e.status && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
                           </div>
                         );
                       })}
