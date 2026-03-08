@@ -2193,7 +2193,7 @@ export default function NEMACOPLive() {
           </div>
           <div style={{fontSize:11,color:C.dim,textAlign:"right"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-              <span style={{color:C.success,fontWeight:600}}>● Day 7 · 07 MAR 2026</span>
+              <span style={{color:C.success,fontWeight:600}}>● Day {getScenarioDayCount()} · {new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}).toUpperCase()}</span>
               <button onClick={refresh} disabled={refreshing} style={{padding:"4px 10px",background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.25)",borderRadius:4,color:refreshing?C.dim:C.success,fontSize:10,cursor:"pointer",fontFamily:"JetBrains Mono,monospace",fontWeight:600}}>
                 {refreshing?<span className="cop-pulse">↻ FETCHING…</span>:"↻ REFRESH LIVE"}
               </button>

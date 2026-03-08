@@ -5,7 +5,7 @@ const CONFLICT_START = new Date('2026-02-28T00:00:00Z');
 
 export function getScenarioDayCount() {
   const now = new Date();
-  return Math.max(1, Math.ceil((now - CONFLICT_START) / (1000 * 60 * 60 * 24)));
+  return Math.floor((now - CONFLICT_START) / (1000 * 60 * 60 * 24)) + 1;
 }
 
 export const scenarioDayCount = getScenarioDayCount();
