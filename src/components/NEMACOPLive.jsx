@@ -2138,25 +2138,7 @@ export default function NEMACOPLive() {
           </div>
         </header>
 
-        {/* LIVE STATUS BAR */}
-        <div style={{background:"#0a1220",borderBottom:`1px solid ${C.surfBorder}`,padding:"6px 20px",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-          <span style={{fontSize:10,color:C.dim,fontWeight:600,letterSpacing:"0.08em"}}>LIVE:</span>
-          {[
-            {l:"BRENT", src:live.brent.source, loading:live.brent.loading, v:live.brent.value},
-            {l:"TASI",  src:live.tasi.source,  loading:live.tasi.loading,  v:live.tasi.value},
-            {l:"GDELT", src:live.gdelt.source, loading:live.gdelt.loading, v:`${live.gdelt.value}/24h`},
-            {l:"IODA",  src:live.ioda.source,  loading:live.ioda.loading,  v:live.ioda.value!==null?`${live.ioda.value}%`:"N/A"},
-            {l:"GCC",   src:live.gcc.data?"AI+WEB":"STATIC", loading:live.gcc.loading, v:live.gcc.error?"⚠ failed":live.gcc.data?"✓ sourced":"seed"},
-          ].map(f=>(
-            <div key={f.l} style={{display:"flex",alignItems:"center",gap:5}}>
-              <span style={{fontSize:10,color:C.dim,fontWeight:500}}>{f.l}:</span>
-              {f.loading?<span className="cop-pulse" style={{fontSize:10,color:C.info}}>●</span>:<span style={{fontSize:10,color:f.src==="STATIC"?C.dim:C.success,fontWeight:500}}>{f.v}</span>}
-              <FeedTag feed={f.src} loading={f.loading}/>
-            </div>
-          ))}
-        </div>
 
-        {/* TAB BAR */}
         <nav style={{display:"flex",background:"#0a1628",borderBottom:`1px solid ${C.surfBorder}`,overflowX:"auto"}}>
           {TABS.map((t,i)=>(
             <button key={i} onClick={()=>setTab(i)} style={{
