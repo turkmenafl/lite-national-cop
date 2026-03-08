@@ -1003,20 +1003,23 @@ const ScreenSituation = ({ live }) => {
                 {/* Scrollable event list */}
                 <div style={{ flex:1, overflowY:"auto", minHeight:0, padding:"0 14px 14px 14px" }}>
                   {filteredStrikes.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {dayToTabLabel(activeDay)}</div>
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                       {filteredStrikes.map(e => {
-                        const col = e.sev==="critical"?C.critical:C.warning;
+                        const sev = e.sev || e.severity;
+                        const col = sev==="critical"?C.critical:C.warning;
+                        const loc = e.loc || e.location;
+                        const typeLabel = e.count && e.count > 1 ? `${e.type} (${e.count}x)` : e.type;
                         return (
                           <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{typeLabel}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
                             </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                            {selEvent===e.id && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{loc}</div>
+                            {selEvent===e.id && e.status && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
                           </div>
                         );
                       })}
