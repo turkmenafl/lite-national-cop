@@ -868,27 +868,19 @@ const GCCTheater = ({ gcc }) => {
   );
 };
 
-// ─── DAILY DATA DERIVED FROM STRIKES_KSA ──────────────────────────────────────
-const getUniqueDays = () => {
-  const days = [...new Set(STRIKES_KSA.map(s => s.day))];
-  days.sort((a, b) => new Date(`2026 ${a}`) - new Date(`2026 ${b}`));
-  return days;
-};
-const STRIKE_DAYS = getUniqueDays();
-
-// Format "Mar 07" → "03/07"
-const dayToTabLabel = (day) => {
-  if (day === "CUMULATIVE") return "CUMULATIVE";
-  const d = new Date(`2026 ${day}`);
-  if (isNaN(d.getTime())) return day;
-  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
-};
-// Reverse lookup: tab label back to day key
-const tabLabelToDay = {};
-STRIKE_DAYS.forEach(d => { tabLabelToDay[dayToTabLabel(d)] = d; });
-tabLabelToDay["CUMULATIVE"] = "CUMULATIVE";
-// Add Mar 08 tab
-const DATE_TAB_ENTRIES = [...STRIKE_DAYS.map(d => ({ label: dayToTabLabel(d), dayKey: d })), { label: "03/08", dayKey: "Mar 08" }];
+// ─── DATE TABS (static canonical list) ─────────────────────────────────────────
+const DATE_TABS = [
+  { id: 'cumulative', label: 'CUMULATIVE' },
+  { id: '2026-02-28', label: '02/28' },
+  { id: '2026-03-01', label: '03/01' },
+  { id: '2026-03-02', label: '03/02' },
+  { id: '2026-03-03', label: '03/03' },
+  { id: '2026-03-04', label: '03/04' },
+  { id: '2026-03-05', label: '03/05' },
+  { id: '2026-03-06', label: '03/06' },
+  { id: '2026-03-07', label: '03/07' },
+  { id: '2026-03-08', label: '03/08' },
+];
 
 // GCC per-day seed data (static estimates distributed across days)
 const GCC_DAILY = {
@@ -902,18 +894,18 @@ const GCC_DAILY = {
 // ─── SCREEN 1: SITUATION ──────────────────────────────────────────────────────
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
-  const [activeDay, setActiveDay] = useState("CUMULATIVE");
+  const [activeDay, setActiveDay] = useState("cumulative");
   const [theaterView, setTheaterView] = useState("LOG");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
 
-  const isCumulative = activeDay === "CUMULATIVE";
+  const isCumulative = activeDay === "cumulative";
   const strikeData = live.ksaStrikes?.data || STRIKES_KSA;
-  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
+  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
 
   const getMarkers = () => {
-    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.day === activeDay);
-    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev }));
+    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
+    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev || s.severity }));
   };
 
   // Build GCC theater data (all 6 countries) with per-day filtering
@@ -937,7 +929,7 @@ const ScreenSituation = ({ live }) => {
     });
   };
 
-  const dateTabs = [{ label: "CUMULATIVE", dayKey: "CUMULATIVE" }, ...DATE_TAB_ENTRIES];
+  const dateTabs = DATE_TABS;
 
   return (
     <div>
