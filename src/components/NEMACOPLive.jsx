@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
-import { STRIKES_KSA } from './data/strikes';
+import { STRIKES_KSA } from '../data/strikes';
 import { getScenarioContext, getScenarioDayCount } from '../context/scenarioContext';
 
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
