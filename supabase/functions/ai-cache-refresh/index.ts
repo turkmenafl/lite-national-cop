@@ -132,6 +132,53 @@ async function callAnthropic(apiKey: string, prompt: string, maxTokens: number):
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+// ─── Direct Brent price fetch (OilPriceAPI → EIA → Claude fallback) ──────────
+
+async function fetchBrentDirect(): Promise<{ price: number; source: string; updatedAt?: string; period?: string } | null> {
+  // 1. Try OilPriceAPI
+  try {
+    const opaKey = Deno.env.get('OILPRICE_API_KEY');
+    if (opaKey) {
+      const res = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
+        headers: { Authorization: `Token ${opaKey}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const price = parseFloat(data?.data?.price);
+        if (!isNaN(price)) {
+          console.log(`[Brent] OPA: ${price}`);
+          return { price, source: 'OPA', updatedAt: data?.data?.created_at ?? new Date().toISOString() };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Brent] OPA failed:', e instanceof Error ? e.message : e);
+  }
+
+  // 2. Fall back to EIA
+  try {
+    const eiaKey = Deno.env.get('EIA_API_KEY');
+    if (eiaKey) {
+      const url = `https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${eiaKey}&frequency=daily&data%5B0%5D=value&facets%5Bseries%5D%5B%5D=RBRTE&length=1`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const row = data?.response?.data?.[0];
+        const price = parseFloat(row?.value);
+        if (!isNaN(price)) {
+          console.log(`[Brent] EIA: ${price} (${row.period})`);
+          return { price, source: 'EIA', period: row.period };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Brent] EIA failed:', e instanceof Error ? e.message : e);
+  }
+
+  console.warn('[Brent] Both OPA and EIA failed — falling back to Claude');
+  return null;
+}
+
 async function callWithRetry(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -186,9 +233,27 @@ serve(async (req) => {
       }
       
       try {
+        // For the financial key: attempt direct Brent fetch (OPA → EIA) before Claude
+        let directBrent: { price: number; source: string; updatedAt?: string; period?: string } | null = null;
+        if (key === 'financial') {
+          directBrent = await fetchBrentDirect();
+          console.log(`[financial] Brent direct: ${directBrent ? `${directBrent.price} via ${directBrent.source}` : 'using Claude fallback'}`);
+        }
+
         console.log(`[${key}] Calling Anthropic...`);
         const text = await callWithRetry(ANTHROPIC_API_KEY, config.prompt, config.max_tokens);
-        const parsed = config.parse(text);
+        const rawParsed = config.parse(text);
+
+        // Merge direct Brent price into financial result when available
+        const parsed = (key === 'financial' && rawParsed && directBrent)
+          ? {
+              ...(rawParsed as Record<string, unknown>),
+              brent: directBrent.price,
+              brentSource: directBrent.source,
+              ...(directBrent.updatedAt ? { brentUpdatedAt: directBrent.updatedAt } : {}),
+              ...(directBrent.period ? { brentPeriod: directBrent.period } : {}),
+            }
+          : rawParsed;
 
         if (parsed) {
           const { error } = await supabase
