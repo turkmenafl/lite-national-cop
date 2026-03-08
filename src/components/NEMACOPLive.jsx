@@ -2154,7 +2154,10 @@ export default function NEMACOPLive() {
               <FeedTag feed={f.src} loading={f.loading}/>
             </div>
           ))}
-          <span style={{marginLeft:"auto",fontSize:10,color:C.dim}}>CORS-blocked: Yahoo Finance direct · NASA FIRMS · PortWatch (use server-side proxy in repo)</span>
+        </div>
+        {/* CORS-blocked notice at bottom of tab */}
+        <div style={{marginTop:12,display:"flex",gap:5,flexWrap:"wrap",justifyContent:"center"}}>
+          <span style={{fontSize:10,color:C.dim}}>CORS-blocked: Yahoo Finance direct · NASA FIRMS · PortWatch (use server-side proxy in repo)</span>
         </div>
 
         {/* TAB BAR */}
