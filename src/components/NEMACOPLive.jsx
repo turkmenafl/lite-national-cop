@@ -2173,7 +2173,12 @@ export default function NEMACOPLive() {
         </nav>
 
         {/* CONTENT */}
-        <main style={{flex:1,overflowY:"auto",padding:"18px 20px"}}>{screens[tab]}</main>
+        <main style={{flex:1,overflowY:"auto",padding:"18px 20px"}}>
+          {screens[tab]}
+          <div style={{marginTop:12,display:"flex",gap:5,flexWrap:"wrap",justifyContent:"center"}}>
+            <span style={{fontSize:10,color:C.dim}}>CORS-blocked: Yahoo Finance direct · NASA FIRMS · PortWatch (use server-side proxy in repo)</span>
+          </div>
+        </main>
 
         {/* FOOTER */}
         <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:10,color:C.dim,flexWrap:"wrap",gap:6}}>
