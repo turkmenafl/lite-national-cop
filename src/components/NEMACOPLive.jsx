@@ -985,7 +985,7 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
         <KpiCard label="HORMUZ"       value="Day 7"  note="0 transits / 91 tankers"  color={C.critical} feed="STATIC" />
         <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
-        <KpiCard label="KSA INTERNET" value={live.ioda.value!==null?`${live.ioda.value}%`:"~99%"} note="vs baseline" color={live.ioda.value!==null?(live.ioda.value<80?C.critical:C.success):"#4ade80"} feed={live.ioda.value!==null?"IODA":"STATIC"} loading={live.ioda.loading} />
+        
       </div>
 
       {/* ── Date-Tabbed Theater Section ── */}
