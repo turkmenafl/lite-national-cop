@@ -1949,7 +1949,11 @@ export default function NEMACOPLive() {
       n.ukmto = { loading:false, error:null, data:ukmtoData||null };
 
       const ksaData = cache.ksa_strikes;
-      n.ksaStrikes = { loading:false, error:null, data:ksaData||null };
+      const isValidKsa = (data) =>
+        Array.isArray(data) &&
+        data.length > 0 &&
+        data.every(e => typeof e.lat === 'number' && typeof e.lng === 'number');
+      n.ksaStrikes = { loading:false, error:null, data: isValidKsa(ksaData) ? ksaData : null };
 
       const ciData = cache.ci_status;
       n.ciStatus = { loading:false, error:null, data:ciData||null };
