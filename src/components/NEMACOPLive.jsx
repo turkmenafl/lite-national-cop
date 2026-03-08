@@ -1339,6 +1339,7 @@ const CI_KEY_MAP = {
 
 const ScreenInfra = ({ live }) => {
   const liveCI = live.ciStatus?.data;
+  const [expandedSector, setExpandedSector] = useState(null);
   return (
   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
     {CI_SECTORS.map(s=>{
@@ -1352,26 +1353,57 @@ const ScreenInfra = ({ live }) => {
       } : s;
       const col=merged.status==="DEGRADED"||merged.status==="CRITICAL"?C.critical:merged.status==="DISRUPTED"?"#f97316":merged.status==="RESTRICTED"||merged.status==="ELEVATED"?C.warning:merged.status==="OFFLINE"?C.critical:C.success;
       const note = merged.feed==="IODA"&&live.ioda.value!==null?`Connectivity: ${live.ioda.value}% of baseline`:merged.note;
+      const isExpanded = expandedSector === merged.name;
       return (
-        <div key={merged.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:6, padding:"12px 14px", boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:18 }}>{merged.icon}</span>
-              <span style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{merged.name}</span>
-              <StatusBadge s={merged.status}/>
+        <div key={merged.name} style={{ background:C.surface, border:`1px solid ${col}22`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", overflow:"hidden" }}>
+          <div onClick={()=>setExpandedSector(isExpanded?null:merged.name)} style={{ padding:"12px 14px", cursor:"pointer" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:18 }}>{merged.icon}</span>
+                <span style={{ fontSize:14, fontWeight:"bold", color:C.fg }}>{merged.name}</span>
+                <StatusBadge s={merged.status}/>
+                {merged.tier && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:`${col}14`, color:col, fontWeight:600 }}>{merged.tier}</span>}
+              </div>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <span style={{ fontSize:12, color:col, fontWeight:"bold" }}>{merged.pct}%</span>
+                <span style={{ fontSize:9, padding:"2px 6px", borderRadius:3, background:`${C.dim}14`, color:C.dim, fontWeight:500 }}>{merged.sourceTag}</span>
+                <FeedTag feed="STATIC"/>
+                <span style={{ fontSize:12, color:C.dim }}>{isExpanded?"▾":"▸"}</span>
+              </div>
             </div>
-            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              <span style={{ fontSize:12, color:col, fontWeight:"bold" }}>{merged.pct}%</span>
-              <FeedTag feed={merged.feed} loading={merged.feed==="IODA"&&live.ioda.loading}/>
+            <div style={{ height:4, background:C.surfBorder, borderRadius:2, marginBottom:6 }}>
+              <div style={{ height:"100%", width:`${merged.pct}%`, background:col, borderRadius:2 }}/>
             </div>
+            <div style={{ fontSize:11, color:C.muted }}>{note}</div>
           </div>
-          <div style={{ height:4, background:C.surfBorder, borderRadius:2, marginBottom:6 }}>
-            <div style={{ height:"100%", width:`${merged.pct}%`, background:col, borderRadius:2 }}/>
-          </div>
-          <div style={{ fontSize:11, color:C.muted }}>{note}</div>
+          {/* Expanded asset rows */}
+          {isExpanded && merged.assets && (
+            <div style={{ padding:"0 14px 12px 14px", borderTop:`1px solid ${C.surfBorder}` }}>
+              <div style={{ fontSize:10, color:C.dim, letterSpacing:"0.06em", padding:"8px 0 6px", fontWeight:600 }}>ASSETS</div>
+              {merged.assets.map((a,i) => {
+                const ac = a.status==="DEGRADED"?C.critical:a.status==="RESTRICTED"||a.status==="ELEVATED"?C.warning:C.success;
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 8px", borderBottom:i<merged.assets.length-1?`1px solid ${C.surfBorder}30`:"none" }}>
+                    <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:`${ac}14`, color:ac, fontWeight:600, minWidth:22, textAlign:"center" }}>{a.tier}</span>
+                    <span style={{ fontSize:12, color:C.fg, fontWeight:600, flex:1 }}>{a.name}</span>
+                    <span style={{ fontSize:16, fontWeight:700, color:ac, minWidth:30, textAlign:"right" }}>{a.score}</span>
+                    <StatusBadge s={a.status}/>
+                  </div>
+                );
+              })}
+              {merged.assets.map((a,i) => (
+                <div key={`n${i}`} style={{ fontSize:10, color:C.muted, padding:"2px 8px 2px 42px", lineHeight:1.4 }}>
+                  <span style={{ color:C.dim, fontWeight:500 }}>{a.name}:</span> {a.note}
+                </div>
+              ))}
+              <div style={{ fontSize:9, color:C.dim, marginTop:6, paddingTop:4, borderTop:`1px solid ${C.surfBorder}30` }}>
+                SOURCE: {merged.source}
+              </div>
+            </div>
+          )}
           {/* PORTWATCH + UKMTO maritime live block */}
           {s.name==="Ports & Maritime" && (live.portwatch?.data || live.ukmto?.data) && (
-            <div style={{ marginTop:8, padding:"8px 10px", background:"rgba(255,255,255,0.03)", borderRadius:3, borderLeft:`2px solid #3b82f6` }}>
+            <div style={{ margin:"0 14px 12px", padding:"8px 10px", background:"rgba(255,255,255,0.03)", borderRadius:3, borderLeft:`2px solid #3b82f6` }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                 <span style={{ fontSize:8, fontWeight:"bold", color:C.fg }}>MARITIME INTELLIGENCE</span>
                 <div style={{ display:"flex", gap:5 }}>
@@ -1380,7 +1412,6 @@ const ScreenInfra = ({ live }) => {
                   {(live.portwatch?.data?.source==="FALLBACK" || live.ukmto?.data?.source==="FALLBACK") && <FeedTag feed="STATIC"/>}
                 </div>
               </div>
-              {/* Hormuz status row */}
               {live.portwatch?.data?.hormuz && (() => {
                 const h = live.portwatch.data.hormuz;
                 const pct = h.transitPct;
@@ -1397,7 +1428,6 @@ const ScreenInfra = ({ live }) => {
                   </div>
                 );
               })()}
-              {/* GCC port throughput */}
               {live.portwatch?.data?.ports?.length > 0 && (
                 <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:4 }}>
                   {live.portwatch.data.ports.map(p => {
@@ -1411,7 +1441,6 @@ const ScreenInfra = ({ live }) => {
                   <span style={{ fontSize:7, color:C.dim, alignSelf:"center" }}>vs 2023 baseline</span>
                 </div>
               )}
-              {/* UKMTO advisory chip */}
               {live.ukmto?.data && (() => {
                 const u = live.ukmto.data;
                 const hCol = (s => s==="SUSPENDED"||s==="CLOSED"?"#ef4444":s==="RESTRICTED"||s==="DISRUPTED"?"#f59e0b":"#22c55e")(u.hormuzStatus);
@@ -1434,6 +1463,12 @@ const ScreenInfra = ({ live }) => {
         </div>
       );
     })}
+    {/* Source attribution */}
+    <div style={{ marginTop:4, display:"flex", gap:5, flexWrap:"wrap", justifyContent:"center" }}>
+      {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
+        <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
+      ))}
+    </div>
   </div>
   );
 };
