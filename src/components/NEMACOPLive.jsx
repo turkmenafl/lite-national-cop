@@ -400,7 +400,24 @@ async function fetchIoda() {
   return Math.round(vals[vals.length-1]*100);
 }
 
+function cacheTimeAgo(isoStr) {
+  if (!isoStr) return null;
+  const mins = Math.floor((Date.now() - new Date(isoStr).getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  return `${Math.floor(mins / 60)}h ago`;
+}
+
 async function fetchGCCStrikes() {
+  // Primary: read from Supabase cache (populated every 10 min by ai-cache-refresh edge fn)
+  try {
+    const { data: row, error } = await supabase
+      .from('ai_cache').select('data, updated_at').eq('key', 'gcc_strikes').maybeSingle();
+    if (!error && row?.data) return { data: row.data, updatedAt: row.updated_at };
+  } catch(e) {
+    console.warn('[GCCStrikes] cache read failed, falling back to API:', e?.message);
+  }
+  // Fallback: single direct Anthropic API call covering all 6 GCC states
   const prompt = `You are a conflict data analyst. Search for the latest verified reports on Iranian missile and drone attacks against GCC countries during the Iran-GCC conflict of February-March 2026.
 For each country — SA, AE, QA, KW, BH, OM — find total strikes, intercept %, source, confidence (CONFIRMED=official MoD/Reuters/AP, EST=think-tank).
 Reply ONLY with valid JSON:
@@ -417,7 +434,7 @@ Reply ONLY with valid JSON:
   const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
   const m = text.match(/\{[\s\S]*\}/);
   if (!m) throw new Error("No JSON");
-  return JSON.parse(m[0]);
+  return { data: JSON.parse(m[0]), updatedAt: null };
 }
 
 async function fetchKSAStrikes() {
@@ -942,15 +959,37 @@ const ScreenSituation = ({ live }) => {
   };
 
   // Build GCC theater data (all 6 countries) with per-day filtering
+  // Merges live.gcc.data from cache when available
   const getGCCTheaterData = () => {
     const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.date===activeDay).length;
     const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
-    const result = [{ ...ksaSeed, strikes: isCumulative ? ksaSeed.strikes : ksaDayCount }];
+    const liveGCC = live.gcc?.data;
+    const ksaLive = liveGCC?.SA;
+    const result = [{
+      ...ksaSeed,
+      strikes: isCumulative ? (ksaLive?.total ?? ksaSeed.strikes) : ksaDayCount,
+      ...(ksaLive ? {
+        interceptPct: ksaLive.intercept_pct ?? ksaSeed.interceptPct,
+        confidence: ksaLive.confidence ?? ksaSeed.confidence,
+        source: ksaLive.source ?? ksaSeed.source,
+        note: ksaLive.note ?? ksaSeed.note,
+      } : {}),
+    }];
     Object.entries(GCC_DAILY).forEach(([code, data]) => {
       const seed = GCC_SEED.find(g=>g.code===code);
       if (!seed) return;
-      const dayCount = isCumulative ? data.total : (data.perDay[activeDay] || 0);
-      result.push({ ...seed, strikes: dayCount });
+      const liveItem = liveGCC?.[code];
+      const dayCount = isCumulative ? (liveItem?.total ?? data.total) : (data.perDay[activeDay] || 0);
+      result.push({
+        ...seed,
+        strikes: dayCount,
+        ...(liveItem ? {
+          interceptPct: liveItem.intercept_pct ?? data.interceptPct,
+          confidence: liveItem.confidence ?? seed.confidence,
+          source: liveItem.source ?? seed.source,
+          note: liveItem.note ?? seed.note,
+        } : {}),
+      });
     });
     return result;
   };
@@ -1063,6 +1102,16 @@ const ScreenSituation = ({ live }) => {
             ) : (
               /* GCC THEATER view */
               <div style={{ padding:"10px 8px", display:"flex", flexDirection:"column", gap:0, flex:1, justifyContent:"space-between", overflowY: expandedCountry ? "auto" : "hidden" }}>
+                {/* Cache timestamp */}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4, paddingBottom:4, borderBottom:`1px solid ${C.surfBorder}30` }}>
+                  <span style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC THEATER</span>
+                  {live.gcc?.updatedAt
+                    ? <span style={{ fontSize:9, color:C.dim }}>Updated {cacheTimeAgo(live.gcc.updatedAt)}</span>
+                    : live.gcc?.loading
+                      ? <span style={{ fontSize:9, color:C.info }}>● fetching…</span>
+                      : <span style={{ fontSize:9, color:C.muted }}>STATIC</span>
+                  }
+                </div>
                 {getGCCTheaterData().map(g => {
                   const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
                   const confCol = g.confidence==="CONFIRMED"?C.success:"#f97316";
@@ -1978,7 +2027,7 @@ export default function NEMACOPLive() {
     tasi:  { value:"10,290", change:"−3.9% wk",  source:"STATIC", loading:false },
     gdelt: { value:20, articles:[], source:"STATIC", loading:false },
     ioda:  { value:null, source:"IODA", loading:false },
-    gcc:   { data:null, loading:false, error:false },
+    gcc:   { data:null, loading:false, error:false, updatedAt:null },
     portwatch: { loading:false, error:null, data:null },
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
@@ -2007,9 +2056,11 @@ export default function NEMACOPLive() {
 
     // Parse AI cache results
     const cache = {};
+    const cacheUpdatedAt = {};
     if (cacheRes.status === "fulfilled" && cacheRes.value?.data) {
       for (const row of cacheRes.value.data) {
         cache[row.key] = row.data;
+        cacheUpdatedAt[row.key] = row.updated_at;
       }
     }
     const cacheAge = cacheRes.status === "fulfilled" && cacheRes.value?.data?.length
@@ -2047,7 +2098,10 @@ export default function NEMACOPLive() {
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
 
       const gccData = cache.gcc_strikes;
-      n.gcc = gccData ? {data:gccData,loading:false,error:false} : {data:d.gcc.data,loading:false,error:!Object.keys(cache).length};
+      const gccUpdatedAt = cacheUpdatedAt['gcc_strikes'] || null;
+      n.gcc = gccData
+        ? {data:gccData, loading:false, error:false, updatedAt:gccUpdatedAt}
+        : {data:d.gcc.data, loading:false, error:!Object.keys(cache).length, updatedAt:null};
 
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
 

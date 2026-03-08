@@ -23,17 +23,6 @@ const PROMPTS: Record<string, { prompt: string; max_tokens: number; parse: (text
       tasiChg: (text.match(/TASICHG[:\s]+([+-]?[\d.]+%)/i) || [])[1] || null,
     }),
   },
-  gcc_strikes: {
-    prompt: `You are a conflict data analyst. Search for the latest verified reports on Iranian missile and drone attacks against GCC countries during the Iran-GCC conflict of February-March 2026.
-For each country — SA, AE, QA, KW, BH, OM — find total strikes, intercept %, source, confidence (CONFIRMED=official MoD/Reuters/AP, EST=think-tank).
-Reply ONLY with valid JSON:
-{"SA":{"total":19,"intercept_pct":96,"source":"Saudi MoD spokesman","confidence":"CONFIRMED","note":"96% intercept. Abqaiq near-miss Mar 4"},"AE":{"total":1276,"intercept_pct":92,"source":"UAE MoD press conference","confidence":"CONFIRMED","note":"Jebel Ali and Dubai T3 hit"},"QA":{"total":115,"intercept_pct":90,"source":"CTP-ISW","confidence":"EST","note":"Al Udeid struck. LNG suspended"},"KW":{"total":484,"intercept_pct":88,"source":"KUNA / US DoD","confidence":"EST","note":"Ali Al Salem struck"},"BH":{"total":198,"intercept_pct":85,"source":"NAVCENT","confidence":"EST","note":"5th Fleet HQ struck"},"OM":{"total":4,"intercept_pct":50,"source":"ONA","confidence":"EST","note":"Duqm Port drone"}}`,
-    max_tokens: 1000,
-    parse: (text) => {
-      const m = text.match(/\{[\s\S]*\}/);
-      return m ? JSON.parse(m[0]) : null;
-    },
-  },
   ukmto: {
     prompt: `Search for the latest UKMTO maritime security advisory for the Arabian Gulf and Strait of Hormuz, March 2026. Return ONLY:
 LEVEL: [ELEVATED/HIGH/SIGNIFICANT]
@@ -56,6 +45,22 @@ TEXT: [max 120 char summary]`,
         text: get("TEXT") ?? "Significant military activity. Elevated GNSS/AIS interference.",
         source: "UKMTO",
       };
+    },
+  },
+  gcc_strikes: {
+    prompt: `Search for the most recent confirmed projectile attack totals (missiles + drones) launched against each GCC state since the Iran-GCC conflict began in late February 2026. For each country provide: total projectile count, intercept percentage, confidence level (CONFIRMED if official MoD statement / REPORTED if major wire / EST if estimated), and primary source with date. Countries: Saudi Arabia, UAE, Kuwait, Bahrain, Qatar, Oman. Return as JSON only with this structure: {"KSA":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"UAE":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Kuwait":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Bahrain":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Qatar":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Oman":{"total":0,"intercept_pct":0,"confidence":"EST","source":""}}`,
+    max_tokens: 1000,
+    parse: (text) => {
+      const m = text.match(/\{[\s\S]*\}/);
+      if (!m) return null;
+      const raw = JSON.parse(m[0]);
+      // Remap prompt keys to GCC_SEED codes used by the frontend
+      const KEY_MAP: Record<string, string> = { KSA:"SA", UAE:"AE", Kuwait:"KW", Bahrain:"BH", Qatar:"QA", Oman:"OM" };
+      const normalized: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(raw)) {
+        normalized[KEY_MAP[k] ?? k] = v;
+      }
+      return Object.keys(normalized).length ? normalized : null;
     },
   },
   ksa_strikes: {
