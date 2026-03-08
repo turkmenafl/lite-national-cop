@@ -105,12 +105,46 @@ const STRIKES_KSA = [
 ];
 
 const CI_SECTORS = [
-  { name:"Oil & Gas",        icon:"⬢", status:"DEGRADED",    pct:82, feed:"GDELT",  note:"Ras Tanura 85% cap. Abqaiq near-miss Mar 4." },
-  { name:"Airports",         icon:"✈", status:"RESTRICTED",  pct:60, feed:"GDELT",  note:"RUH 42%. DMM 33%. JED 112% (overflow)." },
-  { name:"Ports & Maritime", icon:"⚓", status:"DISRUPTED",   pct:45, feed:"STATIC", note:"Hormuz D7 — 0 transits. ~91 tankers holding." },
-  { name:"Power Grid",       icon:"⚡", status:"ELEVATED",    pct:88, feed:"STATIC", note:"Eastern Province proximity threat." },
-  { name:"Water / Desal",    icon:"💧", status:"OPERATIONAL", pct:90, feed:"STATIC", note:"Jubail RO on elevated watch." },
-  { name:"Telecom & Cyber",  icon:"📡", status:"ELEVATED",    pct:73, feed:"IODA",   note:"APT33 activity. AWS Gulf degraded." },
+  { name:"Oil & Gas",        icon:"⬢", status:"DEGRADED",    tier:"T1", pct:82, feed:"STATIC",  sourceTag:"ARAMCO+MoD", note:"Ras Tanura 85% cap. Abqaiq near-miss Mar 4.", source:"Aramco + Reuters + Saudi MoD",
+    assets:[
+      { name:"Ras Tanura Terminal",  tier:"T1", score:82, status:"DEGRADED",    note:"Shrapnel damage Feb 28. Operating ~85% capacity." },
+      { name:"Abqaiq Processing",    tier:"T1", score:85, status:"OPERATIONAL", note:"Near-miss Mar 4. Highest-value target. 5.7M bbl/day." },
+      { name:"Yanbu Refinery",       tier:"T2", score:72, status:"OPERATIONAL", note:"Drone attempt Mar 4 intercepted. No damage." },
+      { name:"Shaybah Field",        tier:"T2", score:65, status:"OPERATIONAL", note:"No direct threats. Remote location advantage." },
+      { name:"SATORP Jubail",        tier:"T2", score:68, status:"OPERATIONAL", note:"Enhanced security posture." },
+    ]},
+  { name:"Airports",         icon:"✈", status:"RESTRICTED",  tier:"T2", pct:60, feed:"STATIC",  sourceTag:"NOTAM+FR24", note:"RUH 42%. DMM 33%. JED 112% (overflow).", source:"NOTAM + Flightradar24 + GACA",
+    assets:[
+      { name:"King Khalid Intl (RUH)",    tier:"T2", score:75, status:"RESTRICTED",  note:"Military airspace restrictions. Delays 2-4h. 42% baseline." },
+      { name:"King Fahd Intl (DMM)",      tier:"T2", score:70, status:"RESTRICTED",  note:"Eastern Province exposure. 33% baseline." },
+      { name:"King Abdulaziz Intl (JED)", tier:"T2", score:73, status:"OPERATIONAL", note:"Least affected. Redirected traffic hub. 112% baseline." },
+    ]},
+  { name:"Ports & Maritime", icon:"⚓", status:"DISRUPTED",   tier:"T1", pct:45, feed:"STATIC", sourceTag:"PORTWATCH+UKMTO", note:"Hormuz D7 — 0 transits. ~91 tankers holding.", source:"PortWatch + UKMTO + Reuters",
+    assets:[
+      { name:"Ras Tanura Oil Port",       tier:"T1", score:82, status:"DEGRADED",    note:"Reduced throughput. Tanker queue forming. -78%." },
+      { name:"Jeddah Islamic Port",       tier:"T2", score:74, status:"OPERATIONAL", note:"Red Sea route active. +18% from Hormuz diversion." },
+      { name:"King Abdulaziz Port (Dammam)", tier:"T2", score:71, status:"RESTRICTED",  note:"Gulf-side. Essential cargo only. -62%." },
+      { name:"Jubail Commercial Port",    tier:"T2", score:69, status:"RESTRICTED",  note:"Security cordon active. -45%." },
+    ]},
+  { name:"Water / Desal",    icon:"💧", status:"OPERATIONAL", tier:"T1", pct:90, feed:"STATIC", sourceTag:"SWCC", note:"Jubail RO on elevated watch.", source:"SWCC statements + satellite",
+    assets:[
+      { name:"Jubail RO Plant",           tier:"T1", score:90, status:"OPERATIONAL", note:"World's largest. Depends on Eastern Province power. 2.1M people." },
+      { name:"Ras Al-Khair Desal/Power",  tier:"T1", score:81, status:"OPERATIONAL", note:"Dual facility. Single point of failure risk. 1.8M people." },
+      { name:"Shoaiba Plant",             tier:"T2", score:67, status:"OPERATIONAL", note:"Red Sea coast. Lower threat exposure." },
+    ]},
+  { name:"Power Grid",       icon:"⚡", status:"ELEVATED",    tier:"T1", pct:88, feed:"STATIC", sourceTag:"SEC", note:"Eastern Province proximity threat.", source:"SEC statements + satellite",
+    assets:[
+      { name:"Eastern Province Grid",     tier:"T1", score:88, status:"ELEVATED",    note:"Proximity to targets. Backup generators on standby. Desal dependency." },
+      { name:"Riyadh Grid",               tier:"T2", score:72, status:"OPERATIONAL", note:"Stable. Rolling brownout plan prepared." },
+      { name:"Western Region Grid",       tier:"T2", score:65, status:"OPERATIONAL", note:"No threat indicators." },
+    ]},
+  { name:"Telecom & Cyber",  icon:"📡", status:"ELEVATED",    tier:"T2", pct:73, feed:"IODA",   sourceTag:"IODA+CLOUDSEK", note:"APT33 activity. AWS Gulf degraded.", source:"IODA + CloudSEK + AWS Health Dashboard",
+    assets:[
+      { name:"Submarine Cables (Jeddah)", tier:"T2", score:71, status:"OPERATIONAL", note:"Red Sea cables intact." },
+      { name:"Data Centers (Riyadh)",     tier:"T2", score:73, status:"ELEVATED",    note:"APT33/OilRig activity detected." },
+      { name:"5G Core Network",           tier:"T2", score:68, status:"OPERATIONAL", note:"No degradation. Cyber defense heightened." },
+      { name:"AWS Gulf Region",           tier:"T2", score:62, status:"DEGRADED",    note:"Bahrain/UAE facilities damaged. KSA workloads migrating." },
+    ]},
 ];
 
 // Risk Clusters — badges STATIC per handover decision (live signals appear inline as evidence only)
@@ -951,7 +985,7 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
         <KpiCard label="HORMUZ"       value="Day 7"  note="0 transits / 91 tankers"  color={C.critical} feed="STATIC" />
         <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
-        <KpiCard label="KSA INTERNET" value={live.ioda.value!==null?`${live.ioda.value}%`:"—"} note="vs baseline" color={live.ioda.value!==null&&live.ioda.value<80?C.critical:C.success} feed="IODA" loading={live.ioda.loading} />
+        <KpiCard label="KSA INTERNET" value={live.ioda.value!==null?`${live.ioda.value}%`:"~99%"} note="vs baseline" color={live.ioda.value!==null?(live.ioda.value<80?C.critical:C.success):"#4ade80"} feed={live.ioda.value!==null?"IODA":"STATIC"} loading={live.ioda.loading} />
       </div>
 
       {/* ── Date-Tabbed Theater Section ── */}
@@ -1155,6 +1189,12 @@ const ScreenSituation = ({ live }) => {
 
       {/* MEDIA & SOURCE WATCH — collapsible */}
       <MediaSourceWatch live={live} />
+      {/* Source attribution */}
+      <div style={{ marginTop:12, display:"flex", gap:5, flexWrap:"wrap", justifyContent:"center" }}>
+        {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
+          <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
+        ))}
+      </div>
     </div>
   );
 };
@@ -1279,6 +1319,12 @@ const ScreenRiskClusters = ({ live }) => {
         <div style={{ fontSize:12, color:C.critical, fontWeight:"bold", marginBottom:4 }}>⚠ DEPENDENCY CHAIN</div>
         <div style={{ fontSize:13, color:"#fca5a5" }}>Eastern Province Power Grid → Jubail + Ras Al-Khair Desal → Water for 3.9M people. Grid strike = water crisis 48h.</div>
         <div style={{ fontSize:10, color:C.dim, marginTop:4 }}>SOURCES: SWCC · SEC annual reports · STATIC</div>
+      </div>
+      {/* Source attribution */}
+      <div style={{ marginTop:12, display:"flex", gap:5, flexWrap:"wrap", justifyContent:"center" }}>
+        {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
+          <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
+        ))}
       </div>
     </div>
   );
@@ -2030,11 +2076,6 @@ export default function NEMACOPLive() {
               </button>
             </div>
             <div style={{fontSize:10,color:C.dim}}>Last fetch: {fmt(lastRefresh)}</div>
-            <div style={{marginTop:4,display:"flex",gap:5}}>
-              {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
-                <span key={l} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:`${c}14`,color:c,fontWeight:500}}>{l}</span>
-              ))}
-            </div>
           </div>
         </header>
 
