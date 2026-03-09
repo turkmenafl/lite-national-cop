@@ -1179,7 +1179,8 @@ const ScreenSituation = ({ live }) => {
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [layerFilter, setLayerFilter] = useState("MENA");
-  const [rightTab, setRightTab] = useState("KSA");
+  const [rightTab, setRightTab] = useState("MENA");
+  const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
     const all = ["SA","IR","IQ","SY","IL","JO","AE","BH","KW","QA","OM","YE"];
     const m = {};
