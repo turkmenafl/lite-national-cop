@@ -1255,14 +1255,24 @@ const ScreenSituation = ({ live }) => {
 
   const dateTabs = DATE_TABS;
 
-  const IRAN_EVENTS = IRAN_STRIKES.map((s,i) => ({
-    id: s.id, time: `Mar 0${7-Math.floor(i/3)} ${String(2+i*3).padStart(2,'0')}:${15+i*5}`,
-    type: i%2===0?"Cruise Missile":"Drone (4x)", loc: s.name, status: "Hit — confirmed", sev: "critical",
-  }));
+  const IRAN_EVENTS = IRAN_STRIKES.map((s,i) => {
+    const day = 7 - Math.floor(i/3);
+    return { id: s.id, date: `2026-03-0${day}`, time: `Mar 0${day} ${String(2+i*3).padStart(2,'0')}:${15+i*5}`, type: i%2===0?"Cruise Missile":"Drone (4x)", loc: s.name, status: "Hit — confirmed", sev: "critical" };
+  });
   const IRAQ_EVENTS = IRAQ_SPILLOVER.map((s,i) => ({
-    id: s.id, time: `Mar 0${7-i} ${String(4+i*2).padStart(2,'0')}:30`,
+    id: s.id, date: `2026-03-0${7-i}`, time: `Mar 0${7-i} ${String(4+i*2).padStart(2,'0')}:30`,
     type: "Ballistic Missile", loc: s.name, status: "Hit — debris confirmed", sev: "critical",
   }));
+
+  const allIranEvents = live.acledIran.events.length > 0 ? live.acledIran.events.slice(0,25).map(normalizeACLEDEvent) : IRAN_EVENTS;
+  const filteredIranEvents = isCumulative ? allIranEvents : allIranEvents.filter(e => e.date === activeDay);
+
+  const menaSummaryFiltered = MENA_SUMMARY.map(c => {
+    if (isCumulative) return c;
+    if (c.code === "SA") return { ...c, events: filteredStrikes.length };
+    if (GCC_DAILY[c.code]) return { ...c, events: GCC_DAILY[c.code].perDay[activeDay] || 0 };
+    return c; // non-GCC: show cumulative when no per-day data
+  });
 
   return (
     <div>
