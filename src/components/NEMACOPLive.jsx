@@ -684,7 +684,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     if (mapRef.current || !mapContainerRef.current) return;
     const map = L.map(mapContainerRef.current, {
       center: [25, 48],
-      zoom: 4.6,
+      zoom: 4.1,
       maxBounds: [[10, 28], [40, 65]],
       maxBoundsViscosity: 1.0,
       zoomControl: false,
