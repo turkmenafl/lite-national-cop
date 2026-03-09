@@ -365,23 +365,18 @@ async function fetchOilPriceAPI() {
 }
 
 async function fetchFinancial() {
-  const res = await fetch(ANTHROPIC_PROXY_URL, {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      model:"claude-sonnet-4-20250514", max_tokens:400,
-      tools:[{ type:"web_search_20250305", name:"web_search" }],
-      messages:[{ role:"user", content:"Find current Brent crude price and Saudi TASI index today. Reply ONLY: BRENT:XX.XX BRENTCHG:+X.X% TASI:XXXXX TASICHG:-X.X%" }]
-    })
-  });
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
-  const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("") || "";
-  return {
-    brent:    (text.match(/BRENT[:\s]+\$?([\d.]+)/i)||[])[1]?parseFloat(text.match(/BRENT[:\s]+\$?([\d.]+)/i)[1]):null,
-    brentChg: (text.match(/BRENTCHG[:\s]+([+-]?[\d.]+%)/i)||[])[1]||null,
-    tasi:     (text.match(/TASI[:\s]+([\d,]+)/i)||[])[1]?.replace(/,/g,"")||null,
-    tasiChg:  (text.match(/TASICHG[:\s]+([+-]?[\d.]+%)/i)||[])[1]||null,
-  };
+  // Cache-only: reads from Supabase ai_cache populated by edge function.
+  // NO fallback to direct Anthropic API — if cache empty, return last known values.
+  try {
+    const { data: row, error } = await supabase
+      .from('ai_cache').select('data, updated_at').eq('key', 'financial').maybeSingle();
+    if (!error && row?.data) {
+      return { ...row.data, updatedAt: row.updated_at, source: 'CACHED' };
+    }
+  } catch(e) {
+    console.warn('[fetchFinancial] cache read failed:', e?.message);
+  }
+  return { brent: null, brentChg: null, tasi: null, tasiChg: null, updatedAt: null, source: 'CACHED' };
 }
 
 async function fetchGdelt() {
@@ -410,32 +405,21 @@ function cacheTimeAgo(isoStr) {
 }
 
 async function fetchGCCStrikes() {
-  // Primary: read from Supabase cache (populated every 10 min by ai-cache-refresh edge fn)
+  // Cache-only: reads from Supabase ai_cache populated by edge function.
+  // NO fallback to direct Anthropic API — if cache empty, return GCC_SEED data.
   try {
     const { data: row, error } = await supabase
       .from('ai_cache').select('data, updated_at').eq('key', 'gcc_strikes').maybeSingle();
     if (!error && row?.data) return { data: row.data, updatedAt: row.updated_at };
   } catch(e) {
-    console.warn('[GCCStrikes] cache read failed, falling back to API:', e?.message);
+    console.warn('[GCCStrikes] cache read failed, using seed data:', e?.message);
   }
-  // Fallback: single direct Anthropic API call covering all 6 GCC states
-  const prompt = `You are a conflict data analyst. Search for the latest verified reports on Iranian missile and drone attacks against GCC countries during the Iran-GCC conflict of February-March 2026.
-For each country — SA, AE, QA, KW, BH, OM — find total strikes, intercept %, source, confidence (CONFIRMED=official MoD/Reuters/AP, EST=think-tank).
-Reply ONLY with valid JSON:
-{"SA":{"total":19,"intercept_pct":96,"source":"Saudi MoD spokesman","confidence":"CONFIRMED","note":"96% intercept. Abqaiq near-miss Mar 4"},"AE":{"total":1276,"intercept_pct":92,"source":"UAE MoD press conference","confidence":"CONFIRMED","note":"Jebel Ali and Dubai T3 hit"},"QA":{"total":115,"intercept_pct":90,"source":"CTP-ISW","confidence":"EST","note":"Al Udeid struck. LNG suspended"},"KW":{"total":484,"intercept_pct":88,"source":"KUNA / US DoD","confidence":"EST","note":"Ali Al Salem struck"},"BH":{"total":198,"intercept_pct":85,"source":"NAVCENT","confidence":"EST","note":"5th Fleet HQ struck"},"OM":{"total":4,"intercept_pct":50,"source":"ONA","confidence":"EST","note":"Duqm Port drone"}}`;
-  const res = await fetch(ANTHROPIC_PROXY_URL, {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000,
-      tools:[{ type:"web_search_20250305", name:"web_search" }],
-      messages:[{ role:"user", content:prompt }]
-    })
-  });
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const data = await res.json();
-  const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("No JSON");
-  return { data: JSON.parse(m[0]), updatedAt: null };
+  // Return GCC_SEED as static fallback (no API call)
+  const seedData = {};
+  for (const s of GCC_SEED) {
+    seedData[s.code] = { total: s.strikes, intercept_pct: s.interceptPct, confidence: s.confidence, source: s.source };
+  }
+  return { data: seedData, updatedAt: null };
 }
 
 async function fetchKSAStrikes() {
