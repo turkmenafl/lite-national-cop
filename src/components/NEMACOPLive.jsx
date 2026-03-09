@@ -563,6 +563,7 @@ const MENA_SUMMARY = [
   
   { code:"SY", name:"Syria", flag:"🇸🇾", events:12, fatalities:4, airDrone:6, missile:4, intercepts:0, clashes:5, protests:1 },
   { code:"JO", name:"Jordan", flag:"🇯🇴", events:3, fatalities:0, airDrone:1, missile:0, intercepts:1, clashes:0, protests:8 },
+  { code:"PS", name:"Palestine", flag:"🇵🇸", events:28, fatalities:15, airDrone:8, missile:5, intercepts:0, clashes:18, protests:22 },
 ];
 
 const PROTEST_MARKERS = [
@@ -688,6 +689,8 @@ TEXT: [max 120 char summary]`;
 const GCC_CAPITALS = {
   SA: [24.69, 46.63], AE: [24.47, 54.37], QA: [25.28, 51.53],
   KW: [29.37, 47.98], BH: [26.22, 50.59], OM: [23.61, 58.59],
+  IR: [35.69, 51.39], IQ: [33.31, 44.37], SY: [33.51, 36.29],
+  IL: [31.77, 35.22], JO: [31.95, 35.93], PS: [31.90, 35.20],
 };
 
 const IRAN_STRIKES = [
@@ -996,31 +999,31 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     if (theaterView !== "GCC") return;
     if (layerFilter !== "MENA" && layerFilter !== "KSA") return;
 
-    const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
+    const POLY_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM", IRN:"IR", IRQ:"IQ", SYR:"SY", ISR:"IL", JOR:"JO", PSE:"PS" };
 
     const addPolygons = (geojson) => {
       if (!mapRef.current) return;
-      const gccFeatures = geojson.features.filter(f => {
+      const matchedFeatures = geojson.features.filter(f => {
         const iso3 = f.id || f.properties?.ISO_A3 || f.properties?.iso_a3 || "";
-        return !!GCC_ISO[iso3];
+        return !!POLY_ISO[iso3];
       });
 
-      gccFeatures.forEach(feature => {
+      matchedFeatures.forEach(feature => {
         const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
-        const iso2 = GCC_ISO[iso3];
+        const iso2 = POLY_ISO[iso3];
         if (layerFilter === "KSA" && iso2 !== "SA") return;
         if (layerFilter === "MENA" && menaCountries && !menaCountries[iso2]) return;
         const seed = GCC_SEED.find(g => g.code === iso2);
-        if (!seed) return;
-        const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
-        const airCol = seed.airspace==="CLOSED"?C.critical:seed.airspace==="RESTRICTED"?C.warning:C.success;
-        const confCol = seed.confidence==="CONFIRMED"?C.success:"#f97316";
+        const cs = MENA_SUMMARY.find(c => c.code === iso2);
+        const airCol = seed?.airspace==="CLOSED"?C.critical:seed?.airspace==="RESTRICTED"?C.warning:"rgba(255,255,255,0.5)";
+        const fillCol = seed ? airCol : "rgba(255,255,255,0.5)";
+        const confCol = seed?.confidence==="CONFIRMED"?C.success:"#f97316";
 
         const layer = L.geoJSON(feature, {
           style: {
-            fillColor: airCol,
+            fillColor: fillCol,
             fillOpacity: 0.15,
-            color: airCol,
+            color: fillCol,
             opacity: 0.3,
             weight: 1,
           },
@@ -1029,14 +1032,15 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
               lyr.setStyle({ fillOpacity: 0.4, color: "#ffffff", opacity: 0.6, weight: 1.5 });
             });
             lyr.on('mouseout', () => {
-              lyr.setStyle({ fillOpacity: 0.15, color: airCol, opacity: 0.3, weight: 1 });
+              lyr.setStyle({ fillOpacity: 0.15, color: fillCol, opacity: 0.3, weight: 1 });
             });
             lyr.on('click', () => {
               const center = GCC_CAPITALS[iso2] || lyr.getBounds().getCenter();
-              const cs = MENA_SUMMARY.find(c => c.code === iso2);
+              const countryName = cs?.name || seed?.name || iso2;
+              const popupData = cs || { code:iso2, name:countryName, flag:"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0 };
               const popup = L.popup({ className: "cop-popup", maxWidth: 260, closeButton: true })
                 .setLatLng(center)
-                .setContent(countryPopupHtml(cs || { code:iso2, name:seed.name, flag:seed.name.split(" ")[0], events:gccData.strikes, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0 }))
+                .setContent(countryPopupHtml(popupData))
                 .openOn(mapRef.current);
             });
           },
