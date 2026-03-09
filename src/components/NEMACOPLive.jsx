@@ -1338,35 +1338,71 @@ const ScreenSituation = ({ live }) => {
                 }}>{f}</button>
               ))}
             </div>
-            {/* Country pills removed — MENA shows all by default */}
             <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} menaCountries={menaCountries} />
-            {/* Map legend */}
-            <div style={{ display:"flex", gap:12, marginTop:6, flexWrap:"wrap" }}>
-              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:C.critical, display:"inline-block" }}/> Iran→KSA</span>
-              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:C.warning, display:"inline-block" }}/> Iran→GCC</span>
-              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:"#06b6d4", display:"inline-block" }}/> US/IL→Iran</span>
-              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:0, height:0, borderLeft:"5px solid transparent", borderRight:"5px solid transparent", borderBottom:"8px solid #eab308", display:"inline-block" }}/> Iraq spillover</span>
-            </div>
           </div>
 
-          {/* Right column — 4-tab event log */}
+          {/* Right column — 3-tab panel */}
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
             {/* Tab bar */}
             <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
-              {["KSA","IRAN"].map(t => (
-                <button key={t} onClick={()=>setRightTab(t)} style={{
-                  flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
-                  background:rightTab===t?"#192233":"transparent",
-                  borderBottom:rightTab===t?`2px solid ${t==="IRAN"?"#06b6d4":C.info}`:"2px solid transparent",
-                  color:rightTab===t?(t==="IRAN"?"#06b6d4":C.fg):C.muted,
-                  fontSize:10, fontWeight:rightTab===t?700:500,
-                  fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
-                }}>{t}</button>
-              ))}
+              {["MENA","KSA","IRAN"].map(t => {
+                const tabCol = t==="IRAN"?"#3b82f6":C.info;
+                return (
+                  <button key={t} onClick={()=>{setRightTab(t);if(t!=="MENA"){setHighlightedCountry(null);setMenaCountries(prev=>{const m={};Object.keys(prev).forEach(k=>m[k]=true);return m;});}}} style={{
+                    flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
+                    background:rightTab===t?"#192233":"transparent",
+                    borderBottom:rightTab===t?`2px solid ${tabCol}`:"2px solid transparent",
+                    color:rightTab===t?C.fg:C.muted,
+                    fontSize:10, fontWeight:rightTab===t?700:500,
+                    fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
+                  }}>{t}</button>
+                );
+              })}
             </div>
 
             {/* Tab content */}
             <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
+              {/* MENA tab — country list */}
+              {rightTab === "MENA" && (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MENA OVERVIEW</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{isCumulative?"CUMULATIVE":activeDay}</span>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                    {menaSummaryFiltered.map(c => {
+                      const evCol = c.events > 100 ? C.critical : c.events > 10 ? C.warning : c.events > 0 ? C.success : C.dim;
+                      const isHl = highlightedCountry === c.code;
+                      return (
+                        <div key={c.code} onClick={() => {
+                          if (isHl) {
+                            setHighlightedCountry(null);
+                            setMenaCountries(prev => { const m = {}; Object.keys(prev).forEach(k => m[k] = true); return m; });
+                          } else {
+                            setHighlightedCountry(c.code);
+                            setMenaCountries(prev => { const m = {}; Object.keys(prev).forEach(k => m[k] = (k === c.code)); return m; });
+                          }
+                        }} style={{
+                          padding:"6px 8px", borderRadius:3, cursor:"pointer",
+                          background: isHl ? `${C.info}14` : "rgba(255,255,255,0.02)",
+                          borderLeft: `2px solid ${evCol}`,
+                          transition:"background 0.1s",
+                        }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <span style={{ fontSize:11, fontWeight:600, color:isHl?C.fg:"#a0b4c8" }}>{c.flag} {c.name}</span>
+                            <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                              <span style={{ fontSize:10, color:evCol, fontWeight:700 }}>{c.events}</span>
+                              <span style={{ fontSize:10, color:c.fatalities > 0 ? C.critical : C.dim }}>{c.fatalities} ☠</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* KSA tab — event log */}
               {rightTab === "KSA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
@@ -1405,30 +1441,30 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
+              {/* IRAN tab — event log */}
               {rightTab === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ US/ISRAEL → IRAN</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{live.acledIran.loading ? "loading…" : live.acledIran.count != null ? `${live.acledIran.count} events · ACLED` : `${IRAN_STRIKES.length} sites`}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6", letterSpacing:"0.08em" }}>IRAN EVENT LOG</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{filteredIranEvents.length} event{filteredIranEvents.length!==1?"s":""}</span>
                   </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                    {(live.acledIran.events.length > 0
-                      ? live.acledIran.events.slice(0,25).map(normalizeACLEDEvent)
-                      : IRAN_EVENTS
-                    ).map(e => (
-                      <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(6,182,212,0.06)", borderLeft:"2px solid #06b6d4" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:"#06b6d4" }}>{e.type}</span>
-                          <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
+                  {filteredIranEvents.length === 0 ? (
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No events for {activeDay}</div>
+                  ) : (
+                    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                      {filteredIranEvents.map(e => (
+                        <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(59,130,246,0.06)", borderLeft:"2px solid #3b82f6" }}>
+                          <div style={{ display:"flex", justifyContent:"space-between" }}>
+                            <span style={{ fontSize:11, fontWeight:700, color:"#3b82f6" }}>{e.type}</span>
+                            <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
+                          </div>
+                          <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
+                          {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
+                          {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
                         </div>
-                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
-                        {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
-                        {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                      ))}
+                    </div>
+                  )}
             </div>
 
             {/* Theater Status panel */}
