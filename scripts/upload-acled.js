@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { parse } from "csv-parse";
-import { createReadStream } from "fs";
+import { createReadStream, readdirSync, statSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join, resolve } from "path";
 import dotenv from "dotenv";
@@ -12,10 +12,23 @@ for (const rel of ["../.env", "../../.env", "../../../.env", ".env"]) {
   dotenv.config({ path: resolve(__dirname, rel) });
 }
 
-const CSV_PATH = join(__dirname, "../src/data/ACLED_US_Iran_Regional_Crisis_2026-03-09.csv");
+// Auto-detect newest ACLED CSV in src/data/
+const DATA_DIR = join(__dirname, "../src/data");
+const acledFiles = readdirSync(DATA_DIR)
+  .filter(f => f.startsWith("ACLED") && f.endsWith(".csv"))
+  .map(f => ({ name: f, mtime: statSync(join(DATA_DIR, f)).mtimeMs }))
+  .sort((a, b) => b.mtime - a.mtime);
 
-const SUPABASE_URL  = process.env.SUPABASE_URL  || process.env.VITE_SUPABASE_URL;
-const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!acledFiles.length) {
+  console.error("No ACLED CSV found in src/data/");
+  process.exit(1);
+}
+
+const CSV_PATH = join(DATA_DIR, acledFiles[0].name);
+console.log(`Detected ACLED file: ${acledFiles[0].name}`);
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   console.error("Missing env vars. Set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env");
