@@ -1250,19 +1250,7 @@ const ScreenSituation = ({ live }) => {
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
               <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
-              <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
-                <div style={{ display:"flex", marginLeft:8, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
-                  {[["LOG","KSA EVENT LOG"],["GCC","MENA THEATER"]].map(([k,label])=>(
-                    <button key={k} onClick={()=>setTheaterView(k)} style={{
-                      padding:"4px 10px", border:"none", cursor:"pointer",
-                      background:theaterView===k?C.info+"22":"transparent",
-                      color:theaterView===k?C.info:C.dim, fontSize:10, fontWeight:theaterView===k?700:500,
-                      fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
-                    }}>{label}</button>
-                  ))}
-                </div>
-              </div>
+              <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
             </div>
             {/* Layer filter bar — MENA · KSA · IRAN */}
             <div style={{ display:"flex", gap:4, marginBottom:8 }}>
