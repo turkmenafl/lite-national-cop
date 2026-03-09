@@ -999,13 +999,13 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     if (theaterView !== "GCC") return;
     if (layerFilter !== "MENA" && layerFilter !== "KSA") return;
 
-    const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
+    const POLY_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM", IRN:"IR", IRQ:"IQ", SYR:"SY", ISR:"IL", JOR:"JO", PSE:"PS" };
 
     const addPolygons = (geojson) => {
       if (!mapRef.current) return;
-      const gccFeatures = geojson.features.filter(f => {
+      const matchedFeatures = geojson.features.filter(f => {
         const iso3 = f.id || f.properties?.ISO_A3 || f.properties?.iso_a3 || "";
-        return !!GCC_ISO[iso3];
+        return !!POLY_ISO[iso3];
       });
 
       gccFeatures.forEach(feature => {
