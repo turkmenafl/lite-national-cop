@@ -1021,9 +1021,9 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
 
         const layer = L.geoJSON(feature, {
           style: {
-            fillColor: airCol,
+            fillColor: fillCol,
             fillOpacity: 0.15,
-            color: airCol,
+            color: fillCol,
             opacity: 0.3,
             weight: 1,
           },
