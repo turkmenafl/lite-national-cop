@@ -1022,25 +1022,10 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
             });
             lyr.on('click', () => {
               const center = GCC_CAPITALS[iso2] || lyr.getBounds().getCenter();
-              const airChip = `<span style="font-size:7px;padding:2px 6px;border-radius:3px;background:${airCol}22;color:${airCol};font-weight:600">${seed.airspace}</span>`;
-              const confChip = `<span style="font-size:7px;padding:2px 5px;border-radius:3px;background:${confCol}18;color:${confCol};font-weight:500">${seed.confidence}</span>`;
-              const popup = L.popup({ className: "cop-popup", maxWidth: 280, closeButton: true })
+              const cs = MENA_SUMMARY.find(c => c.code === iso2);
+              const popup = L.popup({ className: "cop-popup", maxWidth: 260, closeButton: true })
                 .setLatLng(center)
-                .setContent(`
-                  <div>
-                    <div style="font-size:11px;font-weight:700;color:#d8e6f5;margin-bottom:6px">${seed.name}</div>
-                    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">${airChip}</div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                      <span style="font-size:16px;font-weight:800;color:${airCol}">${gccData.strikes.toLocaleString()}</span>
-                      <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(34,197,94,0.14);color:#22c55e;font-weight:600">✓ ${seed.interceptPct}%</span>
-                      ${confChip}
-                    </div>
-                    <div style="font-size:8px;color:#a0b4c8;line-height:1.7;margin-bottom:4px;border-top:1px solid #27324860;padding-top:6px">${seed.note}</div>
-                    <div style="font-size:7px;color:#526175;margin-bottom:2px">DAILY STRIKES (7d)</div>
-                    ${makeSparklineSvg(seed.daily, airCol)}
-                    <div style="font-size:7px;color:#526175;text-align:right;margin-top:2px">${seed.source}</div>
-                  </div>
-                `)
+                .setContent(countryPopupHtml(cs || { code:iso2, name:seed.name, flag:seed.name.split(" ")[0], events:gccData.strikes, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0 }))
                 .openOn(mapRef.current);
             });
           },
