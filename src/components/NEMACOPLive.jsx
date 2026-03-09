@@ -45,6 +45,7 @@ const CSS = `
   ::-webkit-scrollbar-thumb:hover { background: #2a3d56; }
   button { transition: all 0.15s ease; }
   button:hover { filter: brightness(1.15); }
+  .tab-scroll::-webkit-scrollbar { display: none; }
 `;
 const C = {
   bg:'#060b17', surface:'#192233', surfBorder:'#273248',
@@ -903,19 +904,21 @@ const GCCTheater = ({ gcc }) => {
   );
 };
 
-// ─── DATE TABS (static canonical list) ─────────────────────────────────────────
-const DATE_TABS = [
-  { id: 'cumulative', label: 'CUMULATIVE' },
-  { id: '2026-02-28', label: '02/28' },
-  { id: '2026-03-01', label: '03/01' },
-  { id: '2026-03-02', label: '03/02' },
-  { id: '2026-03-03', label: '03/03' },
-  { id: '2026-03-04', label: '03/04' },
-  { id: '2026-03-05', label: '03/05' },
-  { id: '2026-03-06', label: '03/06' },
-  { id: '2026-03-07', label: '03/07' },
-  { id: '2026-03-08', label: '03/08' },
-];
+// ─── DATE TABS (auto-generated from start date through today) ──────────────────
+const TODAY_ISO = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+})();
+const DATE_TABS = (() => {
+  const tabs = [{ id: 'cumulative', label: 'CUMULATIVE' }];
+  const end = new Date(TODAY_ISO + 'T00:00:00');
+  for (const cur = new Date('2026-02-28T00:00:00'); cur <= end; cur.setDate(cur.getDate() + 1)) {
+    const iso = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+    const [, mm, dd] = iso.split('-');
+    tabs.push({ id: iso, label: `${mm}/${dd}` });
+  }
+  return tabs;
+})();
 
 // GCC per-day seed data (static estimates distributed across days)
 const GCC_DAILY = {
@@ -933,6 +936,9 @@ const ScreenSituation = ({ live }) => {
   const [theaterView, setTheaterView] = useState("LOG");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
+
+  const tabScrollRef = useRef(null);
+  const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
 
   const isCumulative = activeDay === "cumulative";
   const strikeData = live.ksaStrikes?.data || STRIKES_KSA;
@@ -1002,25 +1008,32 @@ const ScreenSituation = ({ live }) => {
 
       {/* ── Date-Tabbed Theater Section ── */}
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", marginBottom:14, overflow:"hidden" }}>
-        {/* Date tabs */}
-        <div style={{ display:"flex", overflowX:"auto", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
-          {dateTabs.map(t => {
-            const isActive = activeDay === t.id;
-            const dayStrikes = t.id==="cumulative" ? strikeData.length : strikeData.filter(s=>s.date===t.id).length;
-            return (
-              <button key={t.id} onClick={()=>{setActiveDay(t.id);setSelEvent(null);}} style={{
-                padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
-                background:isActive?"#192233":"transparent",
-                borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
-                color:isActive?C.fg:C.muted, fontSize:10, fontWeight:isActive?700:500,
-                fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
-                display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
-              }}>
-                {t.id==="cumulative"?"⊞ ":""}{t.label}
-                {dayStrikes > 0 && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?`${C.info}22`:`${C.dim}22`, color:isActive?C.info:C.dim, fontWeight:700 }}>{dayStrikes}</span>}
-              </button>
-            );
-          })}
+        {/* Date tabs with horizontal scroll */}
+        <div style={{ display:"flex", alignItems:"stretch", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
+          <button onClick={()=>scrollTabs(-1)} style={{ flexShrink:0, width:22, border:"none", background:"transparent", color:C.dim, cursor:"pointer", fontSize:16, lineHeight:1, padding:0 }}>‹</button>
+          <div ref={tabScrollRef} className="tab-scroll" style={{ display:"flex", overflowX:"auto", flex:1, scrollbarWidth:"none", msOverflowStyle:"none" }}>
+            {dateTabs.map(t => {
+              const isActive = activeDay === t.id;
+              const isToday = t.id === TODAY_ISO;
+              const dayStrikes = t.id==="cumulative" ? strikeData.length : strikeData.filter(s=>s.date===t.id).length;
+              const hasStrikes = dayStrikes > 0;
+              return (
+                <button key={t.id} onClick={(e)=>{setActiveDay(t.id);setSelEvent(null);e.currentTarget.scrollIntoView({inline:'nearest',block:'nearest'});}} style={{
+                  padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
+                  background:isActive?"#192233":"transparent",
+                  borderBottom:isActive?`2px solid ${C.info}`:"2px solid transparent",
+                  color:isActive?C.fg:C.muted, fontSize:10, fontWeight:isActive?700:500,
+                  fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
+                  display:"flex", alignItems:"center", gap:5, transition:"all 0.15s ease",
+                }}>
+                  {t.id==="cumulative"?"⊞ ":""}{t.label}
+                  {isToday && <span style={{ fontSize:7, color:C.info, letterSpacing:"0.05em", opacity:0.8 }}>TODAY</span>}
+                  {t.id !== "cumulative" && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?(hasStrikes?`${C.info}22`:`${C.dim}22`):(hasStrikes?`${C.dim}22`:"transparent"), color:isActive?(hasStrikes?C.info:C.muted):(hasStrikes?C.dim:C.dim), fontWeight:700 }}>{dayStrikes}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <button onClick={()=>scrollTabs(1)} style={{ flexShrink:0, width:22, border:"none", background:"transparent", color:C.dim, cursor:"pointer", fontSize:16, lineHeight:1, padding:0 }}>›</button>
         </div>
 
         {/* Map + Right Panel */}
