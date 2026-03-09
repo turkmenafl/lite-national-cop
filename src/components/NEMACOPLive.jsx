@@ -426,15 +426,25 @@ async function fetchGCCStrikes() {
 // ─── ACLED ────────────────────────────────────────────────────────────────────
 async function fetchACLEDEvents(country) {
   try {
-    let query = supabase.from("acled_events").select("*", { count: "exact" });
+    const base = import.meta.env.VITE_SUPABASE_URL;
+    const key  = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const headers = {
+      "apikey": key,
+      "Authorization": `Bearer ${key}`,
+      "Prefer": "count=exact",
+    };
+    const params = new URLSearchParams({ select: "*", order: "event_date.desc" });
     if (Array.isArray(country)) {
-      query = query.in("country", country);
+      params.set("country", `in.(${country.map(c => `"${c}"`).join(",")})`);
     } else {
-      query = query.eq("country", country);
+      params.set("country", `eq.${country}`);
     }
-    const { data, count, error } = await query.order("event_date", { ascending: false });
-    if (error) throw error;
-    return { events: data || [], count: count ?? 0 };
+    const res = await fetch(`${base}/rest/v1/acled_events?${params}`, { headers });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const countStr = res.headers.get("Content-Range")?.split("/")[1];
+    const count = countStr ? parseInt(countStr, 10) : data.length;
+    return { events: data || [], count };
   } catch (e) {
     console.warn("[ACLED] fetch failed:", e?.message);
     return null;
