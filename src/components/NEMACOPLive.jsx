@@ -786,27 +786,35 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         iconSize: [0, 0], iconAnchor: [-5, 8],
       }),
     }).addTo(map);
-    // MENA country labels
+    // MENA country labels (clickable for popup)
     MENA_LABELS.forEach(({ name, lat, lng }) => {
-      L.marker([lat, lng], {
-        interactive: false,
+      const m = L.marker([lat, lng], {
         icon: L.divIcon({
           className: "",
-          html: `<div style="color:rgba(216,230,245,0.35);font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.12em;pointer-events:none">${name}</div>`,
+          html: `<div style="color:rgba(216,230,245,0.35);font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.12em;cursor:pointer">${name}</div>`,
           iconSize: [0, 0], iconAnchor: [-5, 5],
         }),
       }).addTo(map);
+      m.on('click', () => {
+        const code = NAME_TO_CODE[name];
+        const cs = MENA_SUMMARY.find(c => c.code === code);
+        if (cs) L.popup({ className:"cop-popup", maxWidth:260, closeButton:true }).setLatLng([lat,lng]).setContent(countryPopupHtml(cs)).openOn(map);
+      });
     });
-    // GCC country labels
+    // GCC country labels (clickable for popup)
     [["KSA",24.0,44.5],["UAE",23.5,54.5],["QATAR",25.5,51.3],["KUWAIT",29.8,47.5],["BAHRAIN",26.4,50.3],["OMAN",21.5,57.0]].forEach(([name,lat,lng]) => {
-      L.marker([lat, lng], {
-        interactive: false,
+      const m = L.marker([lat, lng], {
         icon: L.divIcon({
           className: "",
-          html: `<div style="color:rgba(216,230,245,0.25);font-size:9px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;letter-spacing:0.1em;pointer-events:none">${name}</div>`,
+          html: `<div style="color:rgba(216,230,245,0.25);font-size:9px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;letter-spacing:0.1em;cursor:pointer">${name}</div>`,
           iconSize: [0, 0], iconAnchor: [-5, 5],
         }),
       }).addTo(map);
+      m.on('click', () => {
+        const code = NAME_TO_CODE[name];
+        const cs = MENA_SUMMARY.find(c => c.code === code);
+        if (cs) L.popup({ className:"cop-popup", maxWidth:260, closeButton:true }).setLatLng([lat,lng]).setContent(countryPopupHtml(cs)).openOn(map);
+      });
     });
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
