@@ -865,14 +865,13 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
           layersRef.current.push(lbl);
         });
       }
-      // Iran strike markers (cyan)
+      // Iran strike markers (US/Coalition → blue)
       if (showIRAN) {
         IRAN_STRIKES.forEach(s => {
           const m = L.marker([s.lat, s.lng], {
-            interactive: false,
             icon: L.divIcon({
               className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #06b6d4;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#06b6d4;opacity:0.9"></div></div>`,
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
               iconSize: [14, 14], iconAnchor: [7, 7],
             }),
           }).addTo(map);
@@ -881,22 +880,21 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
             interactive: false,
             icon: L.divIcon({
               className: "",
-              html: `<div style="color:#06b6d4;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
+              html: `<div style="color:#3b82f6;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
               iconSize: [0, 0], iconAnchor: [-10, 4],
             }),
           }).addTo(map);
           layersRef.current.push(lbl);
         });
       }
-      // Iraq spillover markers (yellow triangles)
+      // Iraq spillover markers (US/Coalition → blue dots)
       if (showIRAQ) {
         IRAQ_SPILLOVER.forEach(s => {
           const m = L.marker([s.lat, s.lng], {
-            interactive: false,
             icon: L.divIcon({
               className: "",
-              html: `<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #eab308;pointer-events:none"></div>`,
-              iconSize: [14, 12], iconAnchor: [7, 12],
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
             }),
           }).addTo(map);
           layersRef.current.push(m);
@@ -904,11 +902,24 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
             interactive: false,
             icon: L.divIcon({
               className: "",
-              html: `<div style="color:#eab308;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, -2],
+              html: `<div style="color:#3b82f6;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, 4],
             }),
           }).addTo(map);
           layersRef.current.push(lbl);
+        });
+      }
+      // Protest markers (civil unrest → yellow)
+      if (showIRAN || showIRAQ) {
+        PROTEST_MARKERS.forEach(p => {
+          const m = L.marker([p.lat, p.lng], {
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="width:8px;height:8px;border-radius:50%;background:#eab308;opacity:0.8;pointer-events:none"></div>`,
+              iconSize: [8, 8], iconAnchor: [4, 4],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
         });
       }
     } else {
