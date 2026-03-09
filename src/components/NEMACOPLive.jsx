@@ -596,6 +596,31 @@ const GCC_CAPITALS = {
   KW: [29.37, 47.98], BH: [26.22, 50.59], OM: [23.61, 58.59],
 };
 
+const IRAN_STRIKES = [
+  { id:"IR1", name:"Bandar Abbas", lat:27.19, lng:56.28 },
+  { id:"IR2", name:"Bushehr", lat:28.97, lng:50.84 },
+  { id:"IR3", name:"Isfahan", lat:32.65, lng:51.67 },
+  { id:"IR4", name:"Karaj", lat:35.83, lng:50.99 },
+  { id:"IR5", name:"Tehran", lat:35.69, lng:51.39 },
+  { id:"IR6", name:"Kermanshah", lat:34.31, lng:47.07 },
+  { id:"IR7", name:"Tabriz", lat:38.08, lng:46.29 },
+  { id:"IR8", name:"Qom", lat:34.64, lng:50.88 },
+];
+
+const IRAQ_SPILLOVER = [
+  { id:"IQ1", name:"Erbil", lat:36.19, lng:44.01 },
+  { id:"IQ2", name:"Harir", lat:35.47, lng:44.39 },
+];
+
+const MENA_LABELS = [
+  { name:"IRAN", lat:32.5, lng:53.5 },
+  { name:"IRAQ", lat:33.3, lng:43.5 },
+  { name:"SYRIA", lat:35.0, lng:38.5 },
+  { name:"JORDAN", lat:31.5, lng:36.5 },
+  { name:"ISRAEL", lat:31.5, lng:34.8 },
+  { name:"YEMEN", lat:15.5, lng:47.5 },
+];
+
 const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
