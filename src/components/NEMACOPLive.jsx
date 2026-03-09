@@ -560,7 +560,7 @@ const MENA_SUMMARY = [
   { code:"IR", name:"Iran", flag:"🇮🇷", events:90, fatalities:45, airDrone:52, missile:38, intercepts:0, clashes:12, protests:49 },
   { code:"IQ", name:"Iraq", flag:"🇮🇶", events:24, fatalities:8, airDrone:12, missile:8, intercepts:0, clashes:6, protests:15 },
   { code:"IL", name:"Israel", flag:"🇮🇱", events:35, fatalities:2, airDrone:20, missile:15, intercepts:33, clashes:0, protests:3 },
-  { code:"YE", name:"Yemen", flag:"🇾🇪", events:18, fatalities:6, airDrone:10, missile:5, intercepts:0, clashes:8, protests:2 },
+  
   { code:"SY", name:"Syria", flag:"🇸🇾", events:12, fatalities:4, airDrone:6, missile:4, intercepts:0, clashes:5, protests:1 },
   { code:"JO", name:"Jordan", flag:"🇯🇴", events:3, fatalities:0, airDrone:1, missile:0, intercepts:1, clashes:0, protests:8 },
 ];
@@ -573,7 +573,7 @@ const PROTEST_MARKERS = [
   { id:"PR5", lat:26.22, lng:50.59, name:"Manama" },
 ];
 
-const NAME_TO_CODE = { IRAN:"IR", IRAQ:"IQ", SYRIA:"SY", JORDAN:"JO", ISRAEL:"IL", YEMEN:"YE", KSA:"SA", UAE:"AE", QATAR:"QA", KUWAIT:"KW", BAHRAIN:"BH", OMAN:"OM" };
+const NAME_TO_CODE = { IRAN:"IR", IRAQ:"IQ", SYRIA:"SY", JORDAN:"JO", ISRAEL:"IL", KSA:"SA", UAE:"AE", QATAR:"QA", KUWAIT:"KW", BAHRAIN:"BH", OMAN:"OM", PALESTINE:"PS" };
 
 function countryPopupHtml(cs) {
   if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
@@ -712,7 +712,7 @@ const MENA_LABELS = [
   { name:"SYRIA", lat:35.0, lng:38.5 },
   { name:"JORDAN", lat:31.5, lng:36.5 },
   { name:"ISRAEL", lat:31.5, lng:34.8 },
-  { name:"YEMEN", lat:15.5, lng:47.5 },
+  { name:"PALESTINE", lat:31.9, lng:35.2 },
 ];
 
 const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "MENA", menaCountries }) => {
@@ -1193,16 +1193,16 @@ const ScreenSituation = ({ live }) => {
   const [rightTab, setRightTab] = useState("MENA");
   const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
-    const all = ["SA","IR","IQ","SY","IL","JO","AE","BH","KW","QA","OM","YE"];
+    const all = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
     const m = {};
     all.forEach(c => m[c] = true);
     return m;
   });
   const MENA_COUNTRY_LABELS = [
-    { code:"SA", label:"Saudi Arabia" }, { code:"IR", label:"Iran" }, { code:"IQ", label:"Iraq" },
-    { code:"SY", label:"Syria" }, { code:"IL", label:"Israel" }, { code:"JO", label:"Jordan" },
-    { code:"AE", label:"UAE" }, { code:"BH", label:"Bahrain" }, { code:"KW", label:"Kuwait" },
-    { code:"QA", label:"Qatar" }, { code:"OM", label:"Oman" }, { code:"YE", label:"Yemen" },
+    { code:"IR", label:"Iran" }, { code:"IL", label:"Israel" }, { code:"IQ", label:"Iraq" },
+    { code:"AE", label:"UAE" }, { code:"SY", label:"Syria" }, { code:"BH", label:"Bahrain" },
+    { code:"KW", label:"Kuwait" }, { code:"SA", label:"Saudi Arabia" }, { code:"QA", label:"Qatar" },
+    { code:"PS", label:"Palestine" }, { code:"JO", label:"Jordan" }, { code:"OM", label:"Oman" },
   ];
   const toggleMenaCountry = (code) => setMenaCountries(prev => ({ ...prev, [code]: !prev[code] }));
 
