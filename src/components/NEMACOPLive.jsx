@@ -1265,21 +1265,7 @@ const ScreenSituation = ({ live }) => {
                 }}>{f}</button>
               ))}
             </div>
-            {/* Country toggle pills — only in MENA view */}
-            {layerFilter === "MENA" && (
-              <div style={{ display:"flex", gap:3, marginBottom:8, flexWrap:"wrap" }}>
-                {MENA_COUNTRY_LABELS.map(c => (
-                  <button key={c.code} onClick={()=>toggleMenaCountry(c.code)} style={{
-                    padding:"3px 8px", border:`1px solid ${menaCountries[c.code]?(c.code==="IR"?"#06b6d4":c.code==="IQ"?"#eab308":C.info):C.surfBorder}`,
-                    borderRadius:12, cursor:"pointer",
-                    background:menaCountries[c.code]?(c.code==="IR"?"#06b6d418":c.code==="IQ"?"#eab30818":`${C.info}18`):"transparent",
-                    color:menaCountries[c.code]?(c.code==="IR"?"#06b6d4":c.code==="IQ"?"#eab308":C.info):C.dim,
-                    fontSize:9, fontWeight:menaCountries[c.code]?700:400,
-                    fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.03em",
-                  }}>{c.label}</button>
-                ))}
-              </div>
-            )}
+            {/* Country pills removed — MENA shows all by default */}
             <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} menaCountries={menaCountries} />
             {/* Map legend */}
             <div style={{ display:"flex", gap:12, marginTop:6, flexWrap:"wrap" }}>
