@@ -1064,6 +1064,8 @@ const ScreenSituation = ({ live }) => {
   const [theaterView, setTheaterView] = useState("LOG");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
+  const [layerFilter, setLayerFilter] = useState("ALL");
+  const [rightTab, setRightTab] = useState("KSA");
 
   const tabScrollRef = useRef(null);
   const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
