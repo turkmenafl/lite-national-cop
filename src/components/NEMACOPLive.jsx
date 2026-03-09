@@ -687,10 +687,12 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       zoom: 4.46,
       maxBounds: [[10, 28], [40, 65]],
       maxBoundsViscosity: 1.0,
-      zoomControl: false,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
+      zoomControl: true,
+      dragging: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      touchZoom: true,
+      pinchZoom: true,
       attributionControl: false,
     });
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
