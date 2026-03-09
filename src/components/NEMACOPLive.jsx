@@ -687,7 +687,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       zoom: 4.46,
       maxBounds: [[10, 28], [40, 65]],
       maxBoundsViscosity: 1.0,
-      zoomControl: true,
+      zoomControl: false,
       dragging: true,
       scrollWheelZoom: true,
       doubleClickZoom: true,
