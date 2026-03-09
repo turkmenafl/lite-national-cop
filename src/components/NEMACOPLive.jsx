@@ -672,7 +672,7 @@ const MENA_LABELS = [
   { name:"YEMEN", lat:15.5, lng:47.5 },
 ];
 
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "ALL" }) => {
+const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "MENA", menaCountries }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
@@ -770,17 +770,18 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
 
-    const showKSA = layerFilter === "ALL" || layerFilter === "KSA";
-    const showGCC = layerFilter === "ALL" || layerFilter === "GCC";
-    const showIRAN = layerFilter === "ALL" || layerFilter === "IRAN";
-    const showIRAQ = layerFilter === "ALL" || layerFilter === "IRAQ";
+    const showKSA = layerFilter === "MENA" ? !!menaCountries?.SA : layerFilter === "KSA";
+    const showGCC = layerFilter === "MENA" ? !!(menaCountries?.AE || menaCountries?.BH || menaCountries?.KW || menaCountries?.QA || menaCountries?.OM) : false;
+    const showIRAN = layerFilter === "MENA" ? !!menaCountries?.IR : layerFilter === "IRAN";
+    const showIRAQ = layerFilter === "MENA" ? !!menaCountries?.IQ : false;
 
     if (theaterView === "GCC") {
       // GCC country markers
       if (showGCC || showKSA) {
         (gccMarkers || []).forEach(g => {
-          if (!showKSA && g.code === "SA") return;
-          if (!showGCC && g.code !== "SA") return;
+          if (g.code === "SA" && !showKSA) return;
+          if (g.code !== "SA" && !showGCC) return;
+          if (layerFilter === "MENA" && menaCountries && !menaCountries[g.code]) return;
           const coords = GCC_CAPITALS[g.code];
           if (!coords) return;
           const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
@@ -916,7 +917,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         });
       }
     }
-  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter]);
+  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter, menaCountries]);
 
   // GCC country polygons with hover/click — only in MENA view
   useEffect(() => {
@@ -925,7 +926,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     gccPolygonsRef.current.forEach(l => map.removeLayer(l));
     gccPolygonsRef.current = [];
     if (theaterView !== "GCC") return;
-    if (layerFilter !== "ALL" && layerFilter !== "GCC" && layerFilter !== "KSA") return;
+    if (layerFilter !== "MENA" && layerFilter !== "KSA") return;
 
     const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
 
@@ -940,7 +941,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
         const iso2 = GCC_ISO[iso3];
         if (layerFilter === "KSA" && iso2 !== "SA") return;
-        if (layerFilter === "GCC" && iso2 === "SA") return;
+        if (layerFilter === "MENA" && menaCountries && !menaCountries[iso2]) return;
         const seed = GCC_SEED.find(g => g.code === iso2);
         if (!seed) return;
         const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
@@ -1115,8 +1116,21 @@ const ScreenSituation = ({ live }) => {
   const [theaterView, setTheaterView] = useState("LOG");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
-  const [layerFilter, setLayerFilter] = useState("ALL");
+  const [layerFilter, setLayerFilter] = useState("MENA");
   const [rightTab, setRightTab] = useState("KSA");
+  const [menaCountries, setMenaCountries] = useState(() => {
+    const all = ["SA","IR","IQ","SY","IL","JO","AE","BH","KW","QA","OM","YE"];
+    const m = {};
+    all.forEach(c => m[c] = true);
+    return m;
+  });
+  const MENA_COUNTRY_LABELS = [
+    { code:"SA", label:"Saudi Arabia" }, { code:"IR", label:"Iran" }, { code:"IQ", label:"Iraq" },
+    { code:"SY", label:"Syria" }, { code:"IL", label:"Israel" }, { code:"JO", label:"Jordan" },
+    { code:"AE", label:"UAE" }, { code:"BH", label:"Bahrain" }, { code:"KW", label:"Kuwait" },
+    { code:"QA", label:"Qatar" }, { code:"OM", label:"Oman" }, { code:"YE", label:"Yemen" },
+  ];
+  const toggleMenaCountry = (code) => setMenaCountries(prev => ({ ...prev, [code]: !prev[code] }));
 
   const tabScrollRef = useRef(null);
   const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
@@ -1250,20 +1264,35 @@ const ScreenSituation = ({ live }) => {
                 </div>
               </div>
             </div>
-            {/* Layer filter bar */}
+            {/* Layer filter bar — MENA · KSA · IRAN */}
             <div style={{ display:"flex", gap:4, marginBottom:8 }}>
-              {["ALL","KSA","GCC","IRAN","IRAQ"].map(f => (
+              {["MENA","KSA","IRAN"].map(f => (
                 <button key={f} onClick={()=>setLayerFilter(f)} style={{
-                  padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":f==="IRAQ"?"#eab308":C.info):C.surfBorder}`,
+                  padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.surfBorder}`,
                   borderRadius:3, cursor:"pointer",
-                  background:layerFilter===f?(f==="IRAN"?"#06b6d422":f==="IRAQ"?"#eab30822":`${C.info}22`):"transparent",
-                  color:layerFilter===f?(f==="IRAN"?"#06b6d4":f==="IRAQ"?"#eab308":C.info):C.dim,
+                  background:layerFilter===f?(f==="IRAN"?"#06b6d422":`${C.info}22`):"transparent",
+                  color:layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.dim,
                   fontSize:10, fontWeight:layerFilter===f?700:500,
                   fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
                 }}>{f}</button>
               ))}
             </div>
-            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} />
+            {/* Country toggle pills — only in MENA view */}
+            {layerFilter === "MENA" && (
+              <div style={{ display:"flex", gap:3, marginBottom:8, flexWrap:"wrap" }}>
+                {MENA_COUNTRY_LABELS.map(c => (
+                  <button key={c.code} onClick={()=>toggleMenaCountry(c.code)} style={{
+                    padding:"3px 8px", border:`1px solid ${menaCountries[c.code]?(c.code==="IR"?"#06b6d4":c.code==="IQ"?"#eab308":C.info):C.surfBorder}`,
+                    borderRadius:12, cursor:"pointer",
+                    background:menaCountries[c.code]?(c.code==="IR"?"#06b6d418":c.code==="IQ"?"#eab30818":`${C.info}18`):"transparent",
+                    color:menaCountries[c.code]?(c.code==="IR"?"#06b6d4":c.code==="IQ"?"#eab308":C.info):C.dim,
+                    fontSize:9, fontWeight:menaCountries[c.code]?700:400,
+                    fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.03em",
+                  }}>{c.label}</button>
+                ))}
+              </div>
+            )}
+            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} menaCountries={menaCountries} />
             {/* Map legend */}
             <div style={{ display:"flex", gap:12, marginTop:6, flexWrap:"wrap" }}>
               <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:C.critical, display:"inline-block" }}/> Iran→KSA</span>
@@ -1277,12 +1306,12 @@ const ScreenSituation = ({ live }) => {
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
             {/* Tab bar */}
             <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
-              {["KSA","GCC","IRAN","IRAQ"].map(t => (
+              {["KSA","IRAN"].map(t => (
                 <button key={t} onClick={()=>setRightTab(t)} style={{
                   flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
                   background:rightTab===t?"#192233":"transparent",
-                  borderBottom:rightTab===t?`2px solid ${t==="IRAN"?"#06b6d4":t==="IRAQ"?"#eab308":C.info}`:"2px solid transparent",
-                  color:rightTab===t?(t==="IRAN"?"#06b6d4":t==="IRAQ"?"#eab308":C.fg):C.muted,
+                  borderBottom:rightTab===t?`2px solid ${t==="IRAN"?"#06b6d4":C.info}`:"2px solid transparent",
+                  color:rightTab===t?(t==="IRAN"?"#06b6d4":C.fg):C.muted,
                   fontSize:10, fontWeight:rightTab===t?700:500,
                   fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
                 }}>{t}</button>
@@ -1329,49 +1358,10 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {rightTab === "GCC" && (
-                <>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>GCC EVENT LOG</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{live.acledGcc.loading ? "loading…" : live.acledGcc.count != null ? `${live.acledGcc.count} events · ACLED` : "Bahrain · Kuwait · Qatar · UAE"}</span>
-                  </div>
-                  {live.acledGcc.events.length > 0 ? (
-                    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                      {live.acledGcc.events.slice(0,30).map(normalizeACLEDEvent).map(e => {
-                        const col = e.severity==="critical"?C.critical:C.warning;
-                        return (
-                          <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
-                            <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
-                              <span style={{ fontSize:10, color:C.dim }}>{e.date}</span>
-                            </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:1 }}>{e.location}</div>
-                            <div style={{ fontSize:10, color:C.muted, marginTop:1 }}>{e.country}{e.fatalities > 0 && <span style={{ color:C.critical, marginLeft:6 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</span>}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    getGCCTheaterData().filter(g=>["BH","KW","QA","AE"].includes(g.code)).map(g => {
-                      const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
-                      return (
-                        <div key={g.code} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${airCol}`, marginBottom:3 }}>
-                          <div style={{ display:"flex", justifyContent:"space-between" }}>
-                            <span style={{ fontSize:11, fontWeight:700, color:airCol }}>{g.name}</span>
-                            <span style={{ fontSize:14, fontWeight:800, color:airCol }}>{g.strikes.toLocaleString()}</span>
-                          </div>
-                          <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{g.note}</div>
-                        </div>
-                      );
-                    })
-                  )}
-                </>
-              )}
-
               {rightTab === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ IRAN EVENTS</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ US/ISRAEL → IRAN</span>
                     <span style={{ fontSize:10, color:C.dim }}>{live.acledIran.loading ? "loading…" : live.acledIran.count != null ? `${live.acledIran.count} events · ACLED` : `${IRAN_STRIKES.length} sites`}</span>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
@@ -1382,31 +1372,6 @@ const ScreenSituation = ({ live }) => {
                       <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(6,182,212,0.06)", borderLeft:"2px solid #06b6d4" }}>
                         <div style={{ display:"flex", justifyContent:"space-between" }}>
                           <span style={{ fontSize:11, fontWeight:700, color:"#06b6d4" }}>{e.type}</span>
-                          <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
-                        </div>
-                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
-                        {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
-                        {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {rightTab === "IRAQ" && (
-                <>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#eab308", letterSpacing:"0.08em" }}>▶ IRAQ EVENTS</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{live.acledIraq.loading ? "loading…" : live.acledIraq.count != null ? `${live.acledIraq.count} events · ACLED` : `${IRAQ_SPILLOVER.length} events`}</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                    {(live.acledIraq.events.length > 0
-                      ? live.acledIraq.events.slice(0,25).map(normalizeACLEDEvent)
-                      : IRAQ_EVENTS
-                    ).map(e => (
-                      <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(234,179,8,0.06)", borderLeft:"2px solid #eab308" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:"#eab308" }}>{e.type}</span>
                           <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
                         </div>
                         <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
