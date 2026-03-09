@@ -1352,7 +1352,7 @@ const ScreenSituation = ({ live }) => {
           </div>
         </div>
       </div>
-      {/* GCC Theater banner removed — info available in GCC THEATER map view */}
+      {/* GCC Theater banner removed — info available in MENA THEATER map view */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
