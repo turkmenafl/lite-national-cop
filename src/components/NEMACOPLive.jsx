@@ -1476,6 +1476,8 @@ const ScreenSituation = ({ live }) => {
                       ))}
                     </div>
                   )}
+                </>
+              )}
             </div>
 
             {/* Theater Status panel */}
