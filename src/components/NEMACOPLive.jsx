@@ -1193,16 +1193,16 @@ const ScreenSituation = ({ live }) => {
   const [rightTab, setRightTab] = useState("MENA");
   const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
-    const all = ["SA","IR","IQ","SY","IL","JO","AE","BH","KW","QA","OM","YE"];
+    const all = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
     const m = {};
     all.forEach(c => m[c] = true);
     return m;
   });
   const MENA_COUNTRY_LABELS = [
-    { code:"SA", label:"Saudi Arabia" }, { code:"IR", label:"Iran" }, { code:"IQ", label:"Iraq" },
-    { code:"SY", label:"Syria" }, { code:"IL", label:"Israel" }, { code:"JO", label:"Jordan" },
-    { code:"AE", label:"UAE" }, { code:"BH", label:"Bahrain" }, { code:"KW", label:"Kuwait" },
-    { code:"QA", label:"Qatar" }, { code:"OM", label:"Oman" }, { code:"YE", label:"Yemen" },
+    { code:"IR", label:"Iran" }, { code:"IL", label:"Israel" }, { code:"IQ", label:"Iraq" },
+    { code:"AE", label:"UAE" }, { code:"SY", label:"Syria" }, { code:"BH", label:"Bahrain" },
+    { code:"KW", label:"Kuwait" }, { code:"SA", label:"Saudi Arabia" }, { code:"QA", label:"Qatar" },
+    { code:"PS", label:"Palestine" }, { code:"JO", label:"Jordan" }, { code:"OM", label:"Oman" },
   ];
   const toggleMenaCountry = (code) => setMenaCountries(prev => ({ ...prev, [code]: !prev[code] }));
 
