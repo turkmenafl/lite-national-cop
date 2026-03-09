@@ -925,7 +925,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     gccPolygonsRef.current.forEach(l => map.removeLayer(l));
     gccPolygonsRef.current = [];
     if (theaterView !== "GCC") return;
-    if (layerFilter !== "ALL" && layerFilter !== "GCC" && layerFilter !== "KSA") return;
+    if (layerFilter !== "MENA" && layerFilter !== "KSA") return;
 
     const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
 
