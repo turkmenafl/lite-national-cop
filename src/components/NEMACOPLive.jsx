@@ -672,7 +672,7 @@ const MENA_LABELS = [
   { name:"YEMEN", lat:15.5, lng:47.5 },
 ];
 
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "ALL" }) => {
+const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "MENA", menaCountries }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
