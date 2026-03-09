@@ -1032,14 +1032,15 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
               lyr.setStyle({ fillOpacity: 0.4, color: "#ffffff", opacity: 0.6, weight: 1.5 });
             });
             lyr.on('mouseout', () => {
-              lyr.setStyle({ fillOpacity: 0.15, color: airCol, opacity: 0.3, weight: 1 });
+              lyr.setStyle({ fillOpacity: 0.15, color: fillCol, opacity: 0.3, weight: 1 });
             });
             lyr.on('click', () => {
               const center = GCC_CAPITALS[iso2] || lyr.getBounds().getCenter();
-              const cs = MENA_SUMMARY.find(c => c.code === iso2);
+              const countryName = cs?.name || seed?.name || iso2;
+              const popupData = cs || { code:iso2, name:countryName, flag:"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0 };
               const popup = L.popup({ className: "cop-popup", maxWidth: 260, closeButton: true })
                 .setLatLng(center)
-                .setContent(countryPopupHtml(cs || { code:iso2, name:seed.name, flag:seed.name.split(" ")[0], events:gccData.strikes, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0 }))
+                .setContent(countryPopupHtml(popupData))
                 .openOn(mapRef.current);
             });
           },
