@@ -695,6 +695,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       pinchZoom: true,
       attributionControl: false,
     });
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
       tileSize: 256,
       detectRetina: true,
