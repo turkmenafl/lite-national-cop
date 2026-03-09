@@ -1017,8 +1017,31 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
   }, [theaterView, gccMarkers, layerFilter]);
 
   return (
-    <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520 }}>
+    <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520, position: "relative" }}>
       <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+      <div style={{
+        position: "absolute", top: 8, right: 8, zIndex: 1000,
+        background: "rgba(6,11,23,0.85)", border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 4, padding: "6px 10px",
+        fontFamily: "'JetBrains Mono',monospace", fontSize: 9, lineHeight: 1.8,
+        pointerEvents: "none",
+      }}>
+        {[
+          { shape: "dot", color: "#ef4444", label: "Explosion / Strike" },
+          { shape: "dot", color: "#f97316", label: "Armed clash" },
+          { shape: "dot", color: "#eab308", label: "Remote violence" },
+          { shape: "dot", color: "#3b82f6", label: "Protest / Civil unrest" },
+          { shape: "triangle", color: "#eab308", label: "US/Coalition forces" },
+          { shape: "ring", color: "#ef4444", label: "Hormuz closure" },
+        ].map((e, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.55)" }}>
+            {e.shape === "dot" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: e.color, display: "inline-block", flexShrink: 0 }} />}
+            {e.shape === "triangle" && <span style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderBottom: `7px solid ${e.color}`, display: "inline-block", flexShrink: 0 }} />}
+            {e.shape === "ring" && <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1.5px solid ${e.color}`, background: "transparent", display: "inline-block", flexShrink: 0 }} />}
+            {e.label}
+          </div>
+        ))}
+      </div>
     </div>
   );
 });
