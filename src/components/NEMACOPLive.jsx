@@ -916,7 +916,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         });
       }
     }
-  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter]);
+  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter, menaCountries]);
 
   // GCC country polygons with hover/click — only in MENA view
   useEffect(() => {
