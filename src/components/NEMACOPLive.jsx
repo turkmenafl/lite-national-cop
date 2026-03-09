@@ -1305,12 +1305,12 @@ const ScreenSituation = ({ live }) => {
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
             {/* Tab bar */}
             <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
-              {["KSA","GCC","IRAN","IRAQ"].map(t => (
+              {["KSA","IRAN"].map(t => (
                 <button key={t} onClick={()=>setRightTab(t)} style={{
                   flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
                   background:rightTab===t?"#192233":"transparent",
-                  borderBottom:rightTab===t?`2px solid ${t==="IRAN"?"#06b6d4":t==="IRAQ"?"#eab308":C.info}`:"2px solid transparent",
-                  color:rightTab===t?(t==="IRAN"?"#06b6d4":t==="IRAQ"?"#eab308":C.fg):C.muted,
+                  borderBottom:rightTab===t?`2px solid ${t==="IRAN"?"#06b6d4":C.info}`:"2px solid transparent",
+                  color:rightTab===t?(t==="IRAN"?"#06b6d4":C.fg):C.muted,
                   fontSize:10, fontWeight:rightTab===t?700:500,
                   fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
                 }}>{t}</button>
@@ -1357,49 +1357,10 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {rightTab === "GCC" && (
-                <>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>GCC EVENT LOG</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{live.acledGcc.loading ? "loading…" : live.acledGcc.count != null ? `${live.acledGcc.count} events · ACLED` : "Bahrain · Kuwait · Qatar · UAE"}</span>
-                  </div>
-                  {live.acledGcc.events.length > 0 ? (
-                    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                      {live.acledGcc.events.slice(0,30).map(normalizeACLEDEvent).map(e => {
-                        const col = e.severity==="critical"?C.critical:C.warning;
-                        return (
-                          <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
-                            <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
-                              <span style={{ fontSize:10, color:C.dim }}>{e.date}</span>
-                            </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:1 }}>{e.location}</div>
-                            <div style={{ fontSize:10, color:C.muted, marginTop:1 }}>{e.country}{e.fatalities > 0 && <span style={{ color:C.critical, marginLeft:6 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</span>}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    getGCCTheaterData().filter(g=>["BH","KW","QA","AE"].includes(g.code)).map(g => {
-                      const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
-                      return (
-                        <div key={g.code} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${airCol}`, marginBottom:3 }}>
-                          <div style={{ display:"flex", justifyContent:"space-between" }}>
-                            <span style={{ fontSize:11, fontWeight:700, color:airCol }}>{g.name}</span>
-                            <span style={{ fontSize:14, fontWeight:800, color:airCol }}>{g.strikes.toLocaleString()}</span>
-                          </div>
-                          <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{g.note}</div>
-                        </div>
-                      );
-                    })
-                  )}
-                </>
-              )}
-
               {rightTab === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ IRAN EVENTS</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ US/ISRAEL → IRAN</span>
                     <span style={{ fontSize:10, color:C.dim }}>{live.acledIran.loading ? "loading…" : live.acledIran.count != null ? `${live.acledIran.count} events · ACLED` : `${IRAN_STRIKES.length} sites`}</span>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
@@ -1410,31 +1371,6 @@ const ScreenSituation = ({ live }) => {
                       <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(6,182,212,0.06)", borderLeft:"2px solid #06b6d4" }}>
                         <div style={{ display:"flex", justifyContent:"space-between" }}>
                           <span style={{ fontSize:11, fontWeight:700, color:"#06b6d4" }}>{e.type}</span>
-                          <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
-                        </div>
-                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
-                        {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
-                        {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {rightTab === "IRAQ" && (
-                <>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#eab308", letterSpacing:"0.08em" }}>▶ IRAQ EVENTS</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{live.acledIraq.loading ? "loading…" : live.acledIraq.count != null ? `${live.acledIraq.count} events · ACLED` : `${IRAQ_SPILLOVER.length} events`}</span>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                    {(live.acledIraq.events.length > 0
-                      ? live.acledIraq.events.slice(0,25).map(normalizeACLEDEvent)
-                      : IRAQ_EVENTS
-                    ).map(e => (
-                      <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(234,179,8,0.06)", borderLeft:"2px solid #eab308" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:"#eab308" }}>{e.type}</span>
                           <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
                         </div>
                         <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
