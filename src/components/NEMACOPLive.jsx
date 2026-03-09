@@ -770,10 +770,10 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
 
-    const showKSA = layerFilter === "ALL" || layerFilter === "KSA";
-    const showGCC = layerFilter === "ALL" || layerFilter === "GCC";
-    const showIRAN = layerFilter === "ALL" || layerFilter === "IRAN";
-    const showIRAQ = layerFilter === "ALL" || layerFilter === "IRAQ";
+    const showKSA = layerFilter === "MENA" ? !!menaCountries?.SA : layerFilter === "KSA";
+    const showGCC = layerFilter === "MENA" ? !!(menaCountries?.AE || menaCountries?.BH || menaCountries?.KW || menaCountries?.QA || menaCountries?.OM) : false;
+    const showIRAN = layerFilter === "MENA" ? !!menaCountries?.IR : layerFilter === "IRAN";
+    const showIRAQ = layerFilter === "MENA" ? !!menaCountries?.IQ : false;
 
     if (theaterView === "GCC") {
       // GCC country markers
