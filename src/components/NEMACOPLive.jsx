@@ -573,7 +573,7 @@ const PROTEST_MARKERS = [
   { id:"PR5", lat:26.22, lng:50.59, name:"Manama" },
 ];
 
-const NAME_TO_CODE = { IRAN:"IR", IRAQ:"IQ", SYRIA:"SY", JORDAN:"JO", ISRAEL:"IL", YEMEN:"YE", KSA:"SA", UAE:"AE", QATAR:"QA", KUWAIT:"KW", BAHRAIN:"BH", OMAN:"OM" };
+const NAME_TO_CODE = { IRAN:"IR", IRAQ:"IQ", SYRIA:"SY", JORDAN:"JO", ISRAEL:"IL", KSA:"SA", UAE:"AE", QATAR:"QA", KUWAIT:"KW", BAHRAIN:"BH", OMAN:"OM", PALESTINE:"PS" };
 
 function countryPopupHtml(cs) {
   if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
