@@ -1113,7 +1113,7 @@ const GCC_DAILY = {
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("cumulative");
-  const [theaterView, setTheaterView] = useState("LOG");
+  const [theaterView, setTheaterView] = useState("GCC");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [layerFilter, setLayerFilter] = useState("MENA");
