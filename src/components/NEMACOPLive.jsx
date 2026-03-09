@@ -426,17 +426,42 @@ async function fetchGCCStrikes() {
 // ─── ACLED ────────────────────────────────────────────────────────────────────
 async function fetchACLEDEvents(country) {
   try {
-    const { data, count, error } = await supabase
-      .from("acled_events")
-      .select("*", { count: "exact" })
-      .eq("country", country)
-      .order("event_date", { ascending: false });
+    let query = supabase.from("acled_events").select("*", { count: "exact" });
+    if (Array.isArray(country)) {
+      query = query.in("country", country);
+    } else {
+      query = query.eq("country", country);
+    }
+    const { data, count, error } = await query.order("event_date", { ascending: false });
     if (error) throw error;
     return { events: data || [], count: count ?? 0 };
   } catch (e) {
     console.warn("[ACLED] fetch failed:", e?.message);
     return null;
   }
+}
+
+function normalizeACLEDEvent(e) {
+  const fatalities = e.fatalities ?? 0;
+  return {
+    id: e.data_id ?? e.id ?? String(Math.random()),
+    date: e.event_date,
+    time: null,
+    type: e.event_type,
+    count: fatalities,
+    location: e.location,
+    lat: e.latitude != null ? Number(e.latitude) : null,
+    lng: e.longitude != null ? Number(e.longitude) : null,
+    severity: fatalities > 0 ? 'critical' : 'warning',
+    sev: fatalities > 0 ? 'critical' : 'warning',
+    fatalities,
+    notes: e.notes,
+    source: e.source,
+    actor1: e.actor1,
+    status: e.sub_event_type || e.event_type,
+    country: e.country,
+    locationKnown: e.latitude != null && e.longitude != null,
+  };
 }
 
 async function fetchKSAStrikes() {
@@ -648,9 +673,9 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
     const map = L.map(mapContainerRef.current, {
-      center: [27, 47],
-      zoom: 4.2,
-      maxBounds: [[12, 28], [42, 65]],
+      center: [29, 45],
+      zoom: 4.0,
+      maxBounds: [[8, 25], [45, 68]],
       maxBoundsViscosity: 1.0,
       zoomControl: false,
       dragging: false,
@@ -1087,7 +1112,10 @@ const ScreenSituation = ({ live }) => {
   const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
 
   const isCumulative = activeDay === "cumulative";
-  const strikeData = live.ksaStrikes?.data || STRIKES_KSA;
+  const acledKsaNorm = live.acledKsa.events.length > 0
+    ? live.acledKsa.events.map(normalizeACLEDEvent)
+    : null;
+  const strikeData = acledKsaNorm || live.ksaStrikes?.data || STRIKES_KSA;
   const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
 
   const getMarkers = () => {
@@ -1267,16 +1295,22 @@ const ScreenSituation = ({ live }) => {
                         const sev = e.sev || e.severity;
                         const col = sev==="critical"?C.critical:C.warning;
                         const loc = e.loc || e.location;
-                        const typeLabel = e.count && e.count > 1 ? `${e.type} (${e.count}x)` : e.type;
+                        const timeLabel = e.time ?? e.date;
                         return (
                           <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{typeLabel}</span>
-                              <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{timeLabel}</span>
                             </div>
                             <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{loc}{e.locationKnown === false && <span style={{ fontSize:9, background:"#1e293b", color:"#6b7280", border:"1px solid #374151", borderRadius:2, padding:"1px 4px", marginLeft:6 }}>LOC UNVERIFIED</span>}</div>
-                            {selEvent===e.id && e.status && <div style={{ fontSize:11, color:e.status.includes("Hit")?C.critical:C.success, marginTop:3 }}>{e.status}</div>}
+                            {selEvent===e.id && (
+                              <>
+                                {e.fatalities > 0 && <div style={{ fontSize:11, color:C.critical, marginTop:3 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
+                                {e.status && <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{e.status}</div>}
+                                {e.notes && <div style={{ fontSize:10, color:C.dim, marginTop:2, lineHeight:1.4 }}>{e.notes.slice(0,140)}{e.notes.length>140?"…":""}</div>}
+                              </>
+                            )}
                           </div>
                         );
                       })}
@@ -1289,38 +1323,60 @@ const ScreenSituation = ({ live }) => {
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>GCC EVENT LOG</span>
-                    <span style={{ fontSize:10, color:C.dim }}>Bahrain · Kuwait · Qatar · UAE</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{live.acledGcc.loading ? "loading…" : live.acledGcc.count != null ? `${live.acledGcc.count} events · ACLED` : "Bahrain · Kuwait · Qatar · UAE"}</span>
                   </div>
-                  {getGCCTheaterData().filter(g=>["BH","KW","QA","AE"].includes(g.code)).map(g => {
-                    const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
-                    return (
-                      <div key={g.code} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${airCol}`, marginBottom:3 }}>
-                        <div style={{ display:"flex", justifyContent:"space-between" }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:airCol }}>{g.name}</span>
-                          <span style={{ fontSize:14, fontWeight:800, color:airCol }}>{g.strikes.toLocaleString()}</span>
+                  {live.acledGcc.events.length > 0 ? (
+                    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                      {live.acledGcc.events.slice(0,30).map(normalizeACLEDEvent).map(e => {
+                        const col = e.severity==="critical"?C.critical:C.warning;
+                        return (
+                          <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}` }}>
+                            <div style={{ display:"flex", justifyContent:"space-between" }}>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.date}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:C.fg, marginTop:1 }}>{e.location}</div>
+                            <div style={{ fontSize:10, color:C.muted, marginTop:1 }}>{e.country}{e.fatalities > 0 && <span style={{ color:C.critical, marginLeft:6 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</span>}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    getGCCTheaterData().filter(g=>["BH","KW","QA","AE"].includes(g.code)).map(g => {
+                      const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
+                      return (
+                        <div key={g.code} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${airCol}`, marginBottom:3 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between" }}>
+                            <span style={{ fontSize:11, fontWeight:700, color:airCol }}>{g.name}</span>
+                            <span style={{ fontSize:14, fontWeight:800, color:airCol }}>{g.strikes.toLocaleString()}</span>
+                          </div>
+                          <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{g.note}</div>
                         </div>
-                        <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{g.note}</div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </>
               )}
 
               {rightTab === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ US/ISRAEL → IRAN</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{IRAN_STRIKES.length} sites</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ IRAN EVENTS</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{live.acledIran.loading ? "loading…" : live.acledIran.count != null ? `${live.acledIran.count} events · ACLED` : `${IRAN_STRIKES.length} sites`}</span>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                    {IRAN_EVENTS.map(e => (
+                    {(live.acledIran.events.length > 0
+                      ? live.acledIran.events.slice(0,25).map(normalizeACLEDEvent)
+                      : IRAN_EVENTS
+                    ).map(e => (
                       <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(6,182,212,0.06)", borderLeft:"2px solid #06b6d4" }}>
                         <div style={{ display:"flex", justifyContent:"space-between" }}>
                           <span style={{ fontSize:11, fontWeight:700, color:"#06b6d4" }}>{e.type}</span>
-                          <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
+                          <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
                         </div>
-                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                        <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>
+                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
+                        {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
+                        {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
                       </div>
                     ))}
                   </div>
@@ -1330,18 +1386,22 @@ const ScreenSituation = ({ live }) => {
               {rightTab === "IRAQ" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#eab308", letterSpacing:"0.08em" }}>▶ IRAN → IRAQ (SPILLOVER)</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{IRAQ_SPILLOVER.length} events</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#eab308", letterSpacing:"0.08em" }}>▶ IRAQ EVENTS</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{live.acledIraq.loading ? "loading…" : live.acledIraq.count != null ? `${live.acledIraq.count} events · ACLED` : `${IRAQ_SPILLOVER.length} events`}</span>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                    {IRAQ_EVENTS.map(e => (
+                    {(live.acledIraq.events.length > 0
+                      ? live.acledIraq.events.slice(0,25).map(normalizeACLEDEvent)
+                      : IRAQ_EVENTS
+                    ).map(e => (
                       <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(234,179,8,0.06)", borderLeft:"2px solid #eab308" }}>
                         <div style={{ display:"flex", justifyContent:"space-between" }}>
                           <span style={{ fontSize:11, fontWeight:700, color:"#eab308" }}>{e.type}</span>
-                          <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
+                          <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
                         </div>
-                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
-                        <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>
+                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
+                        {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
+                        {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
                       </div>
                     ))}
                   </div>
@@ -2207,7 +2267,10 @@ export default function NEMACOPLive() {
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
     ciStatus: { loading:false, error:null, data:null },
-    acledKsa: { loading:false, error:null, count:null, events:[] },
+    acledKsa:  { loading:false, error:null, count:null, events:[] },
+    acledGcc:  { loading:false, error:null, count:null, events:[] },
+    acledIran: { loading:false, error:null, count:null, events:[] },
+    acledIraq: { loading:false, error:null, count:null, events:[] },
   });
 
   const refresh = useCallback(async () => {
@@ -2222,14 +2285,20 @@ export default function NEMACOPLive() {
       ukmto:{...d.ukmto,loading:true},
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
-      acledKsa:{...d.acledKsa,loading:true},
+      acledKsa: {...d.acledKsa,  loading:true},
+      acledGcc: {...d.acledGcc,  loading:true},
+      acledIran:{...d.acledIran, loading:true},
+      acledIraq:{...d.acledIraq, loading:true},
     }));
 
     // Fetch non-AI feeds + AI cache in parallel
-    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes] = await Promise.allSettled([
+    const [eia, opa, gdelt, ioda, pw, cacheRes, acledKsaRes, acledIranRes, acledIraqRes, acledGccRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
       fetchACLEDEvents("Saudi Arabia"),
+      fetchACLEDEvents("Iran"),
+      fetchACLEDEvents("Iraq"),
+      fetchACLEDEvents(["Bahrain", "Kuwait", "Qatar", "United Arab Emirates"]),
     ]);
 
     // Parse AI cache results
@@ -2313,9 +2382,24 @@ export default function NEMACOPLive() {
       const ciData = cache.ci_status;
       n.ciStatus = { loading:false, error:null, data:ciData||null };
 
-      const acledData = acledRes.status === "fulfilled" ? acledRes.value : null;
-      n.acledKsa = acledData
-        ? { loading:false, error:null, count:acledData.count, events:acledData.events }
+      const acledKsaData = acledKsaRes.status === "fulfilled" ? acledKsaRes.value : null;
+      n.acledKsa = acledKsaData
+        ? { loading:false, error:null, count:acledKsaData.count, events:acledKsaData.events }
+        : { loading:false, error:true, count:null, events:[] };
+
+      const acledIranData = acledIranRes.status === "fulfilled" ? acledIranRes.value : null;
+      n.acledIran = acledIranData
+        ? { loading:false, error:null, count:acledIranData.count, events:acledIranData.events }
+        : { loading:false, error:true, count:null, events:[] };
+
+      const acledIraqData = acledIraqRes.status === "fulfilled" ? acledIraqRes.value : null;
+      n.acledIraq = acledIraqData
+        ? { loading:false, error:null, count:acledIraqData.count, events:acledIraqData.events }
+        : { loading:false, error:true, count:null, events:[] };
+
+      const acledGccData = acledGccRes.status === "fulfilled" ? acledGccRes.value : null;
+      n.acledGcc = acledGccData
+        ? { loading:false, error:null, count:acledGccData.count, events:acledGccData.events }
         : { loading:false, error:true, count:null, events:[] };
 
       return n;
@@ -2409,7 +2493,7 @@ export default function NEMACOPLive() {
         {/* FOOTER */}
         <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:10,color:C.dim,flexWrap:"wrap",gap:6}}>
           <span>BRENT · TASI · MENA STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
-          <span style={{color:"#f97316"}}>PENDING SERVER-SIDE: Yahoo Finance direct · NASA FIRMS · OpenWeatherMap · PortWatch · ACLED</span>
+          <span style={{color:"#f97316"}}>PENDING SERVER-SIDE: Yahoo Finance direct · NASA FIRMS · OpenWeatherMap · PortWatch</span>
         </footer>
       </div>
     </>
