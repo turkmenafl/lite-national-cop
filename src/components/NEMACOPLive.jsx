@@ -621,20 +621,20 @@ const MENA_LABELS = [
   { name:"YEMEN", lat:15.5, lng:47.5 },
 ];
 
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers }) => {
+const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "ALL" }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
   const gccPolygonsRef = useRef([]);
-  const gccGeoRef = useRef(null); // cached GeoJSON data
+  const gccGeoRef = useRef(null);
 
   // Initialize map once
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
     const map = L.map(mapContainerRef.current, {
-      center: [26, 51],
-      zoom: 4.85,
-      maxBounds: [[12, 32], [38, 62]],
+      center: [27, 47],
+      zoom: 4.2,
+      maxBounds: [[12, 28], [42, 65]],
       maxBoundsViscosity: 1.0,
       zoomControl: false,
       dragging: false,
@@ -665,7 +665,6 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
               weight: 1.2,
             },
           }).addTo(mapRef.current);
-          // Eastern Province label
           L.marker([28.8, 51], {
             icon: L.divIcon({
               className: "",
@@ -680,7 +679,6 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     L.polyline([[26.6, 56.3], [27.2, 56.3]], {
       color: "#ef4444", weight: 2, dashArray: "5,3",
     }).addTo(map);
-    // Hormuz label
     L.marker([27.0, 56.4], {
       icon: L.divIcon({
         className: "",
@@ -688,6 +686,28 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         iconSize: [0, 0], iconAnchor: [-5, 8],
       }),
     }).addTo(map);
+    // MENA country labels
+    MENA_LABELS.forEach(({ name, lat, lng }) => {
+      L.marker([lat, lng], {
+        interactive: false,
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="color:rgba(216,230,245,0.35);font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.12em;pointer-events:none">${name}</div>`,
+          iconSize: [0, 0], iconAnchor: [-5, 5],
+        }),
+      }).addTo(map);
+    });
+    // GCC country labels
+    [["KSA",24.0,44.5],["UAE",23.5,54.5],["QATAR",25.5,51.3],["KUWAIT",29.8,47.5],["BAHRAIN",26.4,50.3],["OMAN",21.5,57.0]].forEach(([name,lat,lng]) => {
+      L.marker([lat, lng], {
+        interactive: false,
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="color:rgba(216,230,245,0.25);font-size:9px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;letter-spacing:0.1em;pointer-events:none">${name}</div>`,
+          iconSize: [0, 0], iconAnchor: [-5, 5],
+        }),
+      }).addTo(map);
+    });
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
@@ -696,83 +716,165 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    // Remove old dynamic layers
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
 
+    const showKSA = layerFilter === "ALL" || layerFilter === "KSA";
+    const showGCC = layerFilter === "ALL" || layerFilter === "GCC";
+    const showIRAN = layerFilter === "ALL" || layerFilter === "IRAN";
+    const showIRAQ = layerFilter === "ALL" || layerFilter === "IRAQ";
+
     if (theaterView === "GCC") {
-      // Show all GCC country markers
-      (gccMarkers || []).forEach(g => {
-        const coords = GCC_CAPITALS[g.code];
-        if (!coords) return;
-        const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
-        const isCritical = g.strikes > 100;
-        const m = L.marker(coords, {
-          interactive: false,
-          icon: L.divIcon({
-            className: "",
-            html: isCritical
-              ? `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9;pointer-events:none"></div>`,
-            iconSize: [14, 14], iconAnchor: [7, 7],
-          }),
-        }).addTo(map);
-        layersRef.current.push(m);
-        // Country label
-        const lbl = L.marker(coords, {
-          interactive: false,
-          icon: L.divIcon({
-            className: "",
-            html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${g.code} ${g.strikes.toLocaleString()}</div>`,
-            iconSize: [0, 0], iconAnchor: [-10, 4],
-          }),
-        }).addTo(map);
-        layersRef.current.push(lbl);
-      });
+      // GCC country markers
+      if (showGCC || showKSA) {
+        (gccMarkers || []).forEach(g => {
+          if (!showKSA && g.code === "SA") return;
+          if (!showGCC && g.code !== "SA") return;
+          const coords = GCC_CAPITALS[g.code];
+          if (!coords) return;
+          const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
+          const isCritical = g.strikes > 100;
+          const m = L.marker(coords, {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: isCritical
+                ? `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+                : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9;pointer-events:none"></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+          const lbl = L.marker(coords, {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${g.code} ${g.strikes.toLocaleString()}</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, 4],
+            }),
+          }).addTo(map);
+          layersRef.current.push(lbl);
+        });
+      }
+      // Iran strike markers (cyan)
+      if (showIRAN) {
+        IRAN_STRIKES.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #06b6d4;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#06b6d4;opacity:0.9"></div></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+          const lbl = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:#06b6d4;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, 4],
+            }),
+          }).addTo(map);
+          layersRef.current.push(lbl);
+        });
+      }
+      // Iraq spillover markers (yellow triangles)
+      if (showIRAQ) {
+        IRAQ_SPILLOVER.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #eab308;pointer-events:none"></div>`,
+              iconSize: [14, 12], iconAnchor: [7, 12],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+          const lbl = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:#eab308;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, -2],
+            }),
+          }).addTo(map);
+          layersRef.current.push(lbl);
+        });
+      }
     } else {
-      // KSA EVENT LOG — only KSA markers
-      const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
-      markers.forEach(p => {
-        const isUnverified = p.locationKnown === false;
-        const col = isUnverified ? "#6b7280" : (p.s === "critical" ? C.critical : C.warning);
-        const markerHtml = isUnverified
-          ? `<div style="width:10px;height:10px;border-radius:50%;border:2px dashed #6b7280;background:rgba(107,114,128,0.25);opacity:0.8"></div>`
-          : p.s === "critical"
-            ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-            : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`;
-        const m = L.marker([p.lat, p.lng], {
-          icon: L.divIcon({
-            className: "",
-            html: markerHtml,
-            iconSize: [14, 14], iconAnchor: [7, 7],
-          }),
-        }).addTo(map);
-        if (isUnverified) {
-          m.bindTooltip("⚠ LOC UNVERIFIED — Saudi MoD confirmed", { className: "cop-popup", direction: "top", offset: [0, -8] });
+      // KSA EVENT LOG — KSA markers + optionally Iran/Iraq
+      if (showKSA) {
+        const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
+        markers.forEach(p => {
+          const isUnverified = p.locationKnown === false;
+          const col = isUnverified ? "#6b7280" : (p.s === "critical" ? C.critical : C.warning);
+          const markerHtml = isUnverified
+            ? `<div style="width:10px;height:10px;border-radius:50%;border:2px dashed #6b7280;background:rgba(107,114,128,0.25);opacity:0.8"></div>`
+            : p.s === "critical"
+              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`;
+          const m = L.marker([p.lat, p.lng], {
+            icon: L.divIcon({
+              className: "",
+              html: markerHtml,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          if (isUnverified) {
+            m.bindTooltip("⚠ LOC UNVERIFIED — Saudi MoD confirmed", { className: "cop-popup", direction: "top", offset: [0, -8] });
+          }
+          layersRef.current.push(m);
+        });
+        if (filteredStrikes.length === 0) {
+          const m = L.marker([24, 46], {
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, 5],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
         }
-        layersRef.current.push(m);
-      });
-      if (filteredStrikes.length === 0) {
-        const m = L.marker([24, 46], {
-          icon: L.divIcon({
-            className: "",
-            html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
-            iconSize: [0, 0], iconAnchor: [-10, 5],
-          }),
-        }).addTo(map);
-        layersRef.current.push(m);
+      }
+      // Also show Iran/Iraq in LOG view if filter selected
+      if (showIRAN) {
+        IRAN_STRIKES.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #06b6d4;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#06b6d4;opacity:0.9"></div></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+        });
+      }
+      if (showIRAQ) {
+        IRAQ_SPILLOVER.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #eab308;pointer-events:none"></div>`,
+              iconSize: [14, 12], iconAnchor: [7, 12],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+        });
       }
     }
-  }, [filteredStrikes, getMarkers, theaterView, gccMarkers]);
+  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter]);
 
-  // GCC country polygons with hover/click — only in GCC view
+  // GCC country polygons with hover/click — only in MENA view
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    // Remove old polygons
     gccPolygonsRef.current.forEach(l => map.removeLayer(l));
     gccPolygonsRef.current = [];
     if (theaterView !== "GCC") return;
+    if (layerFilter !== "ALL" && layerFilter !== "GCC" && layerFilter !== "KSA") return;
 
     const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
 
@@ -786,6 +888,8 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       gccFeatures.forEach(feature => {
         const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
         const iso2 = GCC_ISO[iso3];
+        if (layerFilter === "KSA" && iso2 !== "SA") return;
+        if (layerFilter === "GCC" && iso2 === "SA") return;
         const seed = GCC_SEED.find(g => g.code === iso2);
         if (!seed) return;
         const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
@@ -834,7 +938,6 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         }).addTo(mapRef.current);
         gccPolygonsRef.current.push(layer);
 
-        // Add cursor pointer style
         layer.eachLayer(l => {
           const el = l.getElement?.();
           if (el) el.style.cursor = "pointer";
@@ -853,7 +956,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         })
         .catch(() => {});
     }
-  }, [theaterView, gccMarkers]);
+  }, [theaterView, gccMarkers, layerFilter]);
 
   return (
     <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520 }}>
