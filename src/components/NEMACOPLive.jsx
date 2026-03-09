@@ -560,7 +560,7 @@ const MENA_SUMMARY = [
   { code:"IR", name:"Iran", flag:"🇮🇷", events:90, fatalities:45, airDrone:52, missile:38, intercepts:0, clashes:12, protests:49 },
   { code:"IQ", name:"Iraq", flag:"🇮🇶", events:24, fatalities:8, airDrone:12, missile:8, intercepts:0, clashes:6, protests:15 },
   { code:"IL", name:"Israel", flag:"🇮🇱", events:35, fatalities:2, airDrone:20, missile:15, intercepts:33, clashes:0, protests:3 },
-  { code:"YE", name:"Yemen", flag:"🇾🇪", events:18, fatalities:6, airDrone:10, missile:5, intercepts:0, clashes:8, protests:2 },
+  
   { code:"SY", name:"Syria", flag:"🇸🇾", events:12, fatalities:4, airDrone:6, missile:4, intercepts:0, clashes:5, protests:1 },
   { code:"JO", name:"Jordan", flag:"🇯🇴", events:3, fatalities:0, airDrone:1, missile:0, intercepts:1, clashes:0, protests:8 },
 ];
