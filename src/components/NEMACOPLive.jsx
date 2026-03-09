@@ -596,20 +596,45 @@ const GCC_CAPITALS = {
   KW: [29.37, 47.98], BH: [26.22, 50.59], OM: [23.61, 58.59],
 };
 
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers }) => {
+const IRAN_STRIKES = [
+  { id:"IR1", name:"Bandar Abbas", lat:27.19, lng:56.28 },
+  { id:"IR2", name:"Bushehr", lat:28.97, lng:50.84 },
+  { id:"IR3", name:"Isfahan", lat:32.65, lng:51.67 },
+  { id:"IR4", name:"Karaj", lat:35.83, lng:50.99 },
+  { id:"IR5", name:"Tehran", lat:35.69, lng:51.39 },
+  { id:"IR6", name:"Kermanshah", lat:34.31, lng:47.07 },
+  { id:"IR7", name:"Tabriz", lat:38.08, lng:46.29 },
+  { id:"IR8", name:"Qom", lat:34.64, lng:50.88 },
+];
+
+const IRAQ_SPILLOVER = [
+  { id:"IQ1", name:"Erbil", lat:36.19, lng:44.01 },
+  { id:"IQ2", name:"Harir", lat:35.47, lng:44.39 },
+];
+
+const MENA_LABELS = [
+  { name:"IRAN", lat:32.5, lng:53.5 },
+  { name:"IRAQ", lat:33.3, lng:43.5 },
+  { name:"SYRIA", lat:35.0, lng:38.5 },
+  { name:"JORDAN", lat:31.5, lng:36.5 },
+  { name:"ISRAEL", lat:31.5, lng:34.8 },
+  { name:"YEMEN", lat:15.5, lng:47.5 },
+];
+
+const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "ALL" }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
   const gccPolygonsRef = useRef([]);
-  const gccGeoRef = useRef(null); // cached GeoJSON data
+  const gccGeoRef = useRef(null);
 
   // Initialize map once
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
     const map = L.map(mapContainerRef.current, {
-      center: [26, 51],
-      zoom: 4.85,
-      maxBounds: [[12, 32], [38, 62]],
+      center: [27, 47],
+      zoom: 4.2,
+      maxBounds: [[12, 28], [42, 65]],
       maxBoundsViscosity: 1.0,
       zoomControl: false,
       dragging: false,
@@ -640,7 +665,6 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
               weight: 1.2,
             },
           }).addTo(mapRef.current);
-          // Eastern Province label
           L.marker([28.8, 51], {
             icon: L.divIcon({
               className: "",
@@ -655,7 +679,6 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
     L.polyline([[26.6, 56.3], [27.2, 56.3]], {
       color: "#ef4444", weight: 2, dashArray: "5,3",
     }).addTo(map);
-    // Hormuz label
     L.marker([27.0, 56.4], {
       icon: L.divIcon({
         className: "",
@@ -663,6 +686,28 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         iconSize: [0, 0], iconAnchor: [-5, 8],
       }),
     }).addTo(map);
+    // MENA country labels
+    MENA_LABELS.forEach(({ name, lat, lng }) => {
+      L.marker([lat, lng], {
+        interactive: false,
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="color:rgba(216,230,245,0.35);font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.12em;pointer-events:none">${name}</div>`,
+          iconSize: [0, 0], iconAnchor: [-5, 5],
+        }),
+      }).addTo(map);
+    });
+    // GCC country labels
+    [["KSA",24.0,44.5],["UAE",23.5,54.5],["QATAR",25.5,51.3],["KUWAIT",29.8,47.5],["BAHRAIN",26.4,50.3],["OMAN",21.5,57.0]].forEach(([name,lat,lng]) => {
+      L.marker([lat, lng], {
+        interactive: false,
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="color:rgba(216,230,245,0.25);font-size:9px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;letter-spacing:0.1em;pointer-events:none">${name}</div>`,
+          iconSize: [0, 0], iconAnchor: [-5, 5],
+        }),
+      }).addTo(map);
+    });
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
@@ -671,83 +716,165 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    // Remove old dynamic layers
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
 
+    const showKSA = layerFilter === "ALL" || layerFilter === "KSA";
+    const showGCC = layerFilter === "ALL" || layerFilter === "GCC";
+    const showIRAN = layerFilter === "ALL" || layerFilter === "IRAN";
+    const showIRAQ = layerFilter === "ALL" || layerFilter === "IRAQ";
+
     if (theaterView === "GCC") {
-      // Show all GCC country markers
-      (gccMarkers || []).forEach(g => {
-        const coords = GCC_CAPITALS[g.code];
-        if (!coords) return;
-        const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
-        const isCritical = g.strikes > 100;
-        const m = L.marker(coords, {
-          interactive: false,
-          icon: L.divIcon({
-            className: "",
-            html: isCritical
-              ? `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9;pointer-events:none"></div>`,
-            iconSize: [14, 14], iconAnchor: [7, 7],
-          }),
-        }).addTo(map);
-        layersRef.current.push(m);
-        // Country label
-        const lbl = L.marker(coords, {
-          interactive: false,
-          icon: L.divIcon({
-            className: "",
-            html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${g.code} ${g.strikes.toLocaleString()}</div>`,
-            iconSize: [0, 0], iconAnchor: [-10, 4],
-          }),
-        }).addTo(map);
-        layersRef.current.push(lbl);
-      });
+      // GCC country markers
+      if (showGCC || showKSA) {
+        (gccMarkers || []).forEach(g => {
+          if (!showKSA && g.code === "SA") return;
+          if (!showGCC && g.code !== "SA") return;
+          const coords = GCC_CAPITALS[g.code];
+          if (!coords) return;
+          const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
+          const isCritical = g.strikes > 100;
+          const m = L.marker(coords, {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: isCritical
+                ? `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+                : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9;pointer-events:none"></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+          const lbl = L.marker(coords, {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${g.code} ${g.strikes.toLocaleString()}</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, 4],
+            }),
+          }).addTo(map);
+          layersRef.current.push(lbl);
+        });
+      }
+      // Iran strike markers (cyan)
+      if (showIRAN) {
+        IRAN_STRIKES.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #06b6d4;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#06b6d4;opacity:0.9"></div></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+          const lbl = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:#06b6d4;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, 4],
+            }),
+          }).addTo(map);
+          layersRef.current.push(lbl);
+        });
+      }
+      // Iraq spillover markers (yellow triangles)
+      if (showIRAQ) {
+        IRAQ_SPILLOVER.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #eab308;pointer-events:none"></div>`,
+              iconSize: [14, 12], iconAnchor: [7, 12],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+          const lbl = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:#eab308;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, -2],
+            }),
+          }).addTo(map);
+          layersRef.current.push(lbl);
+        });
+      }
     } else {
-      // KSA EVENT LOG — only KSA markers
-      const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
-      markers.forEach(p => {
-        const isUnverified = p.locationKnown === false;
-        const col = isUnverified ? "#6b7280" : (p.s === "critical" ? C.critical : C.warning);
-        const markerHtml = isUnverified
-          ? `<div style="width:10px;height:10px;border-radius:50%;border:2px dashed #6b7280;background:rgba(107,114,128,0.25);opacity:0.8"></div>`
-          : p.s === "critical"
-            ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-            : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`;
-        const m = L.marker([p.lat, p.lng], {
-          icon: L.divIcon({
-            className: "",
-            html: markerHtml,
-            iconSize: [14, 14], iconAnchor: [7, 7],
-          }),
-        }).addTo(map);
-        if (isUnverified) {
-          m.bindTooltip("⚠ LOC UNVERIFIED — Saudi MoD confirmed", { className: "cop-popup", direction: "top", offset: [0, -8] });
+      // KSA EVENT LOG — KSA markers + optionally Iran/Iraq
+      if (showKSA) {
+        const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
+        markers.forEach(p => {
+          const isUnverified = p.locationKnown === false;
+          const col = isUnverified ? "#6b7280" : (p.s === "critical" ? C.critical : C.warning);
+          const markerHtml = isUnverified
+            ? `<div style="width:10px;height:10px;border-radius:50%;border:2px dashed #6b7280;background:rgba(107,114,128,0.25);opacity:0.8"></div>`
+            : p.s === "critical"
+              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
+              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`;
+          const m = L.marker([p.lat, p.lng], {
+            icon: L.divIcon({
+              className: "",
+              html: markerHtml,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          if (isUnverified) {
+            m.bindTooltip("⚠ LOC UNVERIFIED — Saudi MoD confirmed", { className: "cop-popup", direction: "top", offset: [0, -8] });
+          }
+          layersRef.current.push(m);
+        });
+        if (filteredStrikes.length === 0) {
+          const m = L.marker([24, 46], {
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
+              iconSize: [0, 0], iconAnchor: [-10, 5],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
         }
-        layersRef.current.push(m);
-      });
-      if (filteredStrikes.length === 0) {
-        const m = L.marker([24, 46], {
-          icon: L.divIcon({
-            className: "",
-            html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
-            iconSize: [0, 0], iconAnchor: [-10, 5],
-          }),
-        }).addTo(map);
-        layersRef.current.push(m);
+      }
+      // Also show Iran/Iraq in LOG view if filter selected
+      if (showIRAN) {
+        IRAN_STRIKES.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #06b6d4;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#06b6d4;opacity:0.9"></div></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+        });
+      }
+      if (showIRAQ) {
+        IRAQ_SPILLOVER.forEach(s => {
+          const m = L.marker([s.lat, s.lng], {
+            interactive: false,
+            icon: L.divIcon({
+              className: "",
+              html: `<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #eab308;pointer-events:none"></div>`,
+              iconSize: [14, 12], iconAnchor: [7, 12],
+            }),
+          }).addTo(map);
+          layersRef.current.push(m);
+        });
       }
     }
-  }, [filteredStrikes, getMarkers, theaterView, gccMarkers]);
+  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter]);
 
-  // GCC country polygons with hover/click — only in GCC view
+  // GCC country polygons with hover/click — only in MENA view
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    // Remove old polygons
     gccPolygonsRef.current.forEach(l => map.removeLayer(l));
     gccPolygonsRef.current = [];
     if (theaterView !== "GCC") return;
+    if (layerFilter !== "ALL" && layerFilter !== "GCC" && layerFilter !== "KSA") return;
 
     const GCC_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM" };
 
@@ -761,6 +888,8 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       gccFeatures.forEach(feature => {
         const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
         const iso2 = GCC_ISO[iso3];
+        if (layerFilter === "KSA" && iso2 !== "SA") return;
+        if (layerFilter === "GCC" && iso2 === "SA") return;
         const seed = GCC_SEED.find(g => g.code === iso2);
         if (!seed) return;
         const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
@@ -809,7 +938,6 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         }).addTo(mapRef.current);
         gccPolygonsRef.current.push(layer);
 
-        // Add cursor pointer style
         layer.eachLayer(l => {
           const el = l.getElement?.();
           if (el) el.style.cursor = "pointer";
@@ -828,7 +956,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         })
         .catch(() => {});
     }
-  }, [theaterView, gccMarkers]);
+  }, [theaterView, gccMarkers, layerFilter]);
 
   return (
     <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520 }}>
@@ -850,7 +978,7 @@ const GCCTheater = ({ gcc }) => {
     <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
       <div onClick={()=>setExpanded(!expanded)} style={{ display:"flex", justifyContent:"space-between", cursor:"pointer", marginBottom:expanded?10:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.1em" }}>GCC THEATER</span>
+          <span style={{ fontSize:10, fontWeight:700, color:C.fg, letterSpacing:"0.1em" }}>MENA THEATER</span>
           <span style={{ fontSize:7, color:C.dim, letterSpacing:"0.04em" }}>projectiles by state</span>
           {gcc.loading && <span className="cop-pulse" style={{ fontSize:7, color:C.info }}>● fetching…</span>}
           {gcc.error   && <span style={{ fontSize:7, color:C.warning }}>⚠ search failed — seed shown</span>}
@@ -936,6 +1064,8 @@ const ScreenSituation = ({ live }) => {
   const [theaterView, setTheaterView] = useState("LOG");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
+  const [layerFilter, setLayerFilter] = useState("ALL");
+  const [rightTab, setRightTab] = useState("KSA");
 
   const tabScrollRef = useRef(null);
   const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
@@ -994,6 +1124,15 @@ const ScreenSituation = ({ live }) => {
 
   const dateTabs = DATE_TABS;
 
+  const IRAN_EVENTS = IRAN_STRIKES.map((s,i) => ({
+    id: s.id, time: `Mar 0${7-Math.floor(i/3)} ${String(2+i*3).padStart(2,'0')}:${15+i*5}`,
+    type: i%2===0?"Cruise Missile":"Drone (4x)", loc: s.name, status: "Hit — confirmed", sev: "critical",
+  }));
+  const IRAQ_EVENTS = IRAQ_SPILLOVER.map((s,i) => ({
+    id: s.id, time: `Mar 0${7-i} ${String(4+i*2).padStart(2,'0')}:30`,
+    type: "Ballistic Missile", loc: s.name, status: "Hit — debris confirmed", sev: "critical",
+  }));
+
   return (
     <div>
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
@@ -1003,7 +1142,8 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
         <KpiCard label="HORMUZ"       value="Day 7"  note="0 transits / 91 tankers"  color={C.critical} feed="STATIC" />
         <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
-        
+        <KpiCard label="IRAN HIT SITES" value="90+" change="Op. Roaring Lion" color="#06b6d4" feed="STATIC" secondary="ACLED" secondaryColor="#06b6d4" />
+        <KpiCard label="THEATER ACTIVE" value="10" change="countries" color={C.success} feed="LIVE" secondary="LIVE" secondaryColor={C.success} />
       </div>
 
       {/* ── Date-Tabbed Theater Section ── */}
@@ -1045,7 +1185,7 @@ const ScreenSituation = ({ live }) => {
               <div style={{ display:"flex", gap:5, alignItems:"center" }}>
                 <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
                 <div style={{ display:"flex", marginLeft:8, borderRadius:4, overflow:"hidden", border:`1px solid ${C.surfBorder}` }}>
-                  {[["LOG","KSA EVENT LOG"],["GCC","GCC THEATER"]].map(([k,label])=>(
+                  {[["LOG","KSA EVENT LOG"],["GCC","MENA THEATER"]].map(([k,label])=>(
                     <button key={k} onClick={()=>setTheaterView(k)} style={{
                       padding:"4px 10px", border:"none", cursor:"pointer",
                       background:theaterView===k?C.info+"22":"transparent",
@@ -1056,22 +1196,53 @@ const ScreenSituation = ({ live }) => {
                 </div>
               </div>
             </div>
-            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} />
+            {/* Layer filter bar */}
+            <div style={{ display:"flex", gap:4, marginBottom:8 }}>
+              {["ALL","KSA","GCC","IRAN","IRAQ"].map(f => (
+                <button key={f} onClick={()=>setLayerFilter(f)} style={{
+                  padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":f==="IRAQ"?"#eab308":C.info):C.surfBorder}`,
+                  borderRadius:3, cursor:"pointer",
+                  background:layerFilter===f?(f==="IRAN"?"#06b6d422":f==="IRAQ"?"#eab30822":`${C.info}22`):"transparent",
+                  color:layerFilter===f?(f==="IRAN"?"#06b6d4":f==="IRAQ"?"#eab308":C.info):C.dim,
+                  fontSize:10, fontWeight:layerFilter===f?700:500,
+                  fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
+                }}>{f}</button>
+              ))}
+            </div>
+            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} />
+            {/* Map legend */}
+            <div style={{ display:"flex", gap:12, marginTop:6, flexWrap:"wrap" }}>
+              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:C.critical, display:"inline-block" }}/> Iran→KSA</span>
+              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:C.warning, display:"inline-block" }}/> Iran→GCC</span>
+              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:"#06b6d4", display:"inline-block" }}/> US/IL→Iran</span>
+              <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:0, height:0, borderLeft:"5px solid transparent", borderRight:"5px solid transparent", borderBottom:"8px solid #eab308", display:"inline-block" }}/> Iraq spillover</span>
+            </div>
           </div>
 
-          {/* Right column */}
+          {/* Right column — 4-tab event log */}
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
-            {theaterView === "LOG" ? (
-              <>
-                {/* KSA Event Log header */}
-                <div style={{ padding:"14px 14px 6px 14px" }}>
+            {/* Tab bar */}
+            <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
+              {["KSA","GCC","IRAN","IRAQ"].map(t => (
+                <button key={t} onClick={()=>setRightTab(t)} style={{
+                  flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
+                  background:rightTab===t?"#192233":"transparent",
+                  borderBottom:rightTab===t?`2px solid ${t==="IRAN"?"#06b6d4":t==="IRAQ"?"#eab308":C.info}`:"2px solid transparent",
+                  color:rightTab===t?(t==="IRAN"?"#06b6d4":t==="IRAQ"?"#eab308":C.fg):C.muted,
+                  fontSize:10, fontWeight:rightTab===t?700:500,
+                  fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
+                }}>{t}</button>
+              ))}
+            </div>
+
+            {/* Tab content */}
+            <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
+              {rightTab === "KSA" && (
+                <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
                     <span style={{ fontSize:10, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
                   </div>
-                </div>
-                {/* Scrollable event list */}
-                <div style={{ maxHeight:520, overflowY:"auto", padding:"0 14px 14px 14px" }}>
                   {filteredStrikes.length === 0 ? (
                     <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {activeDay}</div>
                   ) : (
@@ -1095,105 +1266,93 @@ const ScreenSituation = ({ live }) => {
                       })}
                     </div>
                   )}
+                </>
+              )}
+
+              {rightTab === "GCC" && (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>GCC EVENT LOG</span>
+                    <span style={{ fontSize:10, color:C.dim }}>Bahrain · Kuwait · Qatar · UAE</span>
+                  </div>
+                  {getGCCTheaterData().filter(g=>["BH","KW","QA","AE"].includes(g.code)).map(g => {
+                    const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
+                    return (
+                      <div key={g.code} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${airCol}`, marginBottom:3 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between" }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:airCol }}>{g.name}</span>
+                          <span style={{ fontSize:14, fontWeight:800, color:airCol }}>{g.strikes.toLocaleString()}</span>
+                        </div>
+                        <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{g.note}</div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {rightTab === "IRAN" && (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#06b6d4", letterSpacing:"0.08em" }}>▶ US/ISRAEL → IRAN</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{IRAN_STRIKES.length} sites</span>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                    {IRAN_EVENTS.map(e => (
+                      <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(6,182,212,0.06)", borderLeft:"2px solid #06b6d4" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between" }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:"#06b6d4" }}>{e.type}</span>
+                          <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
+                        </div>
+                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
+                        <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {rightTab === "IRAQ" && (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#eab308", letterSpacing:"0.08em" }}>▶ IRAN → IRAQ (SPILLOVER)</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{IRAQ_SPILLOVER.length} events</span>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                    {IRAQ_EVENTS.map(e => (
+                      <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(234,179,8,0.06)", borderLeft:"2px solid #eab308" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between" }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:"#eab308" }}>{e.type}</span>
+                          <span style={{ fontSize:10, color:C.dim }}>{e.time}</span>
+                        </div>
+                        <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc}</div>
+                        <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Theater Status panel */}
+            <div style={{ borderTop:`1px solid ${C.surfBorder}`, padding:"10px 14px", background:"rgba(255,255,255,0.02)" }}>
+              <div style={{ fontSize:10, fontWeight:700, color:C.dim, letterSpacing:"0.08em", marginBottom:6 }}>THEATER STATUS</div>
+              {[
+                { label:"Jordan airspace", value:"RESTRICTED", color:C.warning },
+                { label:"Syria spillover", value:"ACTIVE", color:C.warning },
+                { label:"Israel retaliating", value:"CONFIRMED", color:C.critical },
+                { label:"Protests in Iran", value:"49 events", color:"#a855f7" },
+                { label:"Red Sea corridor", value:"DEGRADED", color:C.warning },
+              ].map((s,i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:i<4?`1px solid ${C.surfBorder}30`:"none" }}>
+                  <span style={{ fontSize:10, color:C.muted }}>{s.label}</span>
+                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${s.color}14`, color:s.color, fontWeight:600 }}>{s.value}</span>
                 </div>
-              </>
-            ) : (
-              /* GCC THEATER view */
-              <div style={{ padding:"10px 8px", display:"flex", flexDirection:"column", gap:0, flex:1, justifyContent:"space-between", overflowY: expandedCountry ? "auto" : "hidden" }}>
-                {/* Cache timestamp */}
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4, paddingBottom:4, borderBottom:`1px solid ${C.surfBorder}30` }}>
-                  <span style={{ fontSize:9, fontWeight:700, color:C.dim, letterSpacing:"0.08em" }}>GCC THEATER</span>
-                  {live.gcc?.updatedAt
-                    ? <span style={{ fontSize:9, color:C.dim }}>Updated {cacheTimeAgo(live.gcc.updatedAt)}</span>
-                    : live.gcc?.loading
-                      ? <span style={{ fontSize:9, color:C.info }}>● fetching…</span>
-                      : <span style={{ fontSize:9, color:C.muted }}>STATIC</span>
-                  }
-                </div>
-                {getGCCTheaterData().map(g => {
-                  const airCol = g.airspace==="CLOSED"?C.critical:g.airspace==="RESTRICTED"?C.warning:C.success;
-                  const confCol = g.confidence==="CONFIRMED"?C.success:"#f97316";
-                  const isExpanded = expandedCountry === g.code;
-                   const isHovered = hoveredCountry === g.code;
-                   const countryLabel = g.name.replace(/^..\s/, ''); // strip emoji
-                   return (
-                     <div key={g.code}>
-                        <div onClick={()=>setExpandedCountry(isExpanded?null:g.code)}
-                          onMouseEnter={()=>setHoveredCountry(g.code)}
-                          onMouseLeave={()=>setHoveredCountry(null)}
-                          style={{
-                            padding:"12px 14px",
-                            borderRadius:isExpanded?"4px 4px 0 0":4,
-                            background:isExpanded?"rgba(255,255,255,0.04)":isHovered?"#1e2d45":"rgba(255,255,255,0.02)",
-                            border:`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
-                            borderLeft:`3px solid ${isHovered||isExpanded?airCol:airCol}`,
-                            cursor:"pointer",
-                            transition:"all 0.15s ease",
-                            borderBottom:isExpanded?"none":`1px solid ${isHovered?"#4a7fa5":C.surfBorder}`,
-                            boxShadow:isHovered?"0 2px 8px rgba(0,0,0,0.2)":"none",
-                          }}>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:11, color:isHovered?"#ffffff":C.dim, fontWeight:500, letterSpacing:"0.06em" }}>{g.code}</span>
-                              <span style={{ fontSize:14, fontWeight:700, color:isHovered?"#ffffff":C.fg }}>{g.name}</span>
-                              <span style={{ fontSize:10, padding:"3px 8px", borderRadius:3, background:isHovered?`${airCol}80`:`${airCol}22`, color:isHovered?"#ffffff":airCol, fontWeight:600 }}>{g.airspace}</span>
-                            </div>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:24, fontWeight:800, color:isHovered?"#ffffff":airCol, lineHeight:1 }}>{g.strikes.toLocaleString()}</span>
-                              <span style={{ fontSize:12, color:isHovered?"#ffffff":C.dim, transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>▾</span>
-                            </div>
-                          </div>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ fontSize:11, padding:"3px 8px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.3)":`${C.success}14`, color:isHovered?"#ffffff":C.success, fontWeight:600 }}>✓ {g.interceptPct}%</span>
-                              <span style={{ fontSize:10, padding:"3px 8px", borderRadius:3, background:isHovered?"rgba(255,255,255,0.2)":`${confCol}18`, color:isHovered?"#ffffff":confCol, fontWeight:500 }}>{g.confidence}</span>
-                            </div>
-                          </div>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginTop:3 }}>
-                            <span style={{ fontSize:11, color:isHovered?"#ffffff":C.muted, flex:1 }}>{g.note}</span>
-                            <span style={{ fontSize:10, color:isHovered?"#ffffff":C.dim, whiteSpace:"nowrap", marginLeft:8 }}>{g.source}</span>
-                          </div>
-                       </div>
-                       {/* Expandable commentary panel */}
-                       <div style={{
-                         maxHeight: isExpanded ? 200 : 0,
-                         overflow: "hidden",
-                         transition: "max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease",
-                         opacity: isExpanded ? 1 : 0,
-                         background: "rgba(255,255,255,0.03)",
-                         borderLeft: `3px solid ${airCol}`,
-                         borderRight: `1px solid ${C.surfBorder}`,
-                         borderBottom: isExpanded ? `1px solid ${C.surfBorder}` : "none",
-                         borderTop: "none",
-                         borderRadius: "0 0 4px 4px",
-                         padding: isExpanded ? "8px 10px" : "0 10px",
-                       }}>
-                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                            <span style={{ fontSize:12, fontWeight:700, color:airCol, letterSpacing:"0.04em" }}>{countryLabel} — Situation Summary</span>
-                            <span onClick={(e)=>{e.stopPropagation();setExpandedCountry(null);}} style={{ fontSize:14, color:C.dim, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>×</span>
-                          </div>
-                          <div style={{ fontSize:11, color:C.fg, lineHeight:1.7 }}>
-                           {g.code === "SA" ? `${g.strikes} strikes recorded to date targeting Eastern Province oil infrastructure, Riyadh diplomatic quarter, and military airbases. Abqaiq processing facility near-miss on Mar 4. Ras Tanura terminal degraded to 85% capacity. ${g.interceptPct}% intercept rate via Patriot/THAAD demonstrates near-total defense coverage. Airspace remains ${g.airspace.toLowerCase()} with heightened alert across all sectors.`
-                           : g.code === "AE" ? `${g.strikes.toLocaleString()} projectiles recorded — heaviest volume in theater. Key impacts at Jebel Ali port, Dubai Terminal 3, and French naval base. ${g.interceptPct}% intercept rate under extreme volume pressure. Dubai and Abu Dhabi airports operating at reduced capacity. Jebel Ali port restricted to military logistics only.`
-                           : g.code === "QA" ? `${g.strikes} strikes including 2 ballistic missile impacts at Al Udeid Air Base — critical CENTCOM forward HQ. LNG exports suspended indefinitely, affecting ~25% of global supply. Airspace ${g.airspace.toLowerCase()} — all commercial flights halted. ${g.interceptPct}% intercept rate with notable gaps in coverage.`
-                           : g.code === "KW" ? `${g.strikes} strikes targeting Ali Al Salem Air Base and US Embassy compound. US military assets in active relocation to secondary positions. Embassy sustained direct hit — fire damage, 0 KIA confirmed. ${g.interceptPct}% intercept rate. Kuwait requesting additional Patriot battery deployment.`
-                           : g.code === "BH" ? `${g.strikes} strikes concentrated on NAVCENT 5th Fleet HQ and Bapco refinery. 5th Fleet operations temporarily relocated to sea-based command. Bapco refinery offline — domestic fuel reserves adequate for 14 days. ${g.interceptPct}% intercept rate — lowest among major GCC states.`
-                           : `${g.strikes} strikes — minimal targeting reflecting Oman's mediator status. Duqm Port drone incursion detected. Maintaining diplomatic neutrality in conflict. ${g.interceptPct}% intercept rate with limited engagement. Airspace remains ${g.airspace.toLowerCase()} with heightened monitoring of maritime approaches.`}
-                          </div>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:5, marginTop:5, borderTop:`1px solid ${C.surfBorder}40` }}>
-                            <span style={{ fontSize:10, color:confCol }}>{g.confidence === "CONFIRMED" ? "✓ CONFIRMED" : "~ ESTIMATED"}</span>
-                            <span style={{ fontSize:10, color:C.dim }}>{g.source}</span>
-                         </div>
-                       </div>
-                     </div>
-                  );
-                })}
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      {/* GCC Theater banner removed — info available in GCC THEATER map view */}
+      {/* GCC Theater banner removed — info available in MENA THEATER map view */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
@@ -2181,7 +2340,7 @@ export default function NEMACOPLive() {
             </div>
           </div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-            {[["HORMUZ","CLOSED D7",C.critical],["KSA AIRSPACE","RESTRICTED",C.warning],["CIVIL DEFENSE","ACTIVATED",C.success],["THREAT","CRITICAL",C.critical]].map(([l,v,c])=>(
+            {[["HORMUZ","CLOSED D7",C.critical],["KSA AIRSPACE","RESTRICTED",C.warning],["CIVIL DEFENSE","ACTIVATED",C.success],["THREAT","CRITICAL",C.critical],["IRAN INTERIOR","CONTESTED",C.warning]].map(([l,v,c])=>(
               <div key={l} style={{textAlign:"center"}}>
                 <div style={{fontSize:10,color:C.dim,letterSpacing:"0.06em",marginBottom:3}}>{l}</div>
                 <span style={{fontSize:11,padding:"3px 10px",borderRadius:4,background:`${c}14`,color:c,border:`1px solid ${c}28`,fontWeight:600}}>{v}</span>
@@ -2225,7 +2384,7 @@ export default function NEMACOPLive() {
 
         {/* FOOTER */}
         <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:10,color:C.dim,flexWrap:"wrap",gap:6}}>
-          <span>BRENT · TASI · GCC STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
+          <span>BRENT · TASI · MENA STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
           <span style={{color:"#f97316"}}>PENDING SERVER-SIDE: Yahoo Finance direct · NASA FIRMS · OpenWeatherMap · PortWatch · ACLED</span>
         </footer>
       </div>
