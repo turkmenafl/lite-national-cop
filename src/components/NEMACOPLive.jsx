@@ -550,6 +550,49 @@ Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP
   }
 }
 
+const MENA_SUMMARY = [
+  { code:"SA", name:"Saudi Arabia", flag:"🇸🇦", events:19, fatalities:0, airDrone:8, missile:6, intercepts:18, clashes:0, protests:0 },
+  { code:"AE", name:"UAE", flag:"🇦🇪", events:1276, fatalities:12, airDrone:890, missile:200, intercepts:1174, clashes:15, protests:8 },
+  { code:"QA", name:"Qatar", flag:"🇶🇦", events:115, fatalities:3, airDrone:72, missile:28, intercepts:104, clashes:2, protests:5 },
+  { code:"KW", name:"Kuwait", flag:"🇰🇼", events:484, fatalities:8, airDrone:310, missile:120, intercepts:426, clashes:12, protests:18 },
+  { code:"BH", name:"Bahrain", flag:"🇧🇭", events:198, fatalities:5, airDrone:130, missile:45, intercepts:168, clashes:8, protests:12 },
+  { code:"OM", name:"Oman", flag:"🇴🇲", events:4, fatalities:0, airDrone:3, missile:1, intercepts:2, clashes:0, protests:0 },
+  { code:"IR", name:"Iran", flag:"🇮🇷", events:90, fatalities:45, airDrone:52, missile:38, intercepts:0, clashes:12, protests:49 },
+  { code:"IQ", name:"Iraq", flag:"🇮🇶", events:24, fatalities:8, airDrone:12, missile:8, intercepts:0, clashes:6, protests:15 },
+  { code:"IL", name:"Israel", flag:"🇮🇱", events:35, fatalities:2, airDrone:20, missile:15, intercepts:33, clashes:0, protests:3 },
+  { code:"YE", name:"Yemen", flag:"🇾🇪", events:18, fatalities:6, airDrone:10, missile:5, intercepts:0, clashes:8, protests:2 },
+  { code:"SY", name:"Syria", flag:"🇸🇾", events:12, fatalities:4, airDrone:6, missile:4, intercepts:0, clashes:5, protests:1 },
+  { code:"JO", name:"Jordan", flag:"🇯🇴", events:3, fatalities:0, airDrone:1, missile:0, intercepts:1, clashes:0, protests:8 },
+];
+
+const PROTEST_MARKERS = [
+  { id:"PR1", lat:35.69, lng:51.39, name:"Tehran" },
+  { id:"PR2", lat:33.31, lng:44.37, name:"Baghdad" },
+  { id:"PR3", lat:32.65, lng:51.67, name:"Isfahan" },
+  { id:"PR4", lat:29.37, lng:47.98, name:"Kuwait City" },
+  { id:"PR5", lat:26.22, lng:50.59, name:"Manama" },
+];
+
+const NAME_TO_CODE = { IRAN:"IR", IRAQ:"IQ", SYRIA:"SY", JORDAN:"JO", ISRAEL:"IL", YEMEN:"YE", KSA:"SA", UAE:"AE", QATAR:"QA", KUWAIT:"KW", BAHRAIN:"BH", OMAN:"OM" };
+
+function countryPopupHtml(cs) {
+  if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
+  return `<div>
+    <div style="font-size:12px;font-weight:700;color:#d8e6f5;margin-bottom:8px">${cs.flag} ${cs.name}</div>
+    <div style="display:flex;gap:16px;margin-bottom:8px">
+      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:18px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
+      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:18px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
+    </div>
+    <div style="border-top:1px solid rgba(39,50,72,0.4);padding-top:6px;font-size:9px;color:#a0b4c8;line-height:2.2">
+      Air/drone strikes: <b style="color:#d8e6f5">${cs.airDrone}</b><br/>
+      Missile/shelling: <b style="color:#d8e6f5">${cs.missile}</b><br/>
+      Intercepts: <b style="color:#22c55e">${cs.intercepts}</b><br/>
+      Armed clashes: <b style="color:#d8e6f5">${cs.clashes}</b><br/>
+      Protests: <b style="color:#eab308">${cs.protests}</b>
+    </div>
+  </div>`;
+}
+
 
 async function fetchPortWatch() {
   const PW_BASE = "https://portwatch.imf.org/api/v3/datasets";
