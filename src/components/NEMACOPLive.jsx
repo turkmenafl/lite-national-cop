@@ -1263,20 +1263,35 @@ const ScreenSituation = ({ live }) => {
                 </div>
               </div>
             </div>
-            {/* Layer filter bar */}
+            {/* Layer filter bar — MENA · KSA · IRAN */}
             <div style={{ display:"flex", gap:4, marginBottom:8 }}>
-              {["ALL","KSA","GCC","IRAN","IRAQ"].map(f => (
+              {["MENA","KSA","IRAN"].map(f => (
                 <button key={f} onClick={()=>setLayerFilter(f)} style={{
-                  padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":f==="IRAQ"?"#eab308":C.info):C.surfBorder}`,
+                  padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.surfBorder}`,
                   borderRadius:3, cursor:"pointer",
-                  background:layerFilter===f?(f==="IRAN"?"#06b6d422":f==="IRAQ"?"#eab30822":`${C.info}22`):"transparent",
-                  color:layerFilter===f?(f==="IRAN"?"#06b6d4":f==="IRAQ"?"#eab308":C.info):C.dim,
+                  background:layerFilter===f?(f==="IRAN"?"#06b6d422":`${C.info}22`):"transparent",
+                  color:layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.dim,
                   fontSize:10, fontWeight:layerFilter===f?700:500,
                   fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
                 }}>{f}</button>
               ))}
             </div>
-            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} />
+            {/* Country toggle pills — only in MENA view */}
+            {layerFilter === "MENA" && (
+              <div style={{ display:"flex", gap:3, marginBottom:8, flexWrap:"wrap" }}>
+                {MENA_COUNTRY_LABELS.map(c => (
+                  <button key={c.code} onClick={()=>toggleMenaCountry(c.code)} style={{
+                    padding:"3px 8px", border:`1px solid ${menaCountries[c.code]?(c.code==="IR"?"#06b6d4":c.code==="IQ"?"#eab308":C.info):C.surfBorder}`,
+                    borderRadius:12, cursor:"pointer",
+                    background:menaCountries[c.code]?(c.code==="IR"?"#06b6d418":c.code==="IQ"?"#eab30818":`${C.info}18`):"transparent",
+                    color:menaCountries[c.code]?(c.code==="IR"?"#06b6d4":c.code==="IQ"?"#eab308":C.info):C.dim,
+                    fontSize:9, fontWeight:menaCountries[c.code]?700:400,
+                    fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.03em",
+                  }}>{c.label}</button>
+                ))}
+              </div>
+            )}
+            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} menaCountries={menaCountries} />
             {/* Map legend */}
             <div style={{ display:"flex", gap:12, marginTop:6, flexWrap:"wrap" }}>
               <span style={{ fontSize:9, color:C.muted, display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, borderRadius:"50%", background:C.critical, display:"inline-block" }}/> Iran→KSA</span>
