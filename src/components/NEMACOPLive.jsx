@@ -1115,8 +1115,21 @@ const ScreenSituation = ({ live }) => {
   const [theaterView, setTheaterView] = useState("LOG");
   const [expandedCountry, setExpandedCountry] = useState(null);
   const [hoveredCountry, setHoveredCountry] = useState(null);
-  const [layerFilter, setLayerFilter] = useState("ALL");
+  const [layerFilter, setLayerFilter] = useState("MENA");
   const [rightTab, setRightTab] = useState("KSA");
+  const [menaCountries, setMenaCountries] = useState(() => {
+    const all = ["SA","IR","IQ","SY","IL","JO","AE","BH","KW","QA","OM","YE"];
+    const m = {};
+    all.forEach(c => m[c] = true);
+    return m;
+  });
+  const MENA_COUNTRY_LABELS = [
+    { code:"SA", label:"Saudi Arabia" }, { code:"IR", label:"Iran" }, { code:"IQ", label:"Iraq" },
+    { code:"SY", label:"Syria" }, { code:"IL", label:"Israel" }, { code:"JO", label:"Jordan" },
+    { code:"AE", label:"UAE" }, { code:"BH", label:"Bahrain" }, { code:"KW", label:"Kuwait" },
+    { code:"QA", label:"Qatar" }, { code:"OM", label:"Oman" }, { code:"YE", label:"Yemen" },
+  ];
+  const toggleMenaCountry = (code) => setMenaCountries(prev => ({ ...prev, [code]: !prev[code] }));
 
   const tabScrollRef = useRef(null);
   const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
