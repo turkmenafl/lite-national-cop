@@ -940,7 +940,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
         const iso2 = GCC_ISO[iso3];
         if (layerFilter === "KSA" && iso2 !== "SA") return;
-        if (layerFilter === "GCC" && iso2 === "SA") return;
+        if (layerFilter === "MENA" && menaCountries && !menaCountries[iso2]) return;
         const seed = GCC_SEED.find(g => g.code === iso2);
         if (!seed) return;
         const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
