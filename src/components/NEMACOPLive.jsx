@@ -2384,7 +2384,7 @@ export default function NEMACOPLive() {
 
         {/* FOOTER */}
         <footer style={{borderTop:`1px solid ${C.surfBorder}`,padding:"8px 20px",background:"#0a1220",display:"flex",justifyContent:"space-between",fontSize:10,color:C.dim,flexWrap:"wrap",gap:6}}>
-          <span>BRENT · TASI · GCC STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
+          <span>BRENT · TASI · MENA STRIKES: Claude API + web_search · GDELT: gdeltproject.org · IODA: inetintel.cc.gatech.edu · All other: STATIC / OSINT</span>
           <span style={{color:"#f97316"}}>PENDING SERVER-SIDE: Yahoo Finance direct · NASA FIRMS · OpenWeatherMap · PortWatch · ACLED</span>
         </footer>
       </div>
