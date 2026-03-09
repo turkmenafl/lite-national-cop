@@ -1008,15 +1008,15 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         return !!POLY_ISO[iso3];
       });
 
-      gccFeatures.forEach(feature => {
+      matchedFeatures.forEach(feature => {
         const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
-        const iso2 = GCC_ISO[iso3];
+        const iso2 = POLY_ISO[iso3];
         if (layerFilter === "KSA" && iso2 !== "SA") return;
         if (layerFilter === "MENA" && menaCountries && !menaCountries[iso2]) return;
         const seed = GCC_SEED.find(g => g.code === iso2);
-        if (!seed) return;
-        const gccData = (gccMarkers || []).find(g => g.code === iso2) || seed;
-        const airCol = seed.airspace==="CLOSED"?C.critical:seed.airspace==="RESTRICTED"?C.warning:C.success;
+        const cs = MENA_SUMMARY.find(c => c.code === iso2);
+        const airCol = seed?.airspace==="CLOSED"?C.critical:seed?.airspace==="RESTRICTED"?C.warning:"rgba(255,255,255,0.5)";
+        const fillCol = seed ? airCol : "rgba(255,255,255,0.5)";
         const confCol = seed.confidence==="CONFIRMED"?C.success:"#f97316";
 
         const layer = L.geoJSON(feature, {
