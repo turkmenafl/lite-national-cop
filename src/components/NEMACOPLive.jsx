@@ -946,14 +946,14 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
           layersRef.current.push(m);
         }
       }
-      // Also show Iran/Iraq in LOG view if filter selected
+      // Also show Iran/Iraq in LOG view if filter selected (blue = US/Coalition)
       if (showIRAN) {
         IRAN_STRIKES.forEach(s => {
           const m = L.marker([s.lat, s.lng], {
             interactive: false,
             icon: L.divIcon({
               className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #06b6d4;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#06b6d4;opacity:0.9"></div></div>`,
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
               iconSize: [14, 14], iconAnchor: [7, 7],
             }),
           }).addTo(map);
@@ -966,8 +966,8 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
             interactive: false,
             icon: L.divIcon({
               className: "",
-              html: `<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #eab308;pointer-events:none"></div>`,
-              iconSize: [14, 12], iconAnchor: [7, 12],
+              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
+              iconSize: [14, 14], iconAnchor: [7, 7],
             }),
           }).addTo(map);
           layersRef.current.push(m);
