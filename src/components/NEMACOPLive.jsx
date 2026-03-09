@@ -779,8 +779,9 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
       // GCC country markers
       if (showGCC || showKSA) {
         (gccMarkers || []).forEach(g => {
-          if (!showKSA && g.code === "SA") return;
-          if (!showGCC && g.code !== "SA") return;
+          if (g.code === "SA" && !showKSA) return;
+          if (g.code !== "SA" && !showGCC) return;
+          if (layerFilter === "MENA" && menaCountries && !menaCountries[g.code]) return;
           const coords = GCC_CAPITALS[g.code];
           if (!coords) return;
           const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
