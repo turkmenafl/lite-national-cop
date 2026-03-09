@@ -423,6 +423,22 @@ async function fetchGCCStrikes() {
   return { data: seedData, updatedAt: null };
 }
 
+// ─── ACLED ────────────────────────────────────────────────────────────────────
+async function fetchACLEDEvents(country) {
+  try {
+    const { data, count, error } = await supabase
+      .from("acled_events")
+      .select("*", { count: "exact" })
+      .eq("country", country)
+      .order("event_date", { ascending: false });
+    if (error) throw error;
+    return { events: data || [], count: count ?? 0 };
+  } catch (e) {
+    console.warn("[ACLED] fetch failed:", e?.message);
+    return null;
+  }
+}
+
 async function fetchKSAStrikes() {
   const prompt = `You are a conflict data analyst. Search for the latest verified reports of Iranian missile, drone, and cruise missile attacks against Saudi Arabia (KSA) during the Iran-GCC conflict, February 28 – March 2026.
 Find the 10 most recent individual strike events against KSA. For each event return:
@@ -1136,7 +1152,7 @@ const ScreenSituation = ({ live }) => {
   return (
     <div>
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-        <KpiCard label="STRIKES KSA"  value="19"     change="+3/24h"                color={C.critical} feed="CONFIRMED" />
+        <KpiCard label="STRIKES KSA"  value={live.acledKsa?.count != null ? String(live.acledKsa.count) : "29"}  change="+3/24h"  color={C.critical} feed={live.acledKsa?.count != null ? "ACLED" : "CONFIRMED"} loading={live.acledKsa?.loading} />
         <KpiCard label="INTERCEPTS"   value="96%"    note="Patriot/THAAD"           color={C.success}  feed="CONFIRMED" />
         <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
         <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
@@ -2191,6 +2207,7 @@ export default function NEMACOPLive() {
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
     ciStatus: { loading:false, error:null, data:null },
+    acledKsa: { loading:false, error:null, count:null, events:[] },
   });
 
   const refresh = useCallback(async () => {
@@ -2205,12 +2222,14 @@ export default function NEMACOPLive() {
       ukmto:{...d.ukmto,loading:true},
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
+      acledKsa:{...d.acledKsa,loading:true},
     }));
 
     // Fetch non-AI feeds + AI cache in parallel
-    const [eia, opa, gdelt, ioda, pw, cacheRes] = await Promise.allSettled([
+    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
+      fetchACLEDEvents("Saudi Arabia"),
     ]);
 
     // Parse AI cache results
@@ -2293,6 +2312,11 @@ export default function NEMACOPLive() {
 
       const ciData = cache.ci_status;
       n.ciStatus = { loading:false, error:null, data:ciData||null };
+
+      const acledData = acledRes.status === "fulfilled" ? acledRes.value : null;
+      n.acledKsa = acledData
+        ? { loading:false, error:null, count:acledData.count, events:acledData.events }
+        : { loading:false, error:true, count:null, events:[] };
 
       return n;
     });
