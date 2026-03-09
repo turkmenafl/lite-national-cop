@@ -1017,7 +1017,7 @@ const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccM
         const cs = MENA_SUMMARY.find(c => c.code === iso2);
         const airCol = seed?.airspace==="CLOSED"?C.critical:seed?.airspace==="RESTRICTED"?C.warning:"rgba(255,255,255,0.5)";
         const fillCol = seed ? airCol : "rgba(255,255,255,0.5)";
-        const confCol = seed.confidence==="CONFIRMED"?C.success:"#f97316";
+        const confCol = seed?.confidence==="CONFIRMED"?C.success:"#f97316";
 
         const layer = L.geoJSON(feature, {
           style: {
