@@ -563,6 +563,7 @@ const MENA_SUMMARY = [
   
   { code:"SY", name:"Syria", flag:"🇸🇾", events:12, fatalities:4, airDrone:6, missile:4, intercepts:0, clashes:5, protests:1 },
   { code:"JO", name:"Jordan", flag:"🇯🇴", events:3, fatalities:0, airDrone:1, missile:0, intercepts:1, clashes:0, protests:8 },
+  { code:"PS", name:"Palestine", flag:"🇵🇸", events:28, fatalities:15, airDrone:8, missile:5, intercepts:0, clashes:18, protests:22 },
 ];
 
 const PROTEST_MARKERS = [
