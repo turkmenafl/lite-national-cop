@@ -436,8 +436,8 @@ const ISO_TO_COUNTRY = Object.fromEntries(Object.entries(COUNTRY_TO_ISO).map(([k
 const ISO_TO_FLAG = {IR:"🇮🇷",IL:"🇮🇱",IQ:"🇮🇶",AE:"🇦🇪",SY:"🇸🇾",BH:"🇧🇭",KW:"🇰🇼",SA:"🇸🇦",QA:"🇶🇦",PS:"🇵🇸",JO:"🇯🇴",OM:"🇴🇲"};
 const BUBBLE_COLORS = { red:"#ef4444", blue:"#3b82f6", yellow:"#eab308" };
 const COUNTRY_LABEL_POS = {
-  IR:[32.5,53.5],IQ:[33.3,43.5],SY:[35.0,38.5],JO:[31.5,36.5],
-  IL:[31.5,34.8],PS:[32.3,35.2],SA:[24.0,44.5],AE:[23.5,54.5],
+  IR:[32.5,53.5],IQ:[33.3,43.5],SY:[35.0,38.5],JO:[30.5,37.0],
+  IL:[30.8,34.2],PS:[32.5,35.5],SA:[24.0,44.5],AE:[23.5,54.5],
   QA:[25.5,51.3],KW:[29.8,47.5],BH:[26.4,50.3],OM:[21.5,57.0],
 };
 const COUNTRY_ORDER = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
