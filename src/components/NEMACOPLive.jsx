@@ -721,6 +721,30 @@ Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP
 // MENA country data now computed dynamically from ACLED via buildCountryStats()
 
 
+async function fetchGdelt() {
+  try {
+    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=Saudi+Arabia+Iran+attack+missile+drone&mode=artlist&maxrecords=25&format=json&timespan=24h`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return { count: (data.articles || []).length, articles: data.articles || [] };
+  } catch {
+    return { count: 0, articles: [] };
+  }
+}
+
+async function fetchIoda() {
+  try {
+    const url = `https://ioda.inetintel.cc.gatech.edu/api/v2/signals/raw?entityType=country&entityCode=SA&from=${Math.floor(Date.now()/1000)-3600}&until=${Math.floor(Date.now()/1000)}&datasource=bgp`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const vals = data?.data?.bgp?.values || [];
+    if (!vals.length) return null;
+    return Math.round(vals[vals.length-1] * 100);
+  } catch {
+    return null;
+  }
+}
+
 async function fetchPortWatch() {
   const PW_BASE = "https://portwatch.imf.org/api/v3/datasets";
   const CHOKE_ID = "42132aa4e2fc4d41bdaf9a445f688931_0";
