@@ -2031,11 +2031,10 @@ export default function NEMACOPLive() {
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
     ciStatus: { loading:false, error:null, data:null },
-    acledKsa:  { loading:false, error:null, count:null, events:[] },
-    acledGcc:  { loading:false, error:null, count:null, events:[] },
-    acledIran: { loading:false, error:null, count:null, events:[] },
-    acledIraq: { loading:false, error:null, count:null, events:[] },
+    acledAll: { loading:false, error:null, count:0, events:[], importing:false },
   });
+
+  const importAttemptedRef = useRef(false);
 
   const refresh = useCallback(async () => {
     if (_refreshLock) { console.warn("[COP] refresh already in progress, skipping"); return; }
@@ -2049,23 +2048,15 @@ export default function NEMACOPLive() {
       ukmto:{...d.ukmto,loading:true},
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
-      acledKsa: {...d.acledKsa,  loading:true},
-      acledGcc: {...d.acledGcc,  loading:true},
-      acledIran:{...d.acledIran, loading:true},
-      acledIraq:{...d.acledIraq, loading:true},
+      acledAll:{...d.acledAll,loading:true},
     }));
 
-    // Fetch non-AI feeds + AI cache in parallel
-    const [eia, opa, gdelt, ioda, pw, cacheRes, acledKsaRes, acledIranRes, acledIraqRes, acledGccRes] = await Promise.allSettled([
+    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
-      fetchACLEDEvents("Saudi Arabia"),
-      fetchACLEDEvents("Iran"),
-      fetchACLEDEvents("Iraq"),
-      fetchACLEDEvents(["Bahrain", "Kuwait", "Qatar", "United Arab Emirates"]),
+      fetchAllACLED(),
     ]);
 
-    // Parse AI cache results
     const cache = {};
     const cacheUpdatedAt = {};
     if (cacheRes.status === "fulfilled" && cacheRes.value?.data) {
@@ -2074,9 +2065,8 @@ export default function NEMACOPLive() {
         cacheUpdatedAt[row.key] = row.updated_at;
       }
     }
-    const cacheAge = cacheRes.status === "fulfilled" && cacheRes.value?.data?.length
-      ? cacheRes.value.data[0]?.updated_at : null;
     const cacheSource = Object.keys(cache).length ? "CACHED" : "STATIC";
+    const acledData = acledRes.status === "fulfilled" ? acledRes.value : null;
 
     setLive(d=>{
       const n={...d};
@@ -2091,15 +2081,17 @@ export default function NEMACOPLive() {
         n.brent={
           value:`$${opaPrice.toFixed(2)}`,
           change: eiaChg || d.brent.change,
-          source:"OPA",
-          loading:false,
+          source:"OPA", loading:false,
           secondary: eiaBase!==null ? `EIA baseline $${eiaBase.toFixed(2)}${premium!==null?` · CONFLICT PREMIUM +$${premium.toFixed(2)} / +${premiumPct}%`:''}` : null,
         };
       } else if (eiaResult?.price) {
         n.brent={value:`$${eiaResult.price.toFixed(2)}`,change:eiaResult.change,source:"EIA",loading:false,secondary:null};
-      } else { n.brent={...d.brent,source:"STATIC",loading:false}; }
+      } else {
+        const fin = cache.financial;
+        if (fin?.brent) n.brent={value:`$${Number(fin.brent).toFixed(2)}`,change:fin.brentChg||d.brent.change,source:cacheSource,loading:false,secondary:null};
+        else n.brent={...d.brent,source:"STATIC",loading:false};
+      }
 
-      // AI feeds from cache
       const fin = cache.financial;
       if (fin?.tasi) {
         n.tasi={value:Number(fin.tasi).toLocaleString(),change:fin.tasiChg||d.tasi.change,source:cacheSource,loading:false};
@@ -2109,9 +2101,9 @@ export default function NEMACOPLive() {
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
 
       const gccData = cache.gcc_strikes;
-      const gccUpdatedAt = cacheUpdatedAt['gcc_strikes'] || null;
+      const gccUpdatedAt2 = cacheUpdatedAt['gcc_strikes'] || null;
       n.gcc = gccData
-        ? {data:gccData, loading:false, error:false, updatedAt:gccUpdatedAt}
+        ? {data:gccData, loading:false, error:false, updatedAt:gccUpdatedAt2}
         : {data:d.gcc.data, loading:false, error:!Object.keys(cache).length, updatedAt:null};
 
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
@@ -2122,23 +2114,14 @@ export default function NEMACOPLive() {
       const ksaData = cache.ksa_strikes;
       let mergedKsa = null;
       if (Array.isArray(ksaData) && ksaData.length > 0) {
-        const isCentroidPlaceholder = (event) => {
-          const latBad = event.lat == null || event.lat === 24.0;
-          const lngBad = event.lng == null || event.lng === 45.0;
-          return latBad && lngBad;
-        };
         const validCache = {};
         for (const event of ksaData) {
-          if (isCentroidPlaceholder(event)) {
-            console.warn('ksa_strikes cache: skipping centroid placeholder', event);
-          } else if (typeof event.lat === 'number' && typeof event.lng === 'number' && event.id != null) {
+          if (typeof event.lat === 'number' && typeof event.lng === 'number' && event.id != null) {
             validCache[event.id] = event;
           }
         }
         if (Object.keys(validCache).length > 0) {
-          mergedKsa = STRIKES_KSA.map(seed =>
-            validCache[seed.id] ? { ...seed, ...validCache[seed.id] } : seed
-          );
+          mergedKsa = STRIKES_KSA.map(seed => validCache[seed.id] ? { ...seed, ...validCache[seed.id] } : seed);
         }
       }
       n.ksaStrikes = { loading:false, error:null, data: mergedKsa };
@@ -2146,31 +2129,41 @@ export default function NEMACOPLive() {
       const ciData = cache.ci_status;
       n.ciStatus = { loading:false, error:null, data:ciData||null };
 
-      const acledKsaData = acledKsaRes.status === "fulfilled" ? acledKsaRes.value : null;
-      n.acledKsa = acledKsaData
-        ? { loading:false, error:null, count:acledKsaData.count, events:acledKsaData.events }
-        : { loading:false, error:true, count:null, events:[] };
-
-      const acledIranData = acledIranRes.status === "fulfilled" ? acledIranRes.value : null;
-      n.acledIran = acledIranData
-        ? { loading:false, error:null, count:acledIranData.count, events:acledIranData.events }
-        : { loading:false, error:true, count:null, events:[] };
-
-      const acledIraqData = acledIraqRes.status === "fulfilled" ? acledIraqRes.value : null;
-      n.acledIraq = acledIraqData
-        ? { loading:false, error:null, count:acledIraqData.count, events:acledIraqData.events }
-        : { loading:false, error:true, count:null, events:[] };
-
-      const acledGccData = acledGccRes.status === "fulfilled" ? acledGccRes.value : null;
-      n.acledGcc = acledGccData
-        ? { loading:false, error:null, count:acledGccData.count, events:acledGccData.events }
-        : { loading:false, error:true, count:null, events:[] };
+      n.acledAll = acledData
+        ? { loading:false, error:null, count:acledData.count, events:acledData.events, importing:false }
+        : { loading:false, error:true, count:0, events:[], importing:false };
 
       return n;
     });
     setLastRefresh(new Date());
     setRefreshing(false);
     _refreshLock = false;
+
+    // Auto-import ACLED data if table is empty
+    if (acledData && acledData.count === 0 && !importAttemptedRef.current) {
+      importAttemptedRef.current = true;
+      try {
+        setLive(d => ({...d, acledAll: {...d.acledAll, importing: true }}));
+        const csvRes = await fetch('/data/acled.csv');
+        if (!csvRes.ok) throw new Error('CSV not found');
+        const csvText = await csvRes.text();
+        const importRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/acled-import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: csvText,
+        });
+        if (!importRes.ok) throw new Error(`Import HTTP ${importRes.status}`);
+        const result = await importRes.json();
+        console.log(`[ACLED] Auto-imported ${result.total} events`);
+        const freshAcled = await fetchAllACLED();
+        if (freshAcled) {
+          setLive(d => ({...d, acledAll: { loading:false, error:null, count:freshAcled.count, events:freshAcled.events, importing:false }}));
+        }
+      } catch (e) {
+        console.warn('[ACLED] auto-import failed:', e.message);
+        setLive(d => ({...d, acledAll: {...d.acledAll, importing:false }}));
+      }
+    }
   }, []);
 
   useEffect(()=>{refresh();},[refresh]);
