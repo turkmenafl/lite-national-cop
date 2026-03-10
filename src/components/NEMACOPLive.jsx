@@ -2182,11 +2182,18 @@ export default function NEMACOPLive() {
       n.gdelt = gdelt.status==="fulfilled"?{value:gdelt.value.count,articles:gdelt.value.articles||[],source:"GDELT",loading:false}:{...d.gdelt,source:"STATIC",loading:false};
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
 
-      const gccData = cache.gcc_strikes;
+      const gccCache = cache.gcc_strikes;
       const gccUpdatedAt2 = cacheUpdatedAt['gcc_strikes'] || null;
-      n.gcc = gccData
-        ? {data:gccData, loading:false, error:false, updatedAt:gccUpdatedAt2}
-        : {data:d.gcc.data, loading:false, error:!Object.keys(cache).length, updatedAt:null};
+      if (gccCache) {
+        n.gcc = {data:gccCache, loading:false, error:false, updatedAt:gccUpdatedAt2};
+      } else {
+        // No cache — build seed fallback so popup always has numbers
+        const seedData = {};
+        for (const s of GCC_SEED) {
+          seedData[s.code] = { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
+        }
+        n.gcc = {data:seedData, loading:false, error:false, updatedAt:null};
+      }
 
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
 
