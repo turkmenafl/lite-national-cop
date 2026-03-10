@@ -56,11 +56,14 @@ const C = {
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const GCC_SEED = [
   { code:"SA", name:"🇸🇦 KSA",     airspace:"RESTRICTED", strikes:19,   interceptPct:96, confidence:"CONFIRMED", source:"Saudi MoD spokesman",     note:"96% intercept. Ras Tanura degraded. Abqaiq near-miss Mar 4.", daily:[3,2,1,2,3,3,5] },
-  { code:"AE", name:"🇦🇪 UAE",     airspace:"RESTRICTED", strikes:1276, interceptPct:92, confidence:"CONFIRMED", source:"UAE MoD press conference",  note:"Jebel Ali + Dubai T3 + French base hit.", daily:[120,145,160,185,200,220,246] },
-  { code:"QA", name:"🇶🇦 Qatar",   airspace:"CLOSED",     strikes:115,  interceptPct:90, confidence:"EST",       source:"CTP-ISW / LWJ",             note:"Al Udeid 2 BM impacts. LNG suspended.", daily:[8,10,14,18,20,22,23] },
-  { code:"KW", name:"🇰🇼 Kuwait",  airspace:"RESTRICTED", strikes:484,  interceptPct:88, confidence:"EST",       source:"KUNA / US DoD",             note:"Ali Al Salem struck. US Embassy hit.", daily:[45,55,62,70,78,85,89] },
-  { code:"BH", name:"🇧🇭 Bahrain", airspace:"RESTRICTED", strikes:198,  interceptPct:85, confidence:"EST",       source:"NAVCENT / Alma Research",   note:"5th Fleet HQ struck. Bapco refinery hit.", daily:[18,22,25,28,32,35,38] },
-  { code:"OM", name:"🇴🇲 Oman",    airspace:"OPEN",       strikes:4,    interceptPct:50, confidence:"EST",       source:"ONA / Reuters",             note:"Duqm Port drone. Mediator status.", daily:[0,0,0,1,1,1,1] },
+  { code:"AE", name:"🇦🇪 UAE",     airspace:"RESTRICTED", strikes:12,   interceptPct:92, confidence:"EST",       source:"UAE MoD",                   note:"Jebel Ali + Dubai T3 targeted.", daily:[1,1,2,2,2,2,2] },
+  { code:"QA", name:"🇶🇦 Qatar",   airspace:"CLOSED",     strikes:8,    interceptPct:90, confidence:"EST",       source:"CTP-ISW / LWJ",             note:"Al Udeid 2 BM impacts. LNG suspended.", daily:[1,1,1,1,1,1,2] },
+  { code:"KW", name:"🇰🇼 Kuwait",  airspace:"RESTRICTED", strikes:6,    interceptPct:88, confidence:"EST",       source:"KUNA / US DoD",             note:"Ali Al Salem struck.", daily:[1,1,1,1,1,1,0] },
+  { code:"BH", name:"🇧🇭 Bahrain", airspace:"RESTRICTED", strikes:5,    interceptPct:85, confidence:"EST",       source:"NAVCENT / Alma Research",   note:"5th Fleet HQ area targeted.", daily:[1,1,1,1,1,0,0] },
+  { code:"OM", name:"🇴🇲 Oman",    airspace:"OPEN",       strikes:2,    interceptPct:50, confidence:"EST",       source:"ONA / Reuters",             note:"Duqm Port drone. Mediator status.", daily:[0,0,0,1,0,0,1] },
+  { code:"IL", name:"🇮🇱 Israel",  airspace:"RESTRICTED", strikes:15,   interceptPct:95, confidence:"EST",       source:"IDF / Reuters",             note:"Arrow/Iron Dome intercepts.", daily:[2,2,2,2,2,2,3] },
+  { code:"IQ", name:"🇮🇶 Iraq",    airspace:"RESTRICTED", strikes:10,   interceptPct:70, confidence:"EST",       source:"Iraqi MoD / CTP-ISW",      note:"US bases targeted.", daily:[1,1,2,1,2,1,2] },
+  { code:"JO", name:"🇯🇴 Jordan",  airspace:"RESTRICTED", strikes:3,    interceptPct:80, confidence:"EST",       source:"JAF / Reuters",             note:"Eastern border area.", daily:[0,0,1,0,1,0,1] },
 ];
 
 function makeSparklineSvg(daily, color) {
@@ -218,7 +221,7 @@ const CLUSTERS = [
       { id:"S5", name:"Missile attack", severity:"critical", status:"active",
         badge:"AI+WEB",
         detail:"Ballistic and cruise missile attacks ongoing. Multiple vectors. 96% intercept rate.",
-        liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>live.gcc.data?`KSA: ${live.gcc.data.SA?.intercept_pct||96}% intercept`:"96% intercept (seed)", color:()=>C.success }],
+        liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>{if(!live.gcc.data?.SA) return "96% intercept (seed)"; const sa=live.gcc.data.SA; const pct=sa.total_incoming>0?Math.round((sa.total_intercepted/sa.total_incoming)*100):(sa.intercept_pct||96); return `KSA: ${pct}% intercept`;}, color:()=>C.success }],
         sources:["ACLED (daily)","INSS","Saudi MoD via SPA"],
       },
     ],
@@ -418,7 +421,7 @@ async function fetchGCCStrikes() {
   // Return GCC_SEED as static fallback (no API call)
   const seedData = {};
   for (const s of GCC_SEED) {
-    seedData[s.code] = { total: s.strikes, intercept_pct: s.interceptPct, confidence: s.confidence, source: s.source };
+    seedData[s.code] = { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
   }
   return { data: seedData, updatedAt: null };
 }
@@ -909,7 +912,10 @@ const GCCTheater = ({ gcc }) => {
   const states = GCC_SEED.map(s=>{
     if (!gcc.data?.[s.code]) return s;
     const live = gcc.data[s.code];
-    return { ...s, strikes:live.total??s.strikes, interceptPct:live.intercept_pct??s.interceptPct, confidence:live.confidence??s.confidence, source:live.source??s.source, note:live.note??s.note };
+    const incoming = live.total_incoming ?? live.total ?? s.strikes;
+    const intercepted = live.total_intercepted ?? (live.intercept_pct != null ? Math.round(incoming * live.intercept_pct / 100) : Math.round(incoming * s.interceptPct / 100));
+    const interceptPct = incoming > 0 ? Math.round((intercepted / incoming) * 100) : s.interceptPct;
+    return { ...s, strikes: incoming, interceptPct, confidence: live.confidence ?? s.confidence, source: live.source ?? s.source, note: live.note ?? s.note };
   });
   const maxStrikes = Math.max(...states.map(s=>s.strikes));
   return (
