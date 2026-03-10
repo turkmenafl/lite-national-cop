@@ -776,7 +776,7 @@ const GCC_CAPITALS = {
 };
 
 // ─── LEAFLET THEATER MAP — proportional bubbles from ACLED ───────────────────
-const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, menaCountries }) => {
+const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, menaCountries, gccData }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
