@@ -426,7 +426,7 @@ async function fetchGCCStrikes() {
 // ─── ACLED ────────────────────────────────────────────────────────────────────
 const ACLED_COUNTRIES = ["Iran","Israel","Iraq","United Arab Emirates","Syria","Bahrain","Kuwait","Saudi Arabia","Qatar","Palestine","Jordan","Oman"];
 const SMALL_COUNTRIES_SET = new Set(["IL","PS","QA","BH"]);
-const COUNTRY_CENTROIDS = { IL:[31.5,35.0], PS:[31.9,35.2], QA:[25.28,51.53], BH:[26.22,50.59] };
+const COUNTRY_CENTROIDS = { IL:[31.4,34.8], PS:[31.95,35.25], QA:[25.28,51.53], BH:[26.22,50.59] };
 const UAE_EMIRATE_COORDS = {
   "Abu Dhabi":[24.45,54.65],"Dubai":[25.20,55.27],"Sharjah":[25.34,55.41],
   "Fujairah":[25.12,56.33],"Ras Al Khaimah":[25.79,55.98],"Ajman":[25.41,55.44],"Umm Al Quwain":[25.56,55.55],
