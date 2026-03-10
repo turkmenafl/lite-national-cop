@@ -529,12 +529,22 @@ function buildCountryStats(events) {
   return stats;
 }
 
+const GCC_FALLBACK = {
+  SA: { total_incoming: 19,   total_intercepted: 18 },
+  AE: { total_incoming: 1276, total_intercepted: 1174 },
+  KW: { total_incoming: 484,  total_intercepted: 426 },
+  BH: { total_incoming: 198,  total_intercepted: 168 },
+  QA: { total_incoming: 115,  total_intercepted: 104 },
+  OM: { total_incoming: 4,    total_intercepted: 2 },
+  IL: { total_incoming: 330,  total_intercepted: 391 },
+  IQ: { total_incoming: 84,   total_intercepted: 2 },
+  JO: { total_incoming: 62,   total_intercepted: 16 },
+};
+
 function dynamicPopupHtml(cs, gccData) {
   if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
   const iso = cs.code;
   const gccCountries = new Set(["SA","AE","KW","BH","QA","OM","IL","IQ","JO"]);
-  const gccEntry = gccData?.[iso];
-  const hasGcc = gccCountries.has(iso) && gccEntry;
   const gccLoading = gccCountries.has(iso) && !gccData;
 
   let incoming = "—";
@@ -558,18 +568,21 @@ function dynamicPopupHtml(cs, gccData) {
     incoming = "…";
     intercepted = "…";
     projSource = "AI+WEB";
-  } else if (hasGcc) {
-    incoming = gccEntry.total_incoming ?? "—";
-    intercepted = gccEntry.total_intercepted ?? "—";
-    projNote = gccEntry.note || "";
-    projSource = "AI+WEB";
+  } else if (gccCountries.has(iso)) {
+    const live = gccData?.[iso];
+    const fallback = GCC_FALLBACK[iso];
+    incoming = live?.total_incoming ?? fallback?.total_incoming ?? null;
+    intercepted = live?.total_intercepted ?? fallback?.total_intercepted ?? null;
+    const usingFallback = (live?.total_incoming == null) && fallback;
+    projNote = live?.note || "";
+    projSource = usingFallback ? "SEED" : "AI+WEB";
   } else {
     intercepted = cs.intercepts || 0;
   }
 
-  const feedColor = projSource === "AI+WEB" ? "#22d3ee" : "#64748b";
-  const feedBg = projSource === "AI+WEB" ? "rgba(34,211,238,0.1)" : "rgba(100,116,139,0.1)";
-  const gccSrc = hasGcc ? gccEntry.source : "";
+  const feedColor = projSource === "AI+WEB" ? "#22d3ee" : projSource === "SEED" ? "#f97316" : "#64748b";
+  const feedBg = projSource === "AI+WEB" ? "rgba(34,211,238,0.1)" : projSource === "SEED" ? "rgba(249,115,22,0.1)" : "rgba(100,116,139,0.1)";
+  const gccSrc = gccData?.[iso]?.source || "";
   const pulse = gccLoading ? 'animation:pulse 1.5s ease-in-out infinite;' : '';
 
   return `<div style="font-family:'JetBrains Mono',monospace;min-width:260px">
@@ -586,11 +599,11 @@ function dynamicPopupHtml(cs, gccData) {
     <div style="display:flex;border:1px solid rgba(39,50,72,0.5);border-radius:4px;margin:8px 0;overflow:hidden">
       <div style="flex:1;padding:8px 10px;text-align:center;border-right:1px solid rgba(39,50,72,0.5)">
         <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:3px">PROJECTILES INCOMING</div>
-        <div style="font-size:18px;font-weight:800;color:${incoming==="—"||incoming==="…"?"#526175":"#ef4444"};${pulse}">${typeof incoming==="number"?incoming.toLocaleString():incoming}</div>
+        <div style="font-size:18px;font-weight:800;color:${incoming==="—"||incoming==="…"||incoming===null?"#526175":"#ef4444"};${pulse}">${incoming===null?"—":typeof incoming==="number"?incoming.toLocaleString():incoming}</div>
       </div>
       <div style="flex:1;padding:8px 10px;text-align:center">
         <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:3px">INTERCEPTED</div>
-        <div style="font-size:18px;font-weight:800;color:${intercepted==="—"||intercepted===0||intercepted==="…"?"#526175":"#22c55e"};${pulse}">${typeof intercepted==="number"?intercepted.toLocaleString():intercepted}</div>
+        <div style="font-size:18px;font-weight:800;color:${intercepted==="—"||intercepted===0||intercepted==="…"||intercepted===null?"#526175":"#22c55e"};${pulse}">${intercepted===null?"—":typeof intercepted==="number"?intercepted.toLocaleString():intercepted}</div>
       </div>
     </div>
     ${projNote ? `<div style="font-size:8px;color:#7d8fa3;line-height:1.5">note: ${projNote}</div>` : ""}
