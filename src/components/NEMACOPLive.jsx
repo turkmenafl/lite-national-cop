@@ -918,24 +918,14 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
       circle.bindPopup(popupLines.join(""), { className:"cop-popup", maxWidth:340, autoPan:true });
       layersRef.current.push(circle);
     });
-    // Country labels with event counts
+    // Country labels (no counts — details shown on click)
     Object.entries(COUNTRY_LABEL_POS).forEach(([iso, [lat, lng]]) => {
       if (menaCountries && !menaCountries[iso]) return;
-      const stats = countryStats?.[iso];
-      const total = stats?.events || 0;
-      const strikeCount = stats?.strikes || 0;
-      const protestCount = stats?.protests || 0;
-      let labelHtml;
-      if (iso === "IR") {
-        labelHtml = `IRAN <span style="color:#3b82f6;font-weight:800">${strikeCount}</span>${protestCount>0?` <span style="color:#eab308">+${protestCount}</span>`:""}`;
-      } else {
-        const shortName = (ISO_TO_COUNTRY[iso]||iso).split(" ")[0].toUpperCase();
-        labelHtml = total > 0 ? `${shortName} <span style="color:#ef4444;font-weight:800">${total}</span>` : shortName;
-      }
+      const shortName = (ISO_TO_COUNTRY[iso]||iso).split(" ")[0].toUpperCase();
       const m = L.marker([lat, lng], {
         icon: L.divIcon({
           className: "",
-          html: `<div style="color:rgba(216,230,245,0.45);font-size:10px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.1em;pointer-events:none">${labelHtml}</div>`,
+          html: `<div style="color:rgba(216,230,245,0.45);font-size:10px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.1em;pointer-events:none">${shortName}</div>`,
           iconSize: [0, 0], iconAnchor: [-5, 5],
         }),
       }).addTo(map);
