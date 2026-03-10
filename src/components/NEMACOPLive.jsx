@@ -906,7 +906,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
         `<tr style="color:#526175;border-bottom:1px solid #1e2d42"><td style="padding:2px 4px">DATE</td><td style="padding:2px 4px">TYPE</td><td style="padding:2px 4px">LOC</td><td style="padding:2px 4px;text-align:right">☠</td></tr>`,
         ...shown.map(ev => {
           const date = ev.event_date ? ev.event_date.slice(5) : "—";
-          const type = (ev.sub_event_type || ev.event_type || "—").replace("Shelling/artillery/missile attack","Missile/arty").replace("Air/drone strike","Air/drone");
+          const type = (ev.sub_event_type || ev.event_type || "—").replace("Disrupted weapons use","Intercepted").replace("Shelling/artillery/missile attack","Missile/arty").replace("Air/drone strike","Air/drone");
           const loc = (ev.location || "—").slice(0,18);
           const fat = ev.fatalities || 0;
           const src = ev.source ? `<div style="color:#526175;font-size:7px;margin-top:1px">${(ev.source||"").slice(0,40)}</div>` : "";
@@ -1216,7 +1216,7 @@ const ScreenSituation = ({ live }) => {
                           <div key={e.event_id_cnty || idx} onClick={()=>setSelEvent(selEvent===(e.event_id_cnty||idx)?null:(e.event_id_cnty||idx))}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===(e.event_id_cnty||idx)?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.sub_event_type || e.event_type}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{(e.sub_event_type || e.event_type || "").replace("Disrupted weapons use","Intercepted")}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.event_date}</span>
                             </div>
                             <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location || e.admin1}</div>
@@ -1252,7 +1252,7 @@ const ScreenSituation = ({ live }) => {
                           <div key={e.event_id_cnty || idx} onClick={()=>setSelEvent(selEvent===(e.event_id_cnty||idx)?null:(e.event_id_cnty||idx))}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:`${col}06`, borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.sub_event_type || e.event_type}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{(e.sub_event_type || e.event_type || "").replace("Disrupted weapons use","Intercepted")}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.event_date}</span>
                             </div>
                             <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location || e.admin1}</div>
