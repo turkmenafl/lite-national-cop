@@ -529,22 +529,73 @@ function buildCountryStats(events) {
   return stats;
 }
 
-function dynamicPopupHtml(cs) {
+function dynamicPopupHtml(cs, gccData) {
   if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
-  return `<div>
-    <div style="font-size:12px;font-weight:700;color:#d8e6f5;margin-bottom:8px">${cs.flag} ${cs.name}</div>
+  const iso = cs.code;
+  const gccCountries = new Set(["SA","AE","KW","BH","QA","OM","IL","IQ","JO"]);
+  const gccEntry = gccData?.[iso];
+  const hasGcc = gccCountries.has(iso) && gccEntry;
+
+  // Determine incoming / intercepted
+  let incoming = "—";
+  let intercepted = "—";
+  let projNote = "";
+  let projSource = "ACLED";
+
+  if (iso === "IR") {
+    intercepted = cs.intercepts || 0;
+    projNote = "Strikes by US/Israel coalition";
+    projSource = "ACLED";
+  } else if (iso === "SY") {
+    intercepted = cs.intercepts || 0;
+    projNote = "Transit corridor — not a target";
+    projSource = "ACLED";
+  } else if (iso === "PS") {
+    intercepted = cs.intercepts || 0;
+    projNote = "Collateral — not a target";
+    projSource = "ACLED";
+  } else if (hasGcc) {
+    incoming = gccEntry.total_incoming ?? "—";
+    intercepted = gccEntry.total_intercepted ?? "—";
+    projNote = gccEntry.note || "";
+    projSource = "AI+WEB";
+  } else {
+    incoming = "—";
+    intercepted = cs.intercepts || 0;
+    projSource = "ACLED";
+  }
+
+  const feedColor = projSource === "AI+WEB" ? "#22d3ee" : "#64748b";
+  const feedBg = projSource === "AI+WEB" ? "rgba(34,211,238,0.1)" : "rgba(100,116,139,0.1)";
+  const gccSrc = hasGcc ? gccEntry.source : "";
+
+  return `<div style="font-family:'JetBrains Mono',monospace">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:13px;font-weight:700;color:#d8e6f5">${cs.flag} ${cs.name}</span>
+      <span style="font-size:7px;padding:1px 5px;border-radius:3px;background:${feedBg};color:${feedColor};letter-spacing:0.06em">${projSource}</span>
+    </div>
     <div style="display:flex;gap:16px;margin-bottom:8px">
       <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:18px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
       <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:18px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
     </div>
+    <div style="display:flex;border:1px solid rgba(39,50,72,0.5);border-radius:4px;margin-bottom:8px;overflow:hidden">
+      <div style="flex:1;padding:6px 10px;text-align:center;border-right:1px solid rgba(39,50,72,0.5)">
+        <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:2px">PROJECTILES INCOMING</div>
+        <div style="font-size:16px;font-weight:800;color:${incoming==="—"?"#526175":"#ef4444"}">${typeof incoming==="number"?incoming.toLocaleString():incoming}</div>
+      </div>
+      <div style="flex:1;padding:6px 10px;text-align:center">
+        <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:2px">INTERCEPTED</div>
+        <div style="font-size:16px;font-weight:800;color:${intercepted==="—"||intercepted===0?"#526175":"#22c55e"}">${typeof intercepted==="number"?intercepted.toLocaleString():intercepted}</div>
+      </div>
+    </div>
     <div style="border-top:1px solid rgba(39,50,72,0.4);padding-top:6px;font-size:9px;color:#a0b4c8;line-height:2.2">
-      Air/drone strikes: <b style="color:#d8e6f5">${cs.airDrone}</b><br/>
-      Missile/shelling: <b style="color:#d8e6f5">${cs.missile}</b><br/>
-      Intercepts: <b style="color:#22c55e">${cs.intercepts}</b><br/>
       Armed clashes: <b style="color:#d8e6f5">${cs.clashes}</b><br/>
       Protests: <b style="color:#eab308">${cs.protests}</b>
     </div>
+    ${projNote ? `<div style="margin-top:6px;font-size:8px;color:#7d8fa3;line-height:1.5">note: ${projNote}</div>` : ""}
+    ${gccSrc ? `<div style="font-size:7px;color:#526175;margin-top:2px">source: ${gccSrc}</div>` : ""}
   </div>`;
+}
 }
 
 async function fetchKSAStrikes() {
@@ -725,7 +776,7 @@ const GCC_CAPITALS = {
 };
 
 // ─── LEAFLET THEATER MAP — proportional bubbles from ACLED ───────────────────
-const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, menaCountries }) => {
+const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, menaCountries, gccData }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
@@ -791,7 +842,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
               const popupData = cs || { code:iso2, name:ISO_TO_COUNTRY[iso2]||iso2, flag:ISO_TO_FLAG[iso2]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
               L.popup({ className:"cop-popup", maxWidth:280, closeButton:true })
                 .setLatLng(latLng)
-                .setContent(dynamicPopupHtml(popupData))
+                .setContent(dynamicPopupHtml(popupData, gccData))
                 .openOn(mapRef.current);
             });
           },
@@ -803,7 +854,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
     if (geoRef.current) addPolygons(geoRef.current);
     else fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
       .then(r=>r.json()).then(data=>{ geoRef.current=data; if(mapRef.current) addPolygons(data); }).catch(()=>{});
-  }, [countryStats, highlightedCountry, menaCountries]);
+  }, [countryStats, highlightedCountry, menaCountries, gccData]);
 
   // Proportional bubbles + country labels
   useEffect(() => {
@@ -1096,7 +1147,7 @@ const ScreenSituation = ({ live }) => {
                 }}>{f}</button>
               ))}
             </div>
-            <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} />
+            <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} />
             {live.acledAll?.count === 0 && !live.acledAll?.loading && (
               <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
                 {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
