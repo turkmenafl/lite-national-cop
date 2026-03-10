@@ -426,7 +426,7 @@ async function fetchGCCStrikes() {
 // ─── ACLED ────────────────────────────────────────────────────────────────────
 const ACLED_COUNTRIES = ["Iran","Israel","Iraq","United Arab Emirates","Syria","Bahrain","Kuwait","Saudi Arabia","Qatar","Palestine","Jordan","Oman"];
 const SMALL_COUNTRIES_SET = new Set(["IL","PS","QA","BH"]);
-const COUNTRY_CENTROIDS = { IL:[31.5,35.0], PS:[31.9,35.2], QA:[25.28,51.53], BH:[26.22,50.59] };
+const COUNTRY_CENTROIDS = { IL:[31.4,34.8], PS:[31.95,35.25], QA:[25.28,51.53], BH:[26.22,50.59] };
 const UAE_EMIRATE_COORDS = {
   "Abu Dhabi":[24.45,54.65],"Dubai":[25.20,55.27],"Sharjah":[25.34,55.41],
   "Fujairah":[25.12,56.33],"Ras Al Khaimah":[25.79,55.98],"Ajman":[25.41,55.44],"Umm Al Quwain":[25.56,55.55],
@@ -436,8 +436,8 @@ const ISO_TO_COUNTRY = Object.fromEntries(Object.entries(COUNTRY_TO_ISO).map(([k
 const ISO_TO_FLAG = {IR:"🇮🇷",IL:"🇮🇱",IQ:"🇮🇶",AE:"🇦🇪",SY:"🇸🇾",BH:"🇧🇭",KW:"🇰🇼",SA:"🇸🇦",QA:"🇶🇦",PS:"🇵🇸",JO:"🇯🇴",OM:"🇴🇲"};
 const BUBBLE_COLORS = { red:"#ef4444", blue:"#3b82f6", yellow:"#eab308" };
 const COUNTRY_LABEL_POS = {
-  IR:[32.5,53.5],IQ:[33.3,43.5],SY:[35.0,38.5],JO:[31.5,36.5],
-  IL:[31.5,34.8],PS:[32.3,35.2],SA:[24.0,44.5],AE:[23.5,54.5],
+  IR:[32.5,53.5],IQ:[33.3,43.5],SY:[35.0,38.5],JO:[30.5,37.0],
+  IL:[30.8,34.2],PS:[32.5,35.5],SA:[24.0,44.5],AE:[23.5,54.5],
   QA:[25.5,51.3],KW:[29.8,47.5],BH:[26.4,50.3],OM:[21.5,57.0],
 };
 const COUNTRY_ORDER = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
@@ -492,8 +492,9 @@ function buildBubbleData(events) {
     const coords = getBubbleCoords(e);
     if (!coords) continue;
     const iso = COUNTRY_TO_ISO[e.country];
-    const precision = SMALL_COUNTRIES_SET.has(iso) ? 0 : 1;
-    const key = `${coords[0].toFixed(precision)},${coords[1].toFixed(precision)}`;
+    const key = SMALL_COUNTRIES_SET.has(iso)
+      ? `${iso}-centroid`
+      : `${coords[0].toFixed(1)},${coords[1].toFixed(1)}`;
     const color = getEventColor(e);
     const bKey = `${key}:${color}`;
     if (!buckets[bKey]) buckets[bKey] = { lat: coords[0], lng: coords[1], color, count: 0, country: e.country, iso };
@@ -807,7 +808,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
     bubbleData.forEach(b => {
       if (menaCountries && !menaCountries[b.iso]) return;
       const col = BUBBLE_COLORS[b.color] || "#ef4444";
-      const radius = Math.max(3, Math.min(22, 3 + Math.sqrt(b.count) * 1.2));
+      const radius = Math.max(3, Math.min(28, Math.sqrt(b.count) * 2.5));
       const circle = L.circleMarker([b.lat, b.lng], {
         radius, fillColor: col, fillOpacity: 0.45, color: col, opacity: 0.7, weight: 1.5,
       }).addTo(map);
