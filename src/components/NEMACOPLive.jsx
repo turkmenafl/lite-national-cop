@@ -588,8 +588,8 @@ function dynamicPopupHtml(cs, gccData) {
     incoming = live?.total_incoming ?? fallback?.total_incoming ?? null;
     intercepted = live?.total_intercepted ?? fallback?.total_intercepted ?? null;
     const usingFallback = (live?.total_incoming == null) && fallback;
-    projNote = live?.note || "";
-    projSource = usingFallback ? "SEED" : "AI+WEB";
+    projNote = live?.note || fallback?.note || "";
+    projSource = (live?.total_incoming != null) ? "AI+WEB" : "SEED";
   } else {
     intercepted = cs.intercepts || 0;
   }
