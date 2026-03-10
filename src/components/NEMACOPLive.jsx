@@ -842,7 +842,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
               const popupData = cs || { code:iso2, name:ISO_TO_COUNTRY[iso2]||iso2, flag:ISO_TO_FLAG[iso2]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
               L.popup({ className:"cop-popup", maxWidth:280, closeButton:true })
                 .setLatLng(latLng)
-                .setContent(dynamicPopupHtml(popupData))
+                .setContent(dynamicPopupHtml(popupData, gccData))
                 .openOn(mapRef.current);
             });
           },
