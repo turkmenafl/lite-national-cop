@@ -912,7 +912,10 @@ const GCCTheater = ({ gcc }) => {
   const states = GCC_SEED.map(s=>{
     if (!gcc.data?.[s.code]) return s;
     const live = gcc.data[s.code];
-    return { ...s, strikes:live.total??s.strikes, interceptPct:live.intercept_pct??s.interceptPct, confidence:live.confidence??s.confidence, source:live.source??s.source, note:live.note??s.note };
+    const incoming = live.total_incoming ?? live.total ?? s.strikes;
+    const intercepted = live.total_intercepted ?? (live.intercept_pct != null ? Math.round(incoming * live.intercept_pct / 100) : Math.round(incoming * s.interceptPct / 100));
+    const interceptPct = incoming > 0 ? Math.round((intercepted / incoming) * 100) : s.interceptPct;
+    return { ...s, strikes: incoming, interceptPct, confidence: live.confidence ?? s.confidence, source: live.source ?? s.source, note: live.note ?? s.note };
   });
   const maxStrikes = Math.max(...states.map(s=>s.strikes));
   return (
