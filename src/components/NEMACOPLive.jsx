@@ -906,7 +906,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
         `<tr style="color:#526175;border-bottom:1px solid #1e2d42"><td style="padding:2px 4px">DATE</td><td style="padding:2px 4px">TYPE</td><td style="padding:2px 4px">LOC</td><td style="padding:2px 4px;text-align:right">☠</td></tr>`,
         ...shown.map(ev => {
           const date = ev.event_date ? ev.event_date.slice(5) : "—";
-          const type = (ev.sub_event_type || ev.event_type || "—").replace("Shelling/artillery/missile attack","Missile/arty").replace("Air/drone strike","Air/drone");
+          const type = (ev.sub_event_type || ev.event_type || "—").replace("Disrupted weapons use","Intercepted").replace("Shelling/artillery/missile attack","Missile/arty").replace("Air/drone strike","Air/drone");
           const loc = (ev.location || "—").slice(0,18);
           const fat = ev.fatalities || 0;
           const src = ev.source ? `<div style="color:#526175;font-size:7px;margin-top:1px">${(ev.source||"").slice(0,40)}</div>` : "";
