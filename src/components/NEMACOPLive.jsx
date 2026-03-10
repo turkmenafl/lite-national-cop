@@ -415,7 +415,7 @@ function cacheTimeAgo(isoStr) {
 }
 
 async function fetchGCCStrikes() {
-  if (_cache.gcc.data && Date.now() - _cache.gcc.ts < CACHE_TTL) return _cache.gcc.data;
+  if (_cache.gcc.data && Date.now() - _cache.gcc.ts < CACHE_TTL) { console.log('[fetchGCCStrikes] ⚡ in-memory cache hit'); return _cache.gcc.data; }
   // Cache-only: reads from Supabase ai_cache populated by edge function.
   // NO fallback to direct Anthropic API — if cache empty, return GCC_SEED data.
   try {
