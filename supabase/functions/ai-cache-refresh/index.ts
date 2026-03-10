@@ -67,8 +67,24 @@ TEXT: [max 120 char summary]`,
     },
   },
   gcc_strikes: {
-    prompt: `Search for the most recent confirmed projectile attack totals (missiles + drones) launched against each GCC state since the Iran-GCC conflict began in late February 2026. For each country provide: total projectile count, intercept percentage, confidence level (CONFIRMED if official MoD statement / REPORTED if major wire / EST if estimated), and primary source with date. Countries: Saudi Arabia, UAE, Kuwait, Bahrain, Qatar, Oman. Return as JSON only with this structure: {"KSA":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"UAE":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Kuwait":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Bahrain":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Qatar":{"total":0,"intercept_pct":0,"confidence":"EST","source":""},"Oman":{"total":0,"intercept_pct":0,"confidence":"EST","source":""}}`,
-    max_tokens: 1000,
+    prompt: `You are a conflict data analyst. Today is ${new Date().toISOString().split('T')[0]}.
+
+Search the web RIGHT NOW for the latest verified cumulative totals of Iranian missile and drone attacks since February 28, 2026. Search for each country separately using queries like "Iran missile attack UAE total 2026", "Iran drone strikes Kuwait cumulative March 2026", "Iran ballistic missile Israel intercept 2026", etc.
+
+IMPORTANT: Do NOT use any prior knowledge or example numbers. Only use numbers you find in web search results from this search session. If you cannot find a verified number for a country, use null.
+
+For each country find:
+1. total_incoming — cumulative projectiles fired AT this country (missiles + drones + rockets combined). Intercepts still count as incoming.
+2. total_intercepted — how many were shot down
+3. source — exact source name (e.g. "UAE MoD", "Reuters Mar 8", "CENTCOM", "CTP-ISW")
+4. confidence — CONFIRMED (official MoD/CENTCOM/wire) or EST (think tank/synthesis)
+5. note — one sentence with key facts and latest date covered
+
+Countries: SA (Saudi Arabia), AE (UAE), QA (Qatar), KW (Kuwait), BH (Bahrain), OM (Oman), IL (Israel), IQ (Iraq), JO (Jordan)
+
+Reply ONLY with valid JSON, no other text, using this structure with ZEROES as placeholders only — replace all zeroes with real searched numbers:
+{"SA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"AE":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"QA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"KW":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"BH":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"OM":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IL":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IQ":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"JO":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""}}`,
+    max_tokens: 1200,
     parse: (text) => {
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) return null;
