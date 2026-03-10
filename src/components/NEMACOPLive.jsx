@@ -716,399 +716,148 @@ const GCC_CAPITALS = {
   IL: [31.77, 35.22], JO: [31.95, 35.93], PS: [31.90, 35.20],
 };
 
-const IRAN_STRIKES = [
-  { id:"IR1", name:"Bandar Abbas", lat:27.19, lng:56.28 },
-  { id:"IR2", name:"Bushehr", lat:28.97, lng:50.84 },
-  { id:"IR3", name:"Isfahan", lat:32.65, lng:51.67 },
-  { id:"IR4", name:"Karaj", lat:35.83, lng:50.99 },
-  { id:"IR5", name:"Tehran", lat:35.69, lng:51.39 },
-  { id:"IR6", name:"Kermanshah", lat:34.31, lng:47.07 },
-  { id:"IR7", name:"Tabriz", lat:38.08, lng:46.29 },
-  { id:"IR8", name:"Qom", lat:34.64, lng:50.88 },
-];
-
-const IRAQ_SPILLOVER = [
-  { id:"IQ1", name:"Erbil", lat:36.19, lng:44.01 },
-  { id:"IQ2", name:"Harir", lat:35.47, lng:44.39 },
-];
-
-const MENA_LABELS = [
-  { name:"IRAN", lat:32.5, lng:53.5 },
-  { name:"IRAQ", lat:33.3, lng:43.5 },
-  { name:"SYRIA", lat:35.0, lng:38.5 },
-  { name:"JORDAN", lat:31.5, lng:36.5 },
-  { name:"ISRAEL", lat:31.5, lng:34.8 },
-  { name:"PALESTINE", lat:31.9, lng:35.2 },
-];
-
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "MENA", menaCountries }) => {
+// ─── LEAFLET THEATER MAP — proportional bubbles from ACLED ───────────────────
+const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, menaCountries }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
-  const gccPolygonsRef = useRef([]);
-  const gccGeoRef = useRef(null);
+  const polygonsRef = useRef([]);
+  const geoRef = useRef(null);
 
-  // Initialize map once
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
     const map = L.map(mapContainerRef.current, {
-      center: [25, 48],
-      zoom: 4.46,
-      zoomSnap: 0.5,
-      zoomDelta: 0.5,
-      wheelPxPerZoomLevel: 120,
-      maxBounds: [[10, 28], [40, 65]],
-      maxBoundsViscosity: 1.0,
-      zoomControl: false,
-      dragging: true,
-      scrollWheelZoom: true,
-      doubleClickZoom: true,
-      touchZoom: true,
-      pinchZoom: true,
-      attributionControl: false,
+      center: [28, 48], zoom: 4.5, zoomSnap: 0.5, zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 120, maxBounds: [[10, 28], [42, 65]], maxBoundsViscosity: 1.0,
+      zoomControl: false, dragging: true, scrollWheelZoom: true,
+      doubleClickZoom: true, touchZoom: true, pinchZoom: true, attributionControl: false,
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
-      tileSize: 256,
-      detectRetina: true,
-    }).addTo(map);
-    // Eastern Province highlight from GeoJSON
-    fetch("/data/sa-provinces.geojson")
-      .then(r => r.json())
-      .then(data => {
-        const epFeature = data.features.find(f => {
-          const props = f.properties || {};
-          const name = (props.shapeName || props.name || props.NAME || props.NAME_1 || props.admin1Name || "").toLowerCase();
-          return name.includes("eastern") || name.includes("sharqiyah") || name.includes("ash sharqiy");
-        });
-        if (epFeature && mapRef.current) {
-          L.geoJSON(epFeature, {
-            style: {
-              fillColor: "rgba(239,68,68,0.12)",
-              fillOpacity: 1,
-              color: "#ef4444",
-              opacity: 0.3,
-              weight: 1.2,
-            },
-          }).addTo(mapRef.current);
-          L.marker([28.8, 51], {
-            icon: L.divIcon({
-              className: "",
-              html: '<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',
-              iconSize: [0, 0], iconAnchor: [-5, 5],
-            }),
-          }).addTo(mapRef.current);
-        }
-      })
-      .catch(() => {});
-    // Hormuz dashed line
-    L.polyline([[26.6, 56.3], [27.2, 56.3]], {
-      color: "#ef4444", weight: 2, dashArray: "5,3",
-    }).addTo(map);
-    L.marker([27.0, 56.4], {
-      icon: L.divIcon({
-        className: "",
-        html: '<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',
-        iconSize: [0, 0], iconAnchor: [-5, 8],
-      }),
-    }).addTo(map);
-    // MENA country labels (clickable for popup)
-    MENA_LABELS.forEach(({ name, lat, lng }) => {
-      const m = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="color:rgba(216,230,245,0.35);font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.12em;cursor:pointer">${name}</div>`,
-          iconSize: [0, 0], iconAnchor: [-5, 5],
-        }),
-      }).addTo(map);
-      m.on('click', () => {
-        const code = NAME_TO_CODE[name];
-        const cs = MENA_SUMMARY.find(c => c.code === code);
-        if (cs) L.popup({ className:"cop-popup", maxWidth:260, closeButton:true }).setLatLng([lat,lng]).setContent(countryPopupHtml(cs)).openOn(map);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", { tileSize: 256, detectRetina: true }).addTo(map);
+    // Eastern Province highlight
+    fetch("/data/sa-provinces.geojson").then(r=>r.json()).then(data=>{
+      const ep = data.features.find(f=>{
+        const n = (f.properties?.shapeName||f.properties?.name||f.properties?.NAME||f.properties?.NAME_1||"").toLowerCase();
+        return n.includes("eastern")||n.includes("sharqiyah")||n.includes("ash sharqiy");
       });
-    });
-    // GCC country labels (clickable for popup)
-    [["KSA",24.0,44.5],["UAE",23.5,54.5],["QATAR",25.5,51.3],["KUWAIT",29.8,47.5],["BAHRAIN",26.4,50.3],["OMAN",21.5,57.0]].forEach(([name,lat,lng]) => {
-      const m = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="color:rgba(216,230,245,0.25);font-size:9px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;letter-spacing:0.1em;cursor:pointer">${name}</div>`,
-          iconSize: [0, 0], iconAnchor: [-5, 5],
-        }),
-      }).addTo(map);
-      m.on('click', () => {
-        const code = NAME_TO_CODE[name];
-        const cs = MENA_SUMMARY.find(c => c.code === code);
-        if (cs) L.popup({ className:"cop-popup", maxWidth:260, closeButton:true }).setLatLng([lat,lng]).setContent(countryPopupHtml(cs)).openOn(map);
-      });
-    });
+      if (ep && mapRef.current) {
+        L.geoJSON(ep, { style: { fillColor:"rgba(239,68,68,0.12)", fillOpacity:1, color:"#ef4444", opacity:0.3, weight:1.2 } }).addTo(mapRef.current);
+        L.marker([28.8,51],{icon:L.divIcon({className:"",html:'<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',iconSize:[0,0],iconAnchor:[-5,5]})}).addTo(mapRef.current);
+      }
+    }).catch(()=>{});
+    // Hormuz closure marker
+    L.polyline([[26.6,56.3],[27.2,56.3]],{color:"#ef4444",weight:2,dashArray:"5,3"}).addTo(map);
+    L.marker([27.0,56.4],{icon:L.divIcon({className:"",html:'<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',iconSize:[0,0],iconAnchor:[-5,8]})}).addTo(map);
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Update strike markers when data or view changes
+  // Country polygons — white fill for all 12
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    polygonsRef.current.forEach(l => map.removeLayer(l));
+    polygonsRef.current = [];
+    const POLY_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM", IRN:"IR", IRQ:"IQ", SYR:"SY", ISR:"IL", JOR:"JO", PSE:"PS" };
+    const addPolygons = (geojson) => {
+      if (!mapRef.current) return;
+      geojson.features.filter(f => !!POLY_ISO[f.id || f.properties?.ISO_A3 || ""]).forEach(feature => {
+        const iso2 = POLY_ISO[feature.id || feature.properties?.ISO_A3 || ""];
+        if (menaCountries && !menaCountries[iso2]) return;
+        const isHl = highlightedCountry === iso2;
+        const layer = L.geoJSON(feature, {
+          style: {
+            fillColor: "rgba(255,255,255,0.5)",
+            fillOpacity: isHl ? 0.3 : 0.15,
+            color: isHl ? "#ffffff" : "rgba(255,255,255,0.5)",
+            opacity: isHl ? 0.6 : 0.3,
+            weight: isHl ? 1.5 : 1,
+          },
+          onEachFeature: (f, lyr) => {
+            lyr.on('mouseover', () => lyr.setStyle({ fillOpacity:0.4, color:"#ffffff", opacity:0.6, weight:1.5 }));
+            lyr.on('mouseout', () => lyr.setStyle({ fillOpacity:isHl?0.3:0.15, color:isHl?"#ffffff":"rgba(255,255,255,0.5)", opacity:isHl?0.6:0.3, weight:isHl?1.5:1 }));
+            lyr.on('click', () => {
+              const cs = countryStats?.[iso2];
+              const center = mapRef.current.getSize().divideBy(2);
+              const latLng = mapRef.current.containerPointToLatLng(center);
+              const popupData = cs || { code:iso2, name:ISO_TO_COUNTRY[iso2]||iso2, flag:ISO_TO_FLAG[iso2]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
+              L.popup({ className:"cop-popup", maxWidth:280, closeButton:true })
+                .setLatLng(latLng)
+                .setContent(dynamicPopupHtml(popupData))
+                .openOn(mapRef.current);
+            });
+          },
+        }).addTo(mapRef.current);
+        polygonsRef.current.push(layer);
+        layer.eachLayer(l => { const el=l.getElement?.(); if(el) el.style.cursor="pointer"; });
+      });
+    };
+    if (geoRef.current) addPolygons(geoRef.current);
+    else fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
+      .then(r=>r.json()).then(data=>{ geoRef.current=data; if(mapRef.current) addPolygons(data); }).catch(()=>{});
+  }, [countryStats, highlightedCountry, menaCountries]);
+
+  // Proportional bubbles + country labels
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
-
-    const showKSA = layerFilter === "MENA" ? !!menaCountries?.SA : layerFilter === "KSA";
-    const showGCC = layerFilter === "MENA" ? !!(menaCountries?.AE || menaCountries?.BH || menaCountries?.KW || menaCountries?.QA || menaCountries?.OM) : false;
-    const showIRAN = layerFilter === "MENA" ? !!menaCountries?.IR : layerFilter === "IRAN";
-    const showIRAQ = layerFilter === "MENA" ? !!menaCountries?.IQ : false;
-
-    if (theaterView === "GCC") {
-      // GCC country markers
-      if (showGCC || showKSA) {
-        (gccMarkers || []).forEach(g => {
-          if (g.code === "SA" && !showKSA) return;
-          if (g.code !== "SA" && !showGCC) return;
-          if (layerFilter === "MENA" && menaCountries && !menaCountries[g.code]) return;
-          const coords = GCC_CAPITALS[g.code];
-          if (!coords) return;
-          const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
-          const isCritical = g.strikes > 100;
-          const m = L.marker(coords, {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: isCritical
-                ? `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-                : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9;pointer-events:none"></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-          const lbl = L.marker(coords, {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${g.code} ${g.strikes.toLocaleString()}</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(lbl);
-        });
+    const maxCount = Math.max(1, ...bubbleData.map(b => b.count));
+    bubbleData.forEach(b => {
+      if (menaCountries && !menaCountries[b.iso]) return;
+      const col = BUBBLE_COLORS[b.color] || "#ef4444";
+      const radius = Math.max(4, Math.min(30, Math.sqrt(b.count / maxCount) * 30));
+      const circle = L.circleMarker([b.lat, b.lng], {
+        radius, fillColor: col, fillOpacity: 0.45, color: col, opacity: 0.7, weight: 1.5,
+      }).addTo(map);
+      circle.bindTooltip(`${b.count} event${b.count!==1?"s":""}`, { className:"cop-popup", direction:"top", offset:[0,-radius] });
+      layersRef.current.push(circle);
+    });
+    // Country labels with event counts
+    Object.entries(COUNTRY_LABEL_POS).forEach(([iso, [lat, lng]]) => {
+      if (menaCountries && !menaCountries[iso]) return;
+      const stats = countryStats?.[iso];
+      const total = stats?.events || 0;
+      const strikeCount = stats?.strikes || 0;
+      const protestCount = stats?.protests || 0;
+      let labelHtml;
+      if (iso === "IR") {
+        labelHtml = `IRAN <span style="color:#3b82f6;font-weight:800">${strikeCount}</span>${protestCount>0?` <span style="color:#eab308">+${protestCount}</span>`:""}`;
+      } else {
+        const shortName = (ISO_TO_COUNTRY[iso]||iso).split(" ")[0].toUpperCase();
+        labelHtml = total > 0 ? `${shortName} <span style="color:#ef4444;font-weight:800">${total}</span>` : shortName;
       }
-      // Iran strike markers (US/Coalition → blue)
-      if (showIRAN) {
-        IRAN_STRIKES.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-          const lbl = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:#3b82f6;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(lbl);
-        });
-      }
-      // Iraq spillover markers (US/Coalition → blue dots)
-      if (showIRAQ) {
-        IRAQ_SPILLOVER.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-          const lbl = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:#3b82f6;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(lbl);
-        });
-      }
-      // Protest markers (civil unrest → yellow)
-      if (showIRAN || showIRAQ) {
-        PROTEST_MARKERS.forEach(p => {
-          const m = L.marker([p.lat, p.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="width:8px;height:8px;border-radius:50%;background:#eab308;opacity:0.8;pointer-events:none"></div>`,
-              iconSize: [8, 8], iconAnchor: [4, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        });
-      }
-    } else {
-      // KSA EVENT LOG — KSA markers + optionally Iran/Iraq
-      if (showKSA) {
-        const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
-        markers.forEach(p => {
-          const isUnverified = p.locationKnown === false;
-          const col = isUnverified ? "#6b7280" : (p.s === "critical" ? C.critical : C.warning);
-          const markerHtml = isUnverified
-            ? `<div style="width:10px;height:10px;border-radius:50%;border:2px dashed #6b7280;background:rgba(107,114,128,0.25);opacity:0.8"></div>`
-            : p.s === "critical"
-              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`;
-          const m = L.marker([p.lat, p.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: markerHtml,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          if (isUnverified) {
-            m.bindTooltip("⚠ LOC UNVERIFIED — Saudi MoD confirmed", { className: "cop-popup", direction: "top", offset: [0, -8] });
-          }
-          layersRef.current.push(m);
-        });
-        if (filteredStrikes.length === 0) {
-          const m = L.marker([24, 46], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 5],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        }
-      }
-      // Also show Iran/Iraq in LOG view if filter selected (blue = US/Coalition)
-      if (showIRAN) {
-        IRAN_STRIKES.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        });
-      }
-      if (showIRAQ) {
-        IRAQ_SPILLOVER.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        });
-      }
-    }
-  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter, menaCountries]);
-
-  // GCC country polygons with hover/click — only in MENA view
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    gccPolygonsRef.current.forEach(l => map.removeLayer(l));
-    gccPolygonsRef.current = [];
-    if (theaterView !== "GCC") return;
-    if (layerFilter !== "MENA" && layerFilter !== "KSA") return;
-
-    const POLY_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM", IRN:"IR", IRQ:"IQ", SYR:"SY", ISR:"IL", JOR:"JO", PSE:"PS" };
-
-    const addPolygons = (geojson) => {
-      if (!mapRef.current) return;
-      const matchedFeatures = geojson.features.filter(f => {
-        const iso3 = f.id || f.properties?.ISO_A3 || f.properties?.iso_a3 || "";
-        return !!POLY_ISO[iso3];
-      });
-
-      matchedFeatures.forEach(feature => {
-        const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
-        const iso2 = POLY_ISO[iso3];
-        if (layerFilter === "KSA" && iso2 !== "SA") return;
-        if (layerFilter === "MENA" && menaCountries && !menaCountries[iso2]) return;
-        const seed = GCC_SEED.find(g => g.code === iso2);
-        const cs = MENA_SUMMARY.find(c => c.code === iso2);
-        const airCol = seed?.airspace==="CLOSED"?C.critical:seed?.airspace==="RESTRICTED"?C.warning:"rgba(255,255,255,0.5)";
-        const fillCol = seed ? airCol : "rgba(255,255,255,0.5)";
-        const confCol = seed?.confidence==="CONFIRMED"?C.success:"#f97316";
-
-        const layer = L.geoJSON(feature, {
-          style: {
-            fillColor: fillCol,
-            fillOpacity: 0.15,
-            color: fillCol,
-            opacity: 0.3,
-            weight: 1,
-          },
-          onEachFeature: (f, lyr) => {
-            lyr.on('mouseover', () => {
-              lyr.setStyle({ fillOpacity: 0.4, color: "#ffffff", opacity: 0.6, weight: 1.5 });
-            });
-            lyr.on('mouseout', () => {
-              lyr.setStyle({ fillOpacity: 0.15, color: fillCol, opacity: 0.3, weight: 1 });
-            });
-            lyr.on('click', () => {
-              const center = GCC_CAPITALS[iso2] || lyr.getBounds().getCenter();
-              const countryName = cs?.name || seed?.name || iso2;
-              const popupData = cs || { code:iso2, name:countryName, flag:"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0 };
-              const popup = L.popup({ className: "cop-popup", maxWidth: 260, closeButton: true })
-                .setLatLng(center)
-                .setContent(countryPopupHtml(popupData))
-                .openOn(mapRef.current);
-            });
-          },
-        }).addTo(mapRef.current);
-        gccPolygonsRef.current.push(layer);
-
-        layer.eachLayer(l => {
-          const el = l.getElement?.();
-          if (el) el.style.cursor = "pointer";
-        });
-      });
-    };
-
-    if (gccGeoRef.current) {
-      addPolygons(gccGeoRef.current);
-    } else {
-      fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
-        .then(r => r.json())
-        .then(data => {
-          gccGeoRef.current = data;
-          if (mapRef.current) addPolygons(data);
-        })
-        .catch(() => {});
-    }
-  }, [theaterView, gccMarkers, layerFilter]);
+      const m = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="color:rgba(216,230,245,0.45);font-size:10px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.1em;pointer-events:none">${labelHtml}</div>`,
+          iconSize: [0, 0], iconAnchor: [-5, 5],
+        }),
+      }).addTo(map);
+      layersRef.current.push(m);
+    });
+  }, [bubbleData, countryStats, menaCountries]);
 
   return (
-    <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520, position: "relative" }}>
-      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+    <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden", height:520, position:"relative" }}>
+      <div ref={mapContainerRef} style={{ width:"100%", height:"100%" }} />
       <div style={{
-        position: "absolute", top: 8, right: 8, zIndex: 1000,
-        background: "rgba(6,11,23,0.85)", border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 4, padding: "6px 10px",
-        fontFamily: "'JetBrains Mono',monospace", fontSize: 9, lineHeight: 1.8,
-        pointerEvents: "none",
+        position:"absolute", top:8, right:8, zIndex:1000,
+        background:"rgba(6,11,23,0.85)", border:"1px solid rgba(255,255,255,0.08)",
+        borderRadius:4, padding:"6px 10px",
+        fontFamily:"'JetBrains Mono',monospace", fontSize:9, lineHeight:1.8,
+        pointerEvents:"none",
       }}>
         {[
-          { shape: "dot", color: "#ef4444", label: "Strike from Iran" },
-          { shape: "dot", color: "#3b82f6", label: "US/Coalition action" },
-          { shape: "dot", color: "#eab308", label: "Civil unrest" },
-          { shape: "ring", color: "#ef4444", label: "Hormuz closure" },
+          { shape:"dot", color:"#ef4444", label:"Iranian Strike" },
+          { shape:"dot", color:"#3b82f6", label:"Coalition Strike" },
+          { shape:"dot", color:"#eab308", label:"Civil Unrest (Iran)" },
+          { shape:"ring", color:"#ef4444", label:"Hormuz Closure" },
         ].map((e, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.55)" }}>
-            {e.shape === "dot" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: e.color, display: "inline-block", flexShrink: 0 }} />}
-            {e.shape === "ring" && <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1.5px solid ${e.color}`, background: "transparent", display: "inline-block", flexShrink: 0 }} />}
+          <div key={i} style={{ display:"flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.55)" }}>
+            {e.shape==="dot" && <span style={{ width:7, height:7, borderRadius:"50%", background:e.color, display:"inline-block", flexShrink:0 }} />}
+            {e.shape==="ring" && <span style={{ width:7, height:7, borderRadius:"50%", border:`1.5px solid ${e.color}`, background:"transparent", display:"inline-block", flexShrink:0 }} />}
             {e.label}
           </div>
         ))}
