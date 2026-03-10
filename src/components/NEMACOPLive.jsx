@@ -492,8 +492,9 @@ function buildBubbleData(events) {
     const coords = getBubbleCoords(e);
     if (!coords) continue;
     const iso = COUNTRY_TO_ISO[e.country];
-    const precision = SMALL_COUNTRIES_SET.has(iso) ? 0 : 1;
-    const key = `${coords[0].toFixed(precision)},${coords[1].toFixed(precision)}`;
+    const key = SMALL_COUNTRIES_SET.has(iso)
+      ? `${iso}-centroid`
+      : `${coords[0].toFixed(1)},${coords[1].toFixed(1)}`;
     const color = getEventColor(e);
     const bKey = `${key}:${color}`;
     if (!buckets[bKey]) buckets[bKey] = { lat: coords[0], lng: coords[1], color, count: 0, country: e.country, iso };
