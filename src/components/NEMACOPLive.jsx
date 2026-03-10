@@ -1147,7 +1147,7 @@ const ScreenSituation = ({ live }) => {
                 }}>{f}</button>
               ))}
             </div>
-            <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} />
+            <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} />
             {live.acledAll?.count === 0 && !live.acledAll?.loading && (
               <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
                 {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
