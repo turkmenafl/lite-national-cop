@@ -497,11 +497,12 @@ function buildBubbleData(events) {
       : `${coords[0].toFixed(1)},${coords[1].toFixed(1)}`;
     const color = getEventColor(e);
     const bKey = `${key}:${color}`;
-    if (!buckets[bKey]) buckets[bKey] = { lat: coords[0], lng: coords[1], color, count: 0, country: e.country, iso, strikes: 0, protests: 0, fatalities: 0 };
+    if (!buckets[bKey]) buckets[bKey] = { lat: coords[0], lng: coords[1], color, count: 0, country: e.country, iso, strikes: 0, protests: 0, fatalities: 0, events: [] };
     buckets[bKey].count++;
     buckets[bKey].fatalities += (e.fatalities || 0);
     if (e.sub_event_type === "Air/drone strike" || e.sub_event_type === "Shelling/artillery/missile attack") buckets[bKey].strikes++;
     if (e.event_type === "Protests" || e.event_type === "Demonstrations") buckets[bKey].protests++;
+    buckets[bKey].events.push(e);
   }
   return Object.values(buckets);
 }
