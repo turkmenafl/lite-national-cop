@@ -947,7 +947,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
         {[
           { shape:"dot", color:"#ef4444", label:"Iranian Strike" },
           { shape:"dot", color:"#3b82f6", label:"Coalition Strike" },
-          { shape:"dot", color:"#eab308", label:"Civil Unrest (Iran)" },
+          { shape:"dot", color:"#eab308", label:"Protest" },
           { shape:"ring", color:"#ef4444", label:"Hormuz Closure" },
         ].map((e, i) => (
           <div key={i} style={{ display:"flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.55)" }}>
