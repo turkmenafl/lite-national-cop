@@ -1216,7 +1216,7 @@ const ScreenSituation = ({ live }) => {
                           <div key={e.event_id_cnty || idx} onClick={()=>setSelEvent(selEvent===(e.event_id_cnty||idx)?null:(e.event_id_cnty||idx))}
                             style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===(e.event_id_cnty||idx)?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.sub_event_type || e.event_type}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{(e.sub_event_type || e.event_type || "").replace("Disrupted weapons use","Intercepted")}</span>
                               <span style={{ fontSize:10, color:C.dim }}>{e.event_date}</span>
                             </div>
                             <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location || e.admin1}</div>
