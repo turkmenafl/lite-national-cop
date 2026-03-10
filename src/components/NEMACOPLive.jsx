@@ -854,7 +854,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
     if (geoRef.current) addPolygons(geoRef.current);
     else fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
       .then(r=>r.json()).then(data=>{ geoRef.current=data; if(mapRef.current) addPolygons(data); }).catch(()=>{});
-  }, [countryStats, highlightedCountry, menaCountries]);
+  }, [countryStats, highlightedCountry, menaCountries, gccData]);
 
   // Proportional bubbles + country labels
   useEffect(() => {
