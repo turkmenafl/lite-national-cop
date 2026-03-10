@@ -368,75 +368,92 @@ async function fetchOilPriceAPI() {
   } catch { return null; }
 }
 
-const _cache = { gcc: { data: null, ts: 0 }, financial: { data: null, ts: 0 } };
-const CACHE_TTL = 6 * 60 * 60 * 1000;
+const AI_CACHE_REFRESH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-cache-refresh`;
+const GCC_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const FINANCIAL_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
+// Lock to prevent multiple concurrent refresh triggers for the same key
+const _refreshing = {};
+
+async function triggerRefreshIfNeeded(key, ttl) {
+  // Read from ai_cache
+  const { data: row, error } = await supabase
+    .from('ai_cache').select('data, updated_at').eq('key', key).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+
+  if (!error && row?.data) {
+    const age = Date.now() - new Date(row.updated_at).getTime();
+    if (age < ttl) {
+      console.log(`[${key}] ⚡ Supabase cache hit (${Math.round(age / 60000)} min old)`);
+      return { data: row.data, updatedAt: row.updated_at, fromCache: true };
+    }
+    console.log(`[${key}] ⏰ Supabase cache stale (${Math.round(age / 3600000)}h old), triggering refresh...`);
+  } else {
+    console.log(`[${key}] 🔍 No cache entry found, triggering refresh...`);
+  }
+
+  // Trigger refresh (only one at a time per key)
+  if (!_refreshing[key]) {
+    _refreshing[key] = true;
+    try {
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(`${AI_CACHE_REFRESH_URL}?keys=${key}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+          'apikey': anonKey,
+        },
+        body: JSON.stringify({}),
+      });
+      console.log(`[${key}] ✅ Refresh triggered`);
+    } catch (e) {
+      console.warn(`[${key}] ⚠️ Refresh trigger failed:`, e?.message);
+    } finally {
+      _refreshing[key] = false;
+    }
+
+    // Re-read from cache after refresh
+    const { data: freshRow } = await supabase
+      .from('ai_cache').select('data, updated_at').eq('key', key).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    if (freshRow?.data) {
+      return { data: freshRow.data, updatedAt: freshRow.updated_at, fromCache: false };
+    }
+  }
+
+  // Return stale data if available, or null
+  if (!error && row?.data) {
+    return { data: row.data, updatedAt: row.updated_at, fromCache: true, stale: true };
+  }
+  return null;
+}
 
 async function fetchFinancial() {
-  if (_cache.financial.data && Date.now() - _cache.financial.ts < CACHE_TTL) { console.log('[fetchFinancial] ⚡ in-memory cache hit'); return _cache.financial.data; }
-  // Cache-only: reads from Supabase ai_cache populated by edge function.
-  // NO fallback to direct Anthropic API — if cache empty, return last known values.
   try {
-    const { data: row, error } = await supabase
-      .from('ai_cache').select('data, updated_at').eq('key', 'financial').maybeSingle();
-    if (!error && row?.data) {
-      const result = { ...row.data, updatedAt: row.updated_at, source: 'CACHED' };
-      _cache.financial.data = result; _cache.financial.ts = Date.now();
-      return result;
+    const result = await triggerRefreshIfNeeded('financial', FINANCIAL_TTL);
+    if (result?.data) {
+      return { ...result.data, updatedAt: result.updatedAt, source: result.fromCache ? 'CACHED' : 'REFRESHED' };
     }
   } catch(e) {
-    console.warn('[fetchFinancial] cache read failed:', e?.message);
+    console.warn('[fetchFinancial] failed:', e?.message);
   }
   return { brent: null, brentChg: null, tasi: null, tasiChg: null, updatedAt: null, source: 'CACHED' };
 }
 
-async function fetchGdelt() {
-  const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=Saudi+Arabia+Iran+attack+missile+drone&mode=artlist&maxrecords=25&format=json&timespan=24h`;
-  const res = await fetch(url);
-  const data = await res.json();
-  const articles = (data.articles||[]).slice(0,10);
-  return { count: articles.length || (data.articles||[]).length, articles };
-}
-
-async function fetchIoda() {
-  const url = `https://ioda.inetintel.cc.gatech.edu/api/v2/signals/raw?entityType=country&entityCode=SA&from=${Math.floor(Date.now()/1000)-3600}&until=${Math.floor(Date.now()/1000)}&datasource=bgp`;
-  const res = await fetch(url);
-  const data = await res.json();
-  const vals = data?.data?.bgp?.values || [];
-  if (!vals.length) return null;
-  return Math.round(vals[vals.length-1]*100);
-}
-
-function cacheTimeAgo(isoStr) {
-  if (!isoStr) return null;
-  const mins = Math.floor((Date.now() - new Date(isoStr).getTime()) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  return `${Math.floor(mins / 60)}h ago`;
-}
-
 async function fetchGCCStrikes() {
-  if (_cache.gcc.data && Date.now() - _cache.gcc.ts < CACHE_TTL) { console.log('[fetchGCCStrikes] ⚡ in-memory cache hit'); return _cache.gcc.data; }
-  // Cache-only: reads from Supabase ai_cache populated by edge function.
-  // NO fallback to direct Anthropic API — if cache empty, return GCC_SEED data.
   try {
-    const { data: row, error } = await supabase
-      .from('ai_cache').select('data, updated_at').eq('key', 'gcc_strikes').maybeSingle();
-    if (!error && row?.data) {
-      const result = { data: row.data, updatedAt: row.updated_at };
-      _cache.gcc.data = result; _cache.gcc.ts = Date.now();
-      return result;
+    const result = await triggerRefreshIfNeeded('gcc_strikes', GCC_TTL);
+    if (result?.data) {
+      return { data: result.data, updatedAt: result.updatedAt };
     }
   } catch(e) {
-    console.warn('[GCCStrikes] cache read failed, using seed data:', e?.message);
+    console.warn('[GCCStrikes] failed, using seed data:', e?.message);
   }
-  // Return GCC_SEED as static fallback (no API call)
+  // Return GCC_SEED as static fallback
   const seedData = {};
   for (const s of GCC_SEED) {
     seedData[s.code] = { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
   }
-  const result = { data: seedData, updatedAt: null };
-  _cache.gcc.data = result; _cache.gcc.ts = Date.now();
-  return result;
+  return { data: seedData, updatedAt: null };
 }
 
 // ─── ACLED ────────────────────────────────────────────────────────────────────
