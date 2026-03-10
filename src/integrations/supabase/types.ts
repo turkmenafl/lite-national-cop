@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      acled_events: {
+        Row: {
+          actor1: string | null
+          actor2: string | null
+          admin1: string | null
+          country: string | null
+          disorder_type: string | null
+          event_date: string | null
+          event_id_cnty: string
+          event_type: string | null
+          fatalities: number | null
+          id: number
+          latitude: number | null
+          location: string | null
+          longitude: number | null
+          notes: string | null
+          population_best: number | null
+          source: string | null
+          sub_event_type: string | null
+          timestamp: number | null
+          year: number | null
+        }
+        Insert: {
+          actor1?: string | null
+          actor2?: string | null
+          admin1?: string | null
+          country?: string | null
+          disorder_type?: string | null
+          event_date?: string | null
+          event_id_cnty: string
+          event_type?: string | null
+          fatalities?: number | null
+          id?: never
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
+          notes?: string | null
+          population_best?: number | null
+          source?: string | null
+          sub_event_type?: string | null
+          timestamp?: number | null
+          year?: number | null
+        }
+        Update: {
+          actor1?: string | null
+          actor2?: string | null
+          admin1?: string | null
+          country?: string | null
+          disorder_type?: string | null
+          event_date?: string | null
+          event_id_cnty?: string
+          event_type?: string | null
+          fatalities?: number | null
+          id?: never
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
+          notes?: string | null
+          population_best?: number | null
+          source?: string | null
+          sub_event_type?: string | null
+          timestamp?: number | null
+          year?: number | null
+        }
+        Relationships: []
+      }
       ai_cache: {
         Row: {
           data: Json

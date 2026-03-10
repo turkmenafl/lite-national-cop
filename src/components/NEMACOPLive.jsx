@@ -424,54 +424,119 @@ async function fetchGCCStrikes() {
 }
 
 // ─── ACLED ────────────────────────────────────────────────────────────────────
-async function fetchACLEDEvents(country) {
+const ACLED_COUNTRIES = ["Iran","Israel","Iraq","United Arab Emirates","Syria","Bahrain","Kuwait","Saudi Arabia","Qatar","Palestine","Jordan","Oman"];
+const SMALL_COUNTRIES_SET = new Set(["IL","PS","QA","BH"]);
+const COUNTRY_CENTROIDS = { IL:[31.5,35.0], PS:[31.9,35.2], QA:[25.28,51.53], BH:[26.22,50.59] };
+const UAE_EMIRATE_COORDS = {
+  "Abu Dhabi":[24.45,54.65],"Dubai":[25.20,55.27],"Sharjah":[25.34,55.41],
+  "Fujairah":[25.12,56.33],"Ras Al Khaimah":[25.79,55.98],"Ajman":[25.41,55.44],"Umm Al Quwain":[25.56,55.55],
+};
+const COUNTRY_TO_ISO = {"Iran":"IR","Israel":"IL","Iraq":"IQ","United Arab Emirates":"AE","Syria":"SY","Bahrain":"BH","Kuwait":"KW","Saudi Arabia":"SA","Qatar":"QA","Palestine":"PS","Jordan":"JO","Oman":"OM"};
+const ISO_TO_COUNTRY = Object.fromEntries(Object.entries(COUNTRY_TO_ISO).map(([k,v])=>[v,k]));
+const ISO_TO_FLAG = {IR:"🇮🇷",IL:"🇮🇱",IQ:"🇮🇶",AE:"🇦🇪",SY:"🇸🇾",BH:"🇧🇭",KW:"🇰🇼",SA:"🇸🇦",QA:"🇶🇦",PS:"🇵🇸",JO:"🇯🇴",OM:"🇴🇲"};
+const BUBBLE_COLORS = { red:"#ef4444", blue:"#3b82f6", yellow:"#eab308" };
+const COUNTRY_LABEL_POS = {
+  IR:[32.5,53.5],IQ:[33.3,43.5],SY:[35.0,38.5],JO:[31.5,36.5],
+  IL:[31.5,34.8],PS:[32.3,35.2],SA:[24.0,44.5],AE:[23.5,54.5],
+  QA:[25.5,51.3],KW:[29.8,47.5],BH:[26.4,50.3],OM:[21.5,57.0],
+};
+const COUNTRY_ORDER = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
+
+async function fetchAllACLED() {
   try {
-    const base = import.meta.env.VITE_SUPABASE_URL;
-    const key  = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const headers = {
-      "apikey": key,
-      "Authorization": `Bearer ${key}`,
-      "Prefer": "count=exact",
-    };
-    const params = new URLSearchParams({ select: "*", order: "event_date.desc" });
-    if (Array.isArray(country)) {
-      params.set("country", `in.(${country.map(c => `"${c}"`).join(",")})`);
-    } else {
-      params.set("country", `eq.${country}`);
+    let allEvents = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from('acled_events')
+        .select('event_id_cnty,event_date,event_type,sub_event_type,actor1,country,location,admin1,latitude,longitude,fatalities,notes,source')
+        .in('country', ACLED_COUNTRIES)
+        .order('event_date', { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (error) throw error;
+      allEvents = allEvents.concat(data || []);
+      if (!data || data.length < pageSize) break;
+      from += pageSize;
     }
-    const res = await fetch(`${base}/rest/v1/acled_events?${params}`, { headers });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const countStr = res.headers.get("Content-Range")?.split("/")[1];
-    const count = countStr ? parseInt(countStr, 10) : data.length;
-    return { events: data || [], count };
+    return { events: allEvents, count: allEvents.length };
   } catch (e) {
-    console.warn("[ACLED] fetch failed:", e?.message);
+    console.warn('[ACLED] fetch all failed:', e?.message);
     return null;
   }
 }
 
-function normalizeACLEDEvent(e) {
-  const fatalities = e.fatalities ?? 0;
-  return {
-    id: e.data_id ?? e.id ?? String(Math.random()),
-    date: e.event_date,
-    time: null,
-    type: e.event_type,
-    count: fatalities,
-    location: e.location,
-    lat: e.latitude != null ? Number(e.latitude) : null,
-    lng: e.longitude != null ? Number(e.longitude) : null,
-    severity: fatalities > 0 ? 'critical' : 'warning',
-    sev: fatalities > 0 ? 'critical' : 'warning',
-    fatalities,
-    notes: e.notes,
-    source: e.source,
-    actor1: e.actor1,
-    status: e.sub_event_type || e.event_type,
-    country: e.country,
-    locationKnown: e.latitude != null && e.longitude != null,
-  };
+function getEventColor(event) {
+  const iso = COUNTRY_TO_ISO[event.country];
+  if (iso === "IR") {
+    if (event.event_type === "Protests" || event.event_type === "Demonstrations") return "yellow";
+    return "blue";
+  }
+  return "red";
+}
+
+function getBubbleCoords(event) {
+  const iso = COUNTRY_TO_ISO[event.country];
+  if (SMALL_COUNTRIES_SET.has(iso)) return COUNTRY_CENTROIDS[iso];
+  if (iso === "AE" && event.admin1) {
+    const emirate = Object.keys(UAE_EMIRATE_COORDS).find(e => event.admin1.toLowerCase().includes(e.toLowerCase()));
+    if (emirate) return UAE_EMIRATE_COORDS[emirate];
+  }
+  if (event.latitude != null && event.longitude != null) return [Number(event.latitude), Number(event.longitude)];
+  return null;
+}
+
+function buildBubbleData(events) {
+  const buckets = {};
+  for (const e of events) {
+    const coords = getBubbleCoords(e);
+    if (!coords) continue;
+    const iso = COUNTRY_TO_ISO[e.country];
+    const precision = SMALL_COUNTRIES_SET.has(iso) ? 0 : 1;
+    const key = `${coords[0].toFixed(precision)},${coords[1].toFixed(precision)}`;
+    const color = getEventColor(e);
+    const bKey = `${key}:${color}`;
+    if (!buckets[bKey]) buckets[bKey] = { lat: coords[0], lng: coords[1], color, count: 0, country: e.country, iso };
+    buckets[bKey].count++;
+  }
+  return Object.values(buckets);
+}
+
+function buildCountryStats(events) {
+  const stats = {};
+  for (const e of events) {
+    const iso = COUNTRY_TO_ISO[e.country];
+    if (!iso) continue;
+    if (!stats[iso]) stats[iso] = { code:iso, name:e.country, flag:ISO_TO_FLAG[iso], events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
+    const s = stats[iso];
+    s.events++;
+    s.fatalities += e.fatalities || 0;
+    if (e.sub_event_type === "Air/drone strike") s.airDrone++;
+    else if (e.sub_event_type === "Shelling/artillery/missile attack") s.missile++;
+    else if (e.sub_event_type === "Disrupted weapons use") s.intercepts++;
+    if (e.event_type === "Battles") s.clashes++;
+    if (e.event_type === "Protests" || e.event_type === "Demonstrations") { if (iso === "IR") s.protests++; }
+    if (e.event_type !== "Protests" && e.event_type !== "Demonstrations" && e.sub_event_type !== "Disrupted weapons use") s.strikes++;
+  }
+  return stats;
+}
+
+function dynamicPopupHtml(cs) {
+  if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
+  return `<div>
+    <div style="font-size:12px;font-weight:700;color:#d8e6f5;margin-bottom:8px">${cs.flag} ${cs.name}</div>
+    <div style="display:flex;gap:16px;margin-bottom:8px">
+      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:18px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
+      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:18px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
+    </div>
+    <div style="border-top:1px solid rgba(39,50,72,0.4);padding-top:6px;font-size:9px;color:#a0b4c8;line-height:2.2">
+      Air/drone strikes: <b style="color:#d8e6f5">${cs.airDrone}</b><br/>
+      Missile/shelling: <b style="color:#d8e6f5">${cs.missile}</b><br/>
+      Intercepts: <b style="color:#22c55e">${cs.intercepts}</b><br/>
+      Armed clashes: <b style="color:#d8e6f5">${cs.clashes}</b><br/>
+      Protests: <b style="color:#eab308">${cs.protests}</b>
+    </div>
+  </div>`;
 }
 
 async function fetchKSAStrikes() {
@@ -550,49 +615,7 @@ Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP
   }
 }
 
-const MENA_SUMMARY = [
-  { code:"SA", name:"Saudi Arabia", flag:"🇸🇦", events:19, fatalities:0, airDrone:8, missile:6, intercepts:18, clashes:0, protests:0 },
-  { code:"AE", name:"UAE", flag:"🇦🇪", events:1276, fatalities:12, airDrone:890, missile:200, intercepts:1174, clashes:15, protests:8 },
-  { code:"QA", name:"Qatar", flag:"🇶🇦", events:115, fatalities:3, airDrone:72, missile:28, intercepts:104, clashes:2, protests:5 },
-  { code:"KW", name:"Kuwait", flag:"🇰🇼", events:484, fatalities:8, airDrone:310, missile:120, intercepts:426, clashes:12, protests:18 },
-  { code:"BH", name:"Bahrain", flag:"🇧🇭", events:198, fatalities:5, airDrone:130, missile:45, intercepts:168, clashes:8, protests:12 },
-  { code:"OM", name:"Oman", flag:"🇴🇲", events:4, fatalities:0, airDrone:3, missile:1, intercepts:2, clashes:0, protests:0 },
-  { code:"IR", name:"Iran", flag:"🇮🇷", events:90, fatalities:45, airDrone:52, missile:38, intercepts:0, clashes:12, protests:49 },
-  { code:"IQ", name:"Iraq", flag:"🇮🇶", events:24, fatalities:8, airDrone:12, missile:8, intercepts:0, clashes:6, protests:15 },
-  { code:"IL", name:"Israel", flag:"🇮🇱", events:35, fatalities:2, airDrone:20, missile:15, intercepts:33, clashes:0, protests:3 },
-  
-  { code:"SY", name:"Syria", flag:"🇸🇾", events:12, fatalities:4, airDrone:6, missile:4, intercepts:0, clashes:5, protests:1 },
-  { code:"JO", name:"Jordan", flag:"🇯🇴", events:3, fatalities:0, airDrone:1, missile:0, intercepts:1, clashes:0, protests:8 },
-  { code:"PS", name:"Palestine", flag:"🇵🇸", events:28, fatalities:15, airDrone:8, missile:5, intercepts:0, clashes:18, protests:22 },
-];
-
-const PROTEST_MARKERS = [
-  { id:"PR1", lat:35.69, lng:51.39, name:"Tehran" },
-  { id:"PR2", lat:33.31, lng:44.37, name:"Baghdad" },
-  { id:"PR3", lat:32.65, lng:51.67, name:"Isfahan" },
-  { id:"PR4", lat:29.37, lng:47.98, name:"Kuwait City" },
-  { id:"PR5", lat:26.22, lng:50.59, name:"Manama" },
-];
-
-const NAME_TO_CODE = { IRAN:"IR", IRAQ:"IQ", SYRIA:"SY", JORDAN:"JO", ISRAEL:"IL", KSA:"SA", UAE:"AE", QATAR:"QA", KUWAIT:"KW", BAHRAIN:"BH", OMAN:"OM", PALESTINE:"PS" };
-
-function countryPopupHtml(cs) {
-  if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
-  return `<div>
-    <div style="font-size:12px;font-weight:700;color:#d8e6f5;margin-bottom:8px">${cs.flag} ${cs.name}</div>
-    <div style="display:flex;gap:16px;margin-bottom:8px">
-      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:18px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
-      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:18px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
-    </div>
-    <div style="border-top:1px solid rgba(39,50,72,0.4);padding-top:6px;font-size:9px;color:#a0b4c8;line-height:2.2">
-      Air/drone strikes: <b style="color:#d8e6f5">${cs.airDrone}</b><br/>
-      Missile/shelling: <b style="color:#d8e6f5">${cs.missile}</b><br/>
-      Intercepts: <b style="color:#22c55e">${cs.intercepts}</b><br/>
-      Armed clashes: <b style="color:#d8e6f5">${cs.clashes}</b><br/>
-      Protests: <b style="color:#eab308">${cs.protests}</b>
-    </div>
-  </div>`;
-}
+// MENA country data now computed dynamically from ACLED via buildCountryStats()
 
 
 async function fetchPortWatch() {
@@ -693,399 +716,148 @@ const GCC_CAPITALS = {
   IL: [31.77, 35.22], JO: [31.95, 35.93], PS: [31.90, 35.20],
 };
 
-const IRAN_STRIKES = [
-  { id:"IR1", name:"Bandar Abbas", lat:27.19, lng:56.28 },
-  { id:"IR2", name:"Bushehr", lat:28.97, lng:50.84 },
-  { id:"IR3", name:"Isfahan", lat:32.65, lng:51.67 },
-  { id:"IR4", name:"Karaj", lat:35.83, lng:50.99 },
-  { id:"IR5", name:"Tehran", lat:35.69, lng:51.39 },
-  { id:"IR6", name:"Kermanshah", lat:34.31, lng:47.07 },
-  { id:"IR7", name:"Tabriz", lat:38.08, lng:46.29 },
-  { id:"IR8", name:"Qom", lat:34.64, lng:50.88 },
-];
-
-const IRAQ_SPILLOVER = [
-  { id:"IQ1", name:"Erbil", lat:36.19, lng:44.01 },
-  { id:"IQ2", name:"Harir", lat:35.47, lng:44.39 },
-];
-
-const MENA_LABELS = [
-  { name:"IRAN", lat:32.5, lng:53.5 },
-  { name:"IRAQ", lat:33.3, lng:43.5 },
-  { name:"SYRIA", lat:35.0, lng:38.5 },
-  { name:"JORDAN", lat:31.5, lng:36.5 },
-  { name:"ISRAEL", lat:31.5, lng:34.8 },
-  { name:"PALESTINE", lat:31.9, lng:35.2 },
-];
-
-const LeafletTheaterMap = memo(({ filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter = "MENA", menaCountries }) => {
+// ─── LEAFLET THEATER MAP — proportional bubbles from ACLED ───────────────────
+const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, menaCountries }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
-  const gccPolygonsRef = useRef([]);
-  const gccGeoRef = useRef(null);
+  const polygonsRef = useRef([]);
+  const geoRef = useRef(null);
 
-  // Initialize map once
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
     const map = L.map(mapContainerRef.current, {
-      center: [25, 48],
-      zoom: 4.46,
-      zoomSnap: 0.5,
-      zoomDelta: 0.5,
-      wheelPxPerZoomLevel: 120,
-      maxBounds: [[10, 28], [40, 65]],
-      maxBoundsViscosity: 1.0,
-      zoomControl: false,
-      dragging: true,
-      scrollWheelZoom: true,
-      doubleClickZoom: true,
-      touchZoom: true,
-      pinchZoom: true,
-      attributionControl: false,
+      center: [28, 48], zoom: 4.5, zoomSnap: 0.5, zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 120, maxBounds: [[10, 28], [42, 65]], maxBoundsViscosity: 1.0,
+      zoomControl: false, dragging: true, scrollWheelZoom: true,
+      doubleClickZoom: true, touchZoom: true, pinchZoom: true, attributionControl: false,
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", {
-      tileSize: 256,
-      detectRetina: true,
-    }).addTo(map);
-    // Eastern Province highlight from GeoJSON
-    fetch("/data/sa-provinces.geojson")
-      .then(r => r.json())
-      .then(data => {
-        const epFeature = data.features.find(f => {
-          const props = f.properties || {};
-          const name = (props.shapeName || props.name || props.NAME || props.NAME_1 || props.admin1Name || "").toLowerCase();
-          return name.includes("eastern") || name.includes("sharqiyah") || name.includes("ash sharqiy");
-        });
-        if (epFeature && mapRef.current) {
-          L.geoJSON(epFeature, {
-            style: {
-              fillColor: "rgba(239,68,68,0.12)",
-              fillOpacity: 1,
-              color: "#ef4444",
-              opacity: 0.3,
-              weight: 1.2,
-            },
-          }).addTo(mapRef.current);
-          L.marker([28.8, 51], {
-            icon: L.divIcon({
-              className: "",
-              html: '<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',
-              iconSize: [0, 0], iconAnchor: [-5, 5],
-            }),
-          }).addTo(mapRef.current);
-        }
-      })
-      .catch(() => {});
-    // Hormuz dashed line
-    L.polyline([[26.6, 56.3], [27.2, 56.3]], {
-      color: "#ef4444", weight: 2, dashArray: "5,3",
-    }).addTo(map);
-    L.marker([27.0, 56.4], {
-      icon: L.divIcon({
-        className: "",
-        html: '<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',
-        iconSize: [0, 0], iconAnchor: [-5, 8],
-      }),
-    }).addTo(map);
-    // MENA country labels (clickable for popup)
-    MENA_LABELS.forEach(({ name, lat, lng }) => {
-      const m = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="color:rgba(216,230,245,0.35);font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.12em;cursor:pointer">${name}</div>`,
-          iconSize: [0, 0], iconAnchor: [-5, 5],
-        }),
-      }).addTo(map);
-      m.on('click', () => {
-        const code = NAME_TO_CODE[name];
-        const cs = MENA_SUMMARY.find(c => c.code === code);
-        if (cs) L.popup({ className:"cop-popup", maxWidth:260, closeButton:true }).setLatLng([lat,lng]).setContent(countryPopupHtml(cs)).openOn(map);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", { tileSize: 256, detectRetina: true }).addTo(map);
+    // Eastern Province highlight
+    fetch("/data/sa-provinces.geojson").then(r=>r.json()).then(data=>{
+      const ep = data.features.find(f=>{
+        const n = (f.properties?.shapeName||f.properties?.name||f.properties?.NAME||f.properties?.NAME_1||"").toLowerCase();
+        return n.includes("eastern")||n.includes("sharqiyah")||n.includes("ash sharqiy");
       });
-    });
-    // GCC country labels (clickable for popup)
-    [["KSA",24.0,44.5],["UAE",23.5,54.5],["QATAR",25.5,51.3],["KUWAIT",29.8,47.5],["BAHRAIN",26.4,50.3],["OMAN",21.5,57.0]].forEach(([name,lat,lng]) => {
-      const m = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: "",
-          html: `<div style="color:rgba(216,230,245,0.25);font-size:9px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;letter-spacing:0.1em;cursor:pointer">${name}</div>`,
-          iconSize: [0, 0], iconAnchor: [-5, 5],
-        }),
-      }).addTo(map);
-      m.on('click', () => {
-        const code = NAME_TO_CODE[name];
-        const cs = MENA_SUMMARY.find(c => c.code === code);
-        if (cs) L.popup({ className:"cop-popup", maxWidth:260, closeButton:true }).setLatLng([lat,lng]).setContent(countryPopupHtml(cs)).openOn(map);
-      });
-    });
+      if (ep && mapRef.current) {
+        L.geoJSON(ep, { style: { fillColor:"rgba(239,68,68,0.12)", fillOpacity:1, color:"#ef4444", opacity:0.3, weight:1.2 } }).addTo(mapRef.current);
+        L.marker([28.8,51],{icon:L.divIcon({className:"",html:'<div style="color:rgba(239,68,68,0.6);font-size:10px;font-family:JetBrains Mono,monospace;white-space:nowrap;letter-spacing:0.08em">EASTERN PROVINCE</div>',iconSize:[0,0],iconAnchor:[-5,5]})}).addTo(mapRef.current);
+      }
+    }).catch(()=>{});
+    // Hormuz closure marker
+    L.polyline([[26.6,56.3],[27.2,56.3]],{color:"#ef4444",weight:2,dashArray:"5,3"}).addTo(map);
+    L.marker([27.0,56.4],{icon:L.divIcon({className:"",html:'<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',iconSize:[0,0],iconAnchor:[-5,8]})}).addTo(map);
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Update strike markers when data or view changes
+  // Country polygons — white fill for all 12
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    polygonsRef.current.forEach(l => map.removeLayer(l));
+    polygonsRef.current = [];
+    const POLY_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM", IRN:"IR", IRQ:"IQ", SYR:"SY", ISR:"IL", JOR:"JO", PSE:"PS" };
+    const addPolygons = (geojson) => {
+      if (!mapRef.current) return;
+      geojson.features.filter(f => !!POLY_ISO[f.id || f.properties?.ISO_A3 || ""]).forEach(feature => {
+        const iso2 = POLY_ISO[feature.id || feature.properties?.ISO_A3 || ""];
+        if (menaCountries && !menaCountries[iso2]) return;
+        const isHl = highlightedCountry === iso2;
+        const layer = L.geoJSON(feature, {
+          style: {
+            fillColor: "rgba(255,255,255,0.5)",
+            fillOpacity: isHl ? 0.3 : 0.15,
+            color: isHl ? "#ffffff" : "rgba(255,255,255,0.5)",
+            opacity: isHl ? 0.6 : 0.3,
+            weight: isHl ? 1.5 : 1,
+          },
+          onEachFeature: (f, lyr) => {
+            lyr.on('mouseover', () => lyr.setStyle({ fillOpacity:0.4, color:"#ffffff", opacity:0.6, weight:1.5 }));
+            lyr.on('mouseout', () => lyr.setStyle({ fillOpacity:isHl?0.3:0.15, color:isHl?"#ffffff":"rgba(255,255,255,0.5)", opacity:isHl?0.6:0.3, weight:isHl?1.5:1 }));
+            lyr.on('click', () => {
+              const cs = countryStats?.[iso2];
+              const center = mapRef.current.getSize().divideBy(2);
+              const latLng = mapRef.current.containerPointToLatLng(center);
+              const popupData = cs || { code:iso2, name:ISO_TO_COUNTRY[iso2]||iso2, flag:ISO_TO_FLAG[iso2]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
+              L.popup({ className:"cop-popup", maxWidth:280, closeButton:true })
+                .setLatLng(latLng)
+                .setContent(dynamicPopupHtml(popupData))
+                .openOn(mapRef.current);
+            });
+          },
+        }).addTo(mapRef.current);
+        polygonsRef.current.push(layer);
+        layer.eachLayer(l => { const el=l.getElement?.(); if(el) el.style.cursor="pointer"; });
+      });
+    };
+    if (geoRef.current) addPolygons(geoRef.current);
+    else fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
+      .then(r=>r.json()).then(data=>{ geoRef.current=data; if(mapRef.current) addPolygons(data); }).catch(()=>{});
+  }, [countryStats, highlightedCountry, menaCountries]);
+
+  // Proportional bubbles + country labels
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
-
-    const showKSA = layerFilter === "MENA" ? !!menaCountries?.SA : layerFilter === "KSA";
-    const showGCC = layerFilter === "MENA" ? !!(menaCountries?.AE || menaCountries?.BH || menaCountries?.KW || menaCountries?.QA || menaCountries?.OM) : false;
-    const showIRAN = layerFilter === "MENA" ? !!menaCountries?.IR : layerFilter === "IRAN";
-    const showIRAQ = layerFilter === "MENA" ? !!menaCountries?.IQ : false;
-
-    if (theaterView === "GCC") {
-      // GCC country markers
-      if (showGCC || showKSA) {
-        (gccMarkers || []).forEach(g => {
-          if (g.code === "SA" && !showKSA) return;
-          if (g.code !== "SA" && !showGCC) return;
-          if (layerFilter === "MENA" && menaCountries && !menaCountries[g.code]) return;
-          const coords = GCC_CAPITALS[g.code];
-          if (!coords) return;
-          const col = g.strikes > 100 ? C.critical : g.strikes > 0 ? C.warning : C.success;
-          const isCritical = g.strikes > 100;
-          const m = L.marker(coords, {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: isCritical
-                ? `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-                : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9;pointer-events:none"></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-          const lbl = L.marker(coords, {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:${col};font-size:8px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${g.code} ${g.strikes.toLocaleString()}</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(lbl);
-        });
+    const maxCount = Math.max(1, ...bubbleData.map(b => b.count));
+    bubbleData.forEach(b => {
+      if (menaCountries && !menaCountries[b.iso]) return;
+      const col = BUBBLE_COLORS[b.color] || "#ef4444";
+      const radius = Math.max(4, Math.min(30, Math.sqrt(b.count / maxCount) * 30));
+      const circle = L.circleMarker([b.lat, b.lng], {
+        radius, fillColor: col, fillOpacity: 0.45, color: col, opacity: 0.7, weight: 1.5,
+      }).addTo(map);
+      circle.bindTooltip(`${b.count} event${b.count!==1?"s":""}`, { className:"cop-popup", direction:"top", offset:[0,-radius] });
+      layersRef.current.push(circle);
+    });
+    // Country labels with event counts
+    Object.entries(COUNTRY_LABEL_POS).forEach(([iso, [lat, lng]]) => {
+      if (menaCountries && !menaCountries[iso]) return;
+      const stats = countryStats?.[iso];
+      const total = stats?.events || 0;
+      const strikeCount = stats?.strikes || 0;
+      const protestCount = stats?.protests || 0;
+      let labelHtml;
+      if (iso === "IR") {
+        labelHtml = `IRAN <span style="color:#3b82f6;font-weight:800">${strikeCount}</span>${protestCount>0?` <span style="color:#eab308">+${protestCount}</span>`:""}`;
+      } else {
+        const shortName = (ISO_TO_COUNTRY[iso]||iso).split(" ")[0].toUpperCase();
+        labelHtml = total > 0 ? `${shortName} <span style="color:#ef4444;font-weight:800">${total}</span>` : shortName;
       }
-      // Iran strike markers (US/Coalition → blue)
-      if (showIRAN) {
-        IRAN_STRIKES.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-          const lbl = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:#3b82f6;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(lbl);
-        });
-      }
-      // Iraq spillover markers (US/Coalition → blue dots)
-      if (showIRAQ) {
-        IRAQ_SPILLOVER.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-          const lbl = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:#3b82f6;font-size:7px;font-family:JetBrains Mono,monospace;font-weight:600;white-space:nowrap;pointer-events:none">${s.name}</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(lbl);
-        });
-      }
-      // Protest markers (civil unrest → yellow)
-      if (showIRAN || showIRAQ) {
-        PROTEST_MARKERS.forEach(p => {
-          const m = L.marker([p.lat, p.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="width:8px;height:8px;border-radius:50%;background:#eab308;opacity:0.8;pointer-events:none"></div>`,
-              iconSize: [8, 8], iconAnchor: [4, 4],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        });
-      }
-    } else {
-      // KSA EVENT LOG — KSA markers + optionally Iran/Iraq
-      if (showKSA) {
-        const markers = getMarkers().filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
-        markers.forEach(p => {
-          const isUnverified = p.locationKnown === false;
-          const col = isUnverified ? "#6b7280" : (p.s === "critical" ? C.critical : C.warning);
-          const markerHtml = isUnverified
-            ? `<div style="width:10px;height:10px;border-radius:50%;border:2px dashed #6b7280;background:rgba(107,114,128,0.25);opacity:0.8"></div>`
-            : p.s === "critical"
-              ? `<div style="position:relative;width:14px;height:14px"><div class="strike-ping" style="width:14px;height:14px;border:1px solid ${col};top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div></div>`
-              : `<div style="width:8px;height:8px;border-radius:50%;background:${col};opacity:0.9"></div>`;
-          const m = L.marker([p.lat, p.lng], {
-            icon: L.divIcon({
-              className: "",
-              html: markerHtml,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          if (isUnverified) {
-            m.bindTooltip("⚠ LOC UNVERIFIED — Saudi MoD confirmed", { className: "cop-popup", direction: "top", offset: [0, -8] });
-          }
-          layersRef.current.push(m);
-        });
-        if (filteredStrikes.length === 0) {
-          const m = L.marker([24, 46], {
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="color:${C.dim};font-size:12px;font-family:JetBrains Mono,monospace;white-space:nowrap">No KSA strikes this day</div>`,
-              iconSize: [0, 0], iconAnchor: [-10, 5],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        }
-      }
-      // Also show Iran/Iraq in LOG view if filter selected (blue = US/Coalition)
-      if (showIRAN) {
-        IRAN_STRIKES.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        });
-      }
-      if (showIRAQ) {
-        IRAQ_SPILLOVER.forEach(s => {
-          const m = L.marker([s.lat, s.lng], {
-            interactive: false,
-            icon: L.divIcon({
-              className: "",
-              html: `<div style="position:relative;width:14px;height:14px;pointer-events:none"><div class="strike-ping" style="width:14px;height:14px;border:1px solid #3b82f6;top:0;left:0"></div><div style="position:absolute;top:3px;left:3px;width:8px;height:8px;border-radius:50%;background:#3b82f6;opacity:0.9"></div></div>`,
-              iconSize: [14, 14], iconAnchor: [7, 7],
-            }),
-          }).addTo(map);
-          layersRef.current.push(m);
-        });
-      }
-    }
-  }, [filteredStrikes, getMarkers, theaterView, gccMarkers, layerFilter, menaCountries]);
-
-  // GCC country polygons with hover/click — only in MENA view
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    gccPolygonsRef.current.forEach(l => map.removeLayer(l));
-    gccPolygonsRef.current = [];
-    if (theaterView !== "GCC") return;
-    if (layerFilter !== "MENA" && layerFilter !== "KSA") return;
-
-    const POLY_ISO = { SAU:"SA", ARE:"AE", QAT:"QA", KWT:"KW", BHR:"BH", OMN:"OM", IRN:"IR", IRQ:"IQ", SYR:"SY", ISR:"IL", JOR:"JO", PSE:"PS" };
-
-    const addPolygons = (geojson) => {
-      if (!mapRef.current) return;
-      const matchedFeatures = geojson.features.filter(f => {
-        const iso3 = f.id || f.properties?.ISO_A3 || f.properties?.iso_a3 || "";
-        return !!POLY_ISO[iso3];
-      });
-
-      matchedFeatures.forEach(feature => {
-        const iso3 = feature.id || feature.properties?.ISO_A3 || feature.properties?.iso_a3 || "";
-        const iso2 = POLY_ISO[iso3];
-        if (layerFilter === "KSA" && iso2 !== "SA") return;
-        if (layerFilter === "MENA" && menaCountries && !menaCountries[iso2]) return;
-        const seed = GCC_SEED.find(g => g.code === iso2);
-        const cs = MENA_SUMMARY.find(c => c.code === iso2);
-        const airCol = seed?.airspace==="CLOSED"?C.critical:seed?.airspace==="RESTRICTED"?C.warning:"rgba(255,255,255,0.5)";
-        const fillCol = seed ? airCol : "rgba(255,255,255,0.5)";
-        const confCol = seed?.confidence==="CONFIRMED"?C.success:"#f97316";
-
-        const layer = L.geoJSON(feature, {
-          style: {
-            fillColor: fillCol,
-            fillOpacity: 0.15,
-            color: fillCol,
-            opacity: 0.3,
-            weight: 1,
-          },
-          onEachFeature: (f, lyr) => {
-            lyr.on('mouseover', () => {
-              lyr.setStyle({ fillOpacity: 0.4, color: "#ffffff", opacity: 0.6, weight: 1.5 });
-            });
-            lyr.on('mouseout', () => {
-              lyr.setStyle({ fillOpacity: 0.15, color: fillCol, opacity: 0.3, weight: 1 });
-            });
-            lyr.on('click', () => {
-              const center = GCC_CAPITALS[iso2] || lyr.getBounds().getCenter();
-              const countryName = cs?.name || seed?.name || iso2;
-              const popupData = cs || { code:iso2, name:countryName, flag:"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0 };
-              const popup = L.popup({ className: "cop-popup", maxWidth: 260, closeButton: true })
-                .setLatLng(center)
-                .setContent(countryPopupHtml(popupData))
-                .openOn(mapRef.current);
-            });
-          },
-        }).addTo(mapRef.current);
-        gccPolygonsRef.current.push(layer);
-
-        layer.eachLayer(l => {
-          const el = l.getElement?.();
-          if (el) el.style.cursor = "pointer";
-        });
-      });
-    };
-
-    if (gccGeoRef.current) {
-      addPolygons(gccGeoRef.current);
-    } else {
-      fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
-        .then(r => r.json())
-        .then(data => {
-          gccGeoRef.current = data;
-          if (mapRef.current) addPolygons(data);
-        })
-        .catch(() => {});
-    }
-  }, [theaterView, gccMarkers, layerFilter]);
+      const m = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="color:rgba(216,230,245,0.45);font-size:10px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap;letter-spacing:0.1em;pointer-events:none">${labelHtml}</div>`,
+          iconSize: [0, 0], iconAnchor: [-5, 5],
+        }),
+      }).addTo(map);
+      layersRef.current.push(m);
+    });
+  }, [bubbleData, countryStats, menaCountries]);
 
   return (
-    <div style={{ background: "#060b17", borderRadius: 4, overflow: "hidden", height: 520, position: "relative" }}>
-      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+    <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden", height:520, position:"relative" }}>
+      <div ref={mapContainerRef} style={{ width:"100%", height:"100%" }} />
       <div style={{
-        position: "absolute", top: 8, right: 8, zIndex: 1000,
-        background: "rgba(6,11,23,0.85)", border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 4, padding: "6px 10px",
-        fontFamily: "'JetBrains Mono',monospace", fontSize: 9, lineHeight: 1.8,
-        pointerEvents: "none",
+        position:"absolute", top:8, right:8, zIndex:1000,
+        background:"rgba(6,11,23,0.85)", border:"1px solid rgba(255,255,255,0.08)",
+        borderRadius:4, padding:"6px 10px",
+        fontFamily:"'JetBrains Mono',monospace", fontSize:9, lineHeight:1.8,
+        pointerEvents:"none",
       }}>
         {[
-          { shape: "dot", color: "#ef4444", label: "Strike from Iran" },
-          { shape: "dot", color: "#3b82f6", label: "US/Coalition action" },
-          { shape: "dot", color: "#eab308", label: "Civil unrest" },
-          { shape: "ring", color: "#ef4444", label: "Hormuz closure" },
+          { shape:"dot", color:"#ef4444", label:"Iranian Strike" },
+          { shape:"dot", color:"#3b82f6", label:"Coalition Strike" },
+          { shape:"dot", color:"#eab308", label:"Civil Unrest (Iran)" },
+          { shape:"ring", color:"#ef4444", label:"Hormuz Closure" },
         ].map((e, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.55)" }}>
-            {e.shape === "dot" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: e.color, display: "inline-block", flexShrink: 0 }} />}
-            {e.shape === "ring" && <span style={{ width: 7, height: 7, borderRadius: "50%", border: `1.5px solid ${e.color}`, background: "transparent", display: "inline-block", flexShrink: 0 }} />}
+          <div key={i} style={{ display:"flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.55)" }}>
+            {e.shape==="dot" && <span style={{ width:7, height:7, borderRadius:"50%", background:e.color, display:"inline-block", flexShrink:0 }} />}
+            {e.shape==="ring" && <span style={{ width:7, height:7, borderRadius:"50%", border:`1.5px solid ${e.color}`, background:"transparent", display:"inline-block", flexShrink:0 }} />}
             {e.label}
           </div>
         ))}
@@ -1190,129 +962,53 @@ const GCC_DAILY = {
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("cumulative");
-  const [theaterView, setTheaterView] = useState("GCC");
-  const [expandedCountry, setExpandedCountry] = useState(null);
-  const [hoveredCountry, setHoveredCountry] = useState(null);
   const [layerFilter, setLayerFilter] = useState("MENA");
   const [rightTab, setRightTab] = useState("MENA");
   const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
-    const all = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
-    const m = {};
-    all.forEach(c => m[c] = true);
-    return m;
+    const m = {}; COUNTRY_ORDER.forEach(c => m[c] = true); return m;
   });
-  const MENA_COUNTRY_LABELS = [
-    { code:"IR", label:"Iran" }, { code:"IL", label:"Israel" }, { code:"IQ", label:"Iraq" },
-    { code:"AE", label:"UAE" }, { code:"SY", label:"Syria" }, { code:"BH", label:"Bahrain" },
-    { code:"KW", label:"Kuwait" }, { code:"SA", label:"Saudi Arabia" }, { code:"QA", label:"Qatar" },
-    { code:"PS", label:"Palestine" }, { code:"JO", label:"Jordan" }, { code:"OM", label:"Oman" },
-  ];
-  const toggleMenaCountry = (code) => setMenaCountries(prev => ({ ...prev, [code]: !prev[code] }));
-
   const tabScrollRef = useRef(null);
   const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
 
   const isCumulative = activeDay === "cumulative";
-  const acledKsaNorm = live.acledKsa.events.length > 0
-    ? live.acledKsa.events.map(normalizeACLEDEvent)
-    : null;
-  const strikeData = acledKsaNorm || live.ksaStrikes?.data || STRIKES_KSA;
-  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
+  const allAcledEvents = live.acledAll?.events || [];
+  const filteredAcled = isCumulative ? allAcledEvents : allAcledEvents.filter(e => e.event_date === activeDay);
+  const countryStats = buildCountryStats(allAcledEvents);
+  const filteredStats = buildCountryStats(filteredAcled);
+  const bubbleData = buildBubbleData(filteredAcled);
 
-  const getMarkers = () => {
-    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
-    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev || s.severity, locationKnown: s.locationKnown !== false }));
-  };
+  const countrySummary = COUNTRY_ORDER.map(code => {
+    const s = filteredStats[code];
+    return s || { code, name: ISO_TO_COUNTRY[code]||code, flag: ISO_TO_FLAG[code]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
+  }).sort((a, b) => b.events - a.events);
 
-  // Build GCC theater data (all 6 countries) with per-day filtering
-  // Merges live.gcc.data from cache when available
-  const getGCCTheaterData = () => {
-    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.date===activeDay).length;
-    const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
-    const liveGCC = live.gcc?.data;
-    const ksaLive = liveGCC?.SA;
-    const result = [{
-      ...ksaSeed,
-      strikes: isCumulative ? (ksaLive?.total ?? ksaSeed.strikes) : ksaDayCount,
-      ...(ksaLive ? {
-        interceptPct: ksaLive.intercept_pct ?? ksaSeed.interceptPct,
-        confidence: ksaLive.confidence ?? ksaSeed.confidence,
-        source: ksaLive.source ?? ksaSeed.source,
-        note: ksaLive.note ?? ksaSeed.note,
-      } : {}),
-    }];
-    Object.entries(GCC_DAILY).forEach(([code, data]) => {
-      const seed = GCC_SEED.find(g=>g.code===code);
-      if (!seed) return;
-      const liveItem = liveGCC?.[code];
-      const dayCount = isCumulative ? (liveItem?.total ?? data.total) : (data.perDay[activeDay] || 0);
-      result.push({
-        ...seed,
-        strikes: dayCount,
-        ...(liveItem ? {
-          interceptPct: liveItem.intercept_pct ?? data.interceptPct,
-          confidence: liveItem.confidence ?? seed.confidence,
-          source: liveItem.source ?? seed.source,
-          note: liveItem.note ?? seed.note,
-        } : {}),
-      });
-    });
-    return result;
-  };
-
-  const getGCCForDay = () => {
-    return Object.entries(GCC_DAILY).map(([code, data]) => {
-      const dayCount = isCumulative ? data.total : (data.perDay[activeDay] || 0);
-      return { code, name: code==="AE"?"🇦🇪 UAE":code==="QA"?"🇶🇦 Qatar":code==="KW"?"🇰🇼 Kuwait":code==="BH"?"🇧🇭 Bahrain":"🇴🇲 Oman", strikes:dayCount, interceptPct:data.interceptPct, note:data.note };
-    });
-  };
-
+  const ksaEvents = filteredAcled.filter(e => e.country === "Saudi Arabia");
+  const iranEvents = filteredAcled.filter(e => e.country === "Iran");
   const dateTabs = DATE_TABS;
-
-  const IRAN_EVENTS = IRAN_STRIKES.map((s,i) => {
-    const day = 7 - Math.floor(i/3);
-    return { id: s.id, date: `2026-03-0${day}`, time: `Mar 0${day} ${String(2+i*3).padStart(2,'0')}:${15+i*5}`, type: i%2===0?"Cruise Missile":"Drone (4x)", loc: s.name, status: "Hit — confirmed", sev: "critical" };
-  });
-  const IRAQ_EVENTS = IRAQ_SPILLOVER.map((s,i) => ({
-    id: s.id, date: `2026-03-0${7-i}`, time: `Mar 0${7-i} ${String(4+i*2).padStart(2,'0')}:30`,
-    type: "Ballistic Missile", loc: s.name, status: "Hit — debris confirmed", sev: "critical",
-  }));
-
-  const allIranEvents = live.acledIran.events.length > 0 ? live.acledIran.events.slice(0,25).map(normalizeACLEDEvent) : IRAN_EVENTS;
-  const filteredIranEvents = isCumulative ? allIranEvents : allIranEvents.filter(e => e.date === activeDay);
-
-  const menaSummaryFiltered = MENA_SUMMARY.map(c => {
-    if (isCumulative) return c;
-    if (c.code === "SA") return { ...c, events: filteredStrikes.length };
-    if (GCC_DAILY[c.code]) return { ...c, events: GCC_DAILY[c.code].perDay[activeDay] || 0 };
-    return c; // non-GCC: show cumulative when no per-day data
-  });
 
   return (
     <div>
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-        <KpiCard label="STRIKES KSA"  value={live.acledKsa?.count != null ? String(live.acledKsa.count) : "29"}  change="+3/24h"  color={C.critical} feed={live.acledKsa?.count != null ? "ACLED" : "CONFIRMED"} loading={live.acledKsa?.loading} />
-        <KpiCard label="INTERCEPTS"   value="96%"    note="Patriot/THAAD"           color={C.success}  feed="CONFIRMED" />
-        <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
-        <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
-        <KpiCard label="HORMUZ"       value="Day 7"  note="0 transits / 91 tankers"  color={C.critical} feed="STATIC" />
-        <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
-        <KpiCard label="IRAN HIT SITES" value="90+" change="Op. Roaring Lion" color="#06b6d4" feed="STATIC" secondary="ACLED" secondaryColor="#06b6d4" />
-        <KpiCard label="THEATER ACTIVE" value="10" change="countries" color={C.success} feed="LIVE" secondary="LIVE" secondaryColor={C.success} />
+        <KpiCard label="ACLED EVENTS" value={String(live.acledAll?.count || 0)} change="all countries" color={C.critical} feed={live.acledAll?.count > 0 ? "ACLED" : "STATIC"} loading={live.acledAll?.loading} />
+        <KpiCard label="KSA STRIKES" value={String(countryStats.SA?.strikes || 0)} note="ACLED verified" color={C.critical} feed="ACLED" loading={live.acledAll?.loading} />
+        <KpiCard label="BRENT CRUDE" value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
+        <KpiCard label="TASI" value={live.tasi.value} change={live.tasi.change} color={C.warning} feed={live.tasi.source} loading={live.tasi.loading} />
+        <KpiCard label="HORMUZ" value="Day 7" note="0 transits / 91 tankers" color={C.critical} feed="STATIC" />
+        <KpiCard label="GDELT/24h" value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
+        <KpiCard label="IRAN STRIKES" value={String(countryStats.IR?.strikes || 0)} change="Coalition" color="#06b6d4" feed="ACLED" loading={live.acledAll?.loading} />
+        <KpiCard label="IRAN PROTESTS" value={String(countryStats.IR?.protests || 0)} change="Civil unrest" color="#eab308" feed="ACLED" loading={live.acledAll?.loading} />
       </div>
 
-      {/* ── Date-Tabbed Theater Section ── */}
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", marginBottom:14, overflow:"hidden" }}>
-        {/* Date tabs with horizontal scroll */}
+        {/* Date tabs */}
         <div style={{ display:"flex", alignItems:"stretch", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           <button onClick={()=>scrollTabs(-1)} style={{ flexShrink:0, width:22, border:"none", background:"transparent", color:C.dim, cursor:"pointer", fontSize:16, lineHeight:1, padding:0 }}>‹</button>
           <div ref={tabScrollRef} className="tab-scroll" style={{ display:"flex", overflowX:"auto", flex:1, scrollbarWidth:"none", msOverflowStyle:"none" }}>
             {dateTabs.map(t => {
               const isActive = activeDay === t.id;
               const isToday = t.id === TODAY_ISO;
-              const dayStrikes = t.id==="cumulative" ? strikeData.length : strikeData.filter(s=>s.date===t.id).length;
-              const hasStrikes = dayStrikes > 0;
+              const dayCount = t.id === "cumulative" ? allAcledEvents.length : allAcledEvents.filter(e => e.event_date === t.id).length;
               return (
                 <button key={t.id} onClick={(e)=>{setActiveDay(t.id);setSelEvent(null);e.currentTarget.scrollIntoView({inline:'nearest',block:'nearest'});}} style={{
                   padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
@@ -1324,7 +1020,7 @@ const ScreenSituation = ({ live }) => {
                 }}>
                   {t.id==="cumulative"?"⊞ ":""}{t.label}
                   {isToday && <span style={{ fontSize:7, color:C.info, letterSpacing:"0.05em", opacity:0.8 }}>TODAY</span>}
-                  {t.id !== "cumulative" && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?(hasStrikes?`${C.info}22`:`${C.dim}22`):(hasStrikes?`${C.dim}22`:"transparent"), color:isActive?(hasStrikes?C.info:C.muted):(hasStrikes?C.dim:C.dim), fontWeight:700 }}>{dayStrikes}</span>}
+                  {t.id !== "cumulative" && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?(dayCount>0?`${C.info}22`:`${C.dim}22`):(dayCount>0?`${C.dim}22`:"transparent"), color:isActive?(dayCount>0?C.info:C.muted):(dayCount>0?C.dim:C.dim), fontWeight:700 }}>{dayCount}</span>}
                 </button>
               );
             })}
@@ -1334,16 +1030,20 @@ const ScreenSituation = ({ live }) => {
 
         {/* Map + Right Panel */}
         <div style={{ display:"flex", gap:0, alignItems:"stretch" }}>
-          {/* Left: Theater Map */}
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
               <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
-              <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
+              <span style={{ fontSize:11, color:C.muted }}>{filteredAcled.length} event{filteredAcled.length!==1?"s":""}</span>
             </div>
-            {/* Layer filter bar — MENA · KSA · IRAN */}
             <div style={{ display:"flex", gap:4, marginBottom:8 }}>
               {["MENA","KSA","IRAN"].map(f => (
-                <button key={f} onClick={()=>setLayerFilter(f)} style={{
+                <button key={f} onClick={()=>{
+                  setLayerFilter(f);
+                  if (f==="MENA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=true); return m; });
+                  else if (f==="KSA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="SA")); return m; });
+                  else if (f==="IRAN") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="IR")); return m; });
+                  setHighlightedCountry(null);
+                }} style={{
                   padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.surfBorder}`,
                   borderRadius:3, cursor:"pointer",
                   background:layerFilter===f?(f==="IRAN"?"#06b6d422":`${C.info}22`):"transparent",
@@ -1353,17 +1053,20 @@ const ScreenSituation = ({ live }) => {
                 }}>{f}</button>
               ))}
             </div>
-            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} menaCountries={menaCountries} />
+            <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} />
+            {live.acledAll?.count === 0 && !live.acledAll?.loading && (
+              <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
+                {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
+              </div>
+            )}
           </div>
 
-          {/* Right column — 3-tab panel */}
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
-            {/* Tab bar */}
             <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
               {["MENA","KSA","IRAN"].map(t => {
                 const tabCol = t==="IRAN"?"#3b82f6":C.info;
                 return (
-                  <button key={t} onClick={()=>{setRightTab(t);if(t!=="MENA"){setHighlightedCountry(null);setMenaCountries(prev=>{const m={};Object.keys(prev).forEach(k=>m[k]=true);return m;});}}} style={{
+                  <button key={t} onClick={()=>{setRightTab(t);if(t!=="MENA"){setHighlightedCountry(null);setMenaCountries(()=>{const m={};COUNTRY_ORDER.forEach(k=>m[k]=true);return m;});}}} style={{
                     flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
                     background:rightTab===t?"#192233":"transparent",
                     borderBottom:rightTab===t?`2px solid ${tabCol}`:"2px solid transparent",
@@ -1375,9 +1078,7 @@ const ScreenSituation = ({ live }) => {
               })}
             </div>
 
-            {/* Tab content */}
             <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
-              {/* MENA tab — country list */}
               {rightTab === "MENA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
@@ -1385,17 +1086,17 @@ const ScreenSituation = ({ live }) => {
                     <span style={{ fontSize:10, color:C.dim }}>{isCumulative?"CUMULATIVE":activeDay}</span>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-                    {menaSummaryFiltered.map(c => {
+                    {countrySummary.map(c => {
                       const evCol = c.events > 100 ? C.critical : c.events > 10 ? C.warning : c.events > 0 ? C.success : C.dim;
                       const isHl = highlightedCountry === c.code;
                       return (
                         <div key={c.code} onClick={() => {
                           if (isHl) {
                             setHighlightedCountry(null);
-                            setMenaCountries(prev => { const m = {}; Object.keys(prev).forEach(k => m[k] = true); return m; });
+                            setMenaCountries(() => { const m={}; COUNTRY_ORDER.forEach(k=>m[k]=true); return m; });
                           } else {
                             setHighlightedCountry(c.code);
-                            setMenaCountries(prev => { const m = {}; Object.keys(prev).forEach(k => m[k] = (k === c.code)); return m; });
+                            setMenaCountries(() => { const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k===c.code)); return m; });
                           }
                         }} style={{
                           padding:"6px 8px", borderRadius:3, cursor:"pointer",
@@ -1417,35 +1118,31 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {/* KSA tab — event log */}
               {rightTab === "KSA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{ksaEvents.length} event{ksaEvents.length!==1?"s":""}</span>
                   </div>
-                  {filteredStrikes.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {activeDay}</div>
+                  {ksaEvents.length === 0 ? (
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No events for {isCumulative?"this period":activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                      {filteredStrikes.map(e => {
-                        const sev = e.sev || e.severity;
-                        const col = sev==="critical"?C.critical:C.warning;
-                        const loc = e.loc || e.location;
-                        const timeLabel = e.time ?? e.date;
+                      {ksaEvents.slice(0, 50).map((e, idx) => {
+                        const col = (e.fatalities > 0) ? C.critical : C.warning;
                         return (
-                          <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
-                            style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
+                          <div key={e.event_id_cnty || idx} onClick={()=>setSelEvent(selEvent===(e.event_id_cnty||idx)?null:(e.event_id_cnty||idx))}
+                            style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===(e.event_id_cnty||idx)?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
-                              <span style={{ fontSize:10, color:C.dim }}>{timeLabel}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.sub_event_type || e.event_type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.event_date}</span>
                             </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{loc}{e.locationKnown === false && <span style={{ fontSize:9, background:"#1e293b", color:"#6b7280", border:"1px solid #374151", borderRadius:2, padding:"1px 4px", marginLeft:6 }}>LOC UNVERIFIED</span>}</div>
-                            {selEvent===e.id && (
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location || e.admin1}</div>
+                            {selEvent===(e.event_id_cnty||idx) && (
                               <>
-                                {e.fatalities > 0 && <div style={{ fontSize:11, color:C.critical, marginTop:3 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
-                                {e.status && <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{e.status}</div>}
-                                {e.notes && <div style={{ fontSize:10, color:C.dim, marginTop:2, lineHeight:1.4 }}>{e.notes.slice(0,140)}{e.notes.length>140?"…":""}</div>}
+                                {e.fatalities > 0 && <div style={{ fontSize:11, color:C.critical, marginTop:3 }}>⚡ {e.fatalities} fatalit{e.fatalities!==1?"ies":"y"}</div>}
+                                {e.actor1 && <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>Actor: {e.actor1.slice(0,60)}</div>}
+                                {e.notes && <div style={{ fontSize:10, color:C.dim, marginTop:2, lineHeight:1.4 }}>{e.notes.slice(0,200)}{e.notes.length>200?"…":""}</div>}
                               </>
                             )}
                           </div>
@@ -1456,49 +1153,41 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {/* IRAN tab — event log */}
               {rightTab === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6", letterSpacing:"0.08em" }}>IRAN EVENT LOG</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{filteredIranEvents.length} event{filteredIranEvents.length!==1?"s":""}</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{iranEvents.length} event{iranEvents.length!==1?"s":""}</span>
                   </div>
-                  {filteredIranEvents.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No events for {activeDay}</div>
+                  {iranEvents.length === 0 ? (
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No events for {isCumulative?"this period":activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                      {filteredIranEvents.map(e => (
-                        <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(59,130,246,0.06)", borderLeft:"2px solid #3b82f6" }}>
-                          <div style={{ display:"flex", justifyContent:"space-between" }}>
-                            <span style={{ fontSize:11, fontWeight:700, color:"#3b82f6" }}>{e.type}</span>
-                            <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
+                      {iranEvents.slice(0, 50).map((e, idx) => {
+                        const isProtest = e.event_type === "Protests" || e.event_type === "Demonstrations";
+                        const col = isProtest ? "#eab308" : "#3b82f6";
+                        return (
+                          <div key={e.event_id_cnty || idx} onClick={()=>setSelEvent(selEvent===(e.event_id_cnty||idx)?null:(e.event_id_cnty||idx))}
+                            style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:`${col}06`, borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
+                            <div style={{ display:"flex", justifyContent:"space-between" }}>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.sub_event_type || e.event_type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.event_date}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location || e.admin1}</div>
+                            {selEvent===(e.event_id_cnty||idx) && (
+                              <>
+                                {e.fatalities > 0 && <div style={{ fontSize:11, color:C.critical, marginTop:3 }}>⚡ {e.fatalities} fatalit{e.fatalities!==1?"ies":"y"}</div>}
+                                {e.actor1 && <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>Actor: {e.actor1.slice(0,60)}</div>}
+                                {e.notes && <div style={{ fontSize:10, color:C.dim, marginTop:2, lineHeight:1.4 }}>{e.notes.slice(0,200)}{e.notes.length>200?"…":""}</div>}
+                              </>
+                            )}
                           </div>
-                          <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
-                          {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
-                          {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </>
               )}
-            </div>
-
-            {/* Theater Status panel */}
-            <div style={{ borderTop:`1px solid ${C.surfBorder}`, padding:"10px 14px", background:"rgba(255,255,255,0.02)" }}>
-              <div style={{ fontSize:10, fontWeight:700, color:C.dim, letterSpacing:"0.08em", marginBottom:6 }}>THEATER STATUS</div>
-              {[
-                { label:"Jordan airspace", value:"RESTRICTED", color:C.warning },
-                { label:"Syria spillover", value:"ACTIVE", color:C.warning },
-                { label:"Israel retaliating", value:"CONFIRMED", color:C.critical },
-                { label:"Protests in Iran", value:"49 events", color:"#a855f7" },
-                { label:"Red Sea corridor", value:"DEGRADED", color:C.warning },
-              ].map((s,i) => (
-                <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:i<4?`1px solid ${C.surfBorder}30`:"none" }}>
-                  <span style={{ fontSize:10, color:C.muted }}>{s.label}</span>
-                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${s.color}14`, color:s.color, fontWeight:600 }}>{s.value}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -2342,11 +2031,10 @@ export default function NEMACOPLive() {
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
     ciStatus: { loading:false, error:null, data:null },
-    acledKsa:  { loading:false, error:null, count:null, events:[] },
-    acledGcc:  { loading:false, error:null, count:null, events:[] },
-    acledIran: { loading:false, error:null, count:null, events:[] },
-    acledIraq: { loading:false, error:null, count:null, events:[] },
+    acledAll: { loading:false, error:null, count:0, events:[], importing:false },
   });
+
+  const importAttemptedRef = useRef(false);
 
   const refresh = useCallback(async () => {
     if (_refreshLock) { console.warn("[COP] refresh already in progress, skipping"); return; }
@@ -2360,23 +2048,15 @@ export default function NEMACOPLive() {
       ukmto:{...d.ukmto,loading:true},
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
-      acledKsa: {...d.acledKsa,  loading:true},
-      acledGcc: {...d.acledGcc,  loading:true},
-      acledIran:{...d.acledIran, loading:true},
-      acledIraq:{...d.acledIraq, loading:true},
+      acledAll:{...d.acledAll,loading:true},
     }));
 
-    // Fetch non-AI feeds + AI cache in parallel
-    const [eia, opa, gdelt, ioda, pw, cacheRes, acledKsaRes, acledIranRes, acledIraqRes, acledGccRes] = await Promise.allSettled([
+    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
-      fetchACLEDEvents("Saudi Arabia"),
-      fetchACLEDEvents("Iran"),
-      fetchACLEDEvents("Iraq"),
-      fetchACLEDEvents(["Bahrain", "Kuwait", "Qatar", "United Arab Emirates"]),
+      fetchAllACLED(),
     ]);
 
-    // Parse AI cache results
     const cache = {};
     const cacheUpdatedAt = {};
     if (cacheRes.status === "fulfilled" && cacheRes.value?.data) {
@@ -2385,9 +2065,8 @@ export default function NEMACOPLive() {
         cacheUpdatedAt[row.key] = row.updated_at;
       }
     }
-    const cacheAge = cacheRes.status === "fulfilled" && cacheRes.value?.data?.length
-      ? cacheRes.value.data[0]?.updated_at : null;
     const cacheSource = Object.keys(cache).length ? "CACHED" : "STATIC";
+    const acledData = acledRes.status === "fulfilled" ? acledRes.value : null;
 
     setLive(d=>{
       const n={...d};
@@ -2402,15 +2081,17 @@ export default function NEMACOPLive() {
         n.brent={
           value:`$${opaPrice.toFixed(2)}`,
           change: eiaChg || d.brent.change,
-          source:"OPA",
-          loading:false,
+          source:"OPA", loading:false,
           secondary: eiaBase!==null ? `EIA baseline $${eiaBase.toFixed(2)}${premium!==null?` · CONFLICT PREMIUM +$${premium.toFixed(2)} / +${premiumPct}%`:''}` : null,
         };
       } else if (eiaResult?.price) {
         n.brent={value:`$${eiaResult.price.toFixed(2)}`,change:eiaResult.change,source:"EIA",loading:false,secondary:null};
-      } else { n.brent={...d.brent,source:"STATIC",loading:false}; }
+      } else {
+        const fin = cache.financial;
+        if (fin?.brent) n.brent={value:`$${Number(fin.brent).toFixed(2)}`,change:fin.brentChg||d.brent.change,source:cacheSource,loading:false,secondary:null};
+        else n.brent={...d.brent,source:"STATIC",loading:false};
+      }
 
-      // AI feeds from cache
       const fin = cache.financial;
       if (fin?.tasi) {
         n.tasi={value:Number(fin.tasi).toLocaleString(),change:fin.tasiChg||d.tasi.change,source:cacheSource,loading:false};
@@ -2420,9 +2101,9 @@ export default function NEMACOPLive() {
       n.ioda  = ioda.status==="fulfilled"&&ioda.value!==null?{value:ioda.value,source:"IODA",loading:false}:{value:null,source:"IODA",loading:false};
 
       const gccData = cache.gcc_strikes;
-      const gccUpdatedAt = cacheUpdatedAt['gcc_strikes'] || null;
+      const gccUpdatedAt2 = cacheUpdatedAt['gcc_strikes'] || null;
       n.gcc = gccData
-        ? {data:gccData, loading:false, error:false, updatedAt:gccUpdatedAt}
+        ? {data:gccData, loading:false, error:false, updatedAt:gccUpdatedAt2}
         : {data:d.gcc.data, loading:false, error:!Object.keys(cache).length, updatedAt:null};
 
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
@@ -2433,23 +2114,14 @@ export default function NEMACOPLive() {
       const ksaData = cache.ksa_strikes;
       let mergedKsa = null;
       if (Array.isArray(ksaData) && ksaData.length > 0) {
-        const isCentroidPlaceholder = (event) => {
-          const latBad = event.lat == null || event.lat === 24.0;
-          const lngBad = event.lng == null || event.lng === 45.0;
-          return latBad && lngBad;
-        };
         const validCache = {};
         for (const event of ksaData) {
-          if (isCentroidPlaceholder(event)) {
-            console.warn('ksa_strikes cache: skipping centroid placeholder', event);
-          } else if (typeof event.lat === 'number' && typeof event.lng === 'number' && event.id != null) {
+          if (typeof event.lat === 'number' && typeof event.lng === 'number' && event.id != null) {
             validCache[event.id] = event;
           }
         }
         if (Object.keys(validCache).length > 0) {
-          mergedKsa = STRIKES_KSA.map(seed =>
-            validCache[seed.id] ? { ...seed, ...validCache[seed.id] } : seed
-          );
+          mergedKsa = STRIKES_KSA.map(seed => validCache[seed.id] ? { ...seed, ...validCache[seed.id] } : seed);
         }
       }
       n.ksaStrikes = { loading:false, error:null, data: mergedKsa };
@@ -2457,31 +2129,41 @@ export default function NEMACOPLive() {
       const ciData = cache.ci_status;
       n.ciStatus = { loading:false, error:null, data:ciData||null };
 
-      const acledKsaData = acledKsaRes.status === "fulfilled" ? acledKsaRes.value : null;
-      n.acledKsa = acledKsaData
-        ? { loading:false, error:null, count:acledKsaData.count, events:acledKsaData.events }
-        : { loading:false, error:true, count:null, events:[] };
-
-      const acledIranData = acledIranRes.status === "fulfilled" ? acledIranRes.value : null;
-      n.acledIran = acledIranData
-        ? { loading:false, error:null, count:acledIranData.count, events:acledIranData.events }
-        : { loading:false, error:true, count:null, events:[] };
-
-      const acledIraqData = acledIraqRes.status === "fulfilled" ? acledIraqRes.value : null;
-      n.acledIraq = acledIraqData
-        ? { loading:false, error:null, count:acledIraqData.count, events:acledIraqData.events }
-        : { loading:false, error:true, count:null, events:[] };
-
-      const acledGccData = acledGccRes.status === "fulfilled" ? acledGccRes.value : null;
-      n.acledGcc = acledGccData
-        ? { loading:false, error:null, count:acledGccData.count, events:acledGccData.events }
-        : { loading:false, error:true, count:null, events:[] };
+      n.acledAll = acledData
+        ? { loading:false, error:null, count:acledData.count, events:acledData.events, importing:false }
+        : { loading:false, error:true, count:0, events:[], importing:false };
 
       return n;
     });
     setLastRefresh(new Date());
     setRefreshing(false);
     _refreshLock = false;
+
+    // Auto-import ACLED data if table is empty
+    if (acledData && acledData.count === 0 && !importAttemptedRef.current) {
+      importAttemptedRef.current = true;
+      try {
+        setLive(d => ({...d, acledAll: {...d.acledAll, importing: true }}));
+        const csvRes = await fetch('/data/acled.csv');
+        if (!csvRes.ok) throw new Error('CSV not found');
+        const csvText = await csvRes.text();
+        const importRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/acled-import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: csvText,
+        });
+        if (!importRes.ok) throw new Error(`Import HTTP ${importRes.status}`);
+        const result = await importRes.json();
+        console.log(`[ACLED] Auto-imported ${result.total} events`);
+        const freshAcled = await fetchAllACLED();
+        if (freshAcled) {
+          setLive(d => ({...d, acledAll: { loading:false, error:null, count:freshAcled.count, events:freshAcled.events, importing:false }}));
+        }
+      } catch (e) {
+        console.warn('[ACLED] auto-import failed:', e.message);
+        setLive(d => ({...d, acledAll: {...d.acledAll, importing:false }}));
+      }
+    }
   }, []);
 
   useEffect(()=>{refresh();},[refresh]);
