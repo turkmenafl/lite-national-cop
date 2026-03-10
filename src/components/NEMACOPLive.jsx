@@ -2108,7 +2108,7 @@ export default function NEMACOPLive() {
     tasi:  { value:"10,290", change:"−3.9% wk",  source:"STATIC", loading:false },
     gdelt: { value:20, articles:[], source:"STATIC", loading:false },
     ioda:  { value:null, source:"IODA", loading:false },
-    gcc:   { data:null, loading:false, error:false, updatedAt:null },
+    gcc:   { data: (() => { const d={}; for(const s of GCC_SEED) d[s.code]={total_incoming:s.strikes,total_intercepted:Math.round(s.strikes*s.interceptPct/100),confidence:s.confidence,source:s.source,note:s.note}; return d; })(), loading:false, error:false, updatedAt:null },
     portwatch: { loading:false, error:null, data:null },
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
