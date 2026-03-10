@@ -947,7 +947,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
         {[
           { shape:"dot", color:"#ef4444", label:"Iranian Strike" },
           { shape:"dot", color:"#3b82f6", label:"Coalition Strike" },
-          { shape:"dot", color:"#eab308", label:"Civil Unrest (Iran)" },
+          { shape:"dot", color:"#eab308", label:"Protest" },
           { shape:"ring", color:"#ef4444", label:"Hormuz Closure" },
         ].map((e, i) => (
           <div key={i} style={{ display:"flex", alignItems:"center", gap:6, color:"rgba(255,255,255,0.55)" }}>
@@ -1094,7 +1094,7 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="HORMUZ" value="Day 7" note="0 transits / 91 tankers" color={C.critical} feed="STATIC" />
         <KpiCard label="GDELT/24h" value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
         <KpiCard label="IRAN STRIKES" value={String(countryStats.IR?.strikes || 0)} change="Coalition" color="#06b6d4" feed="ACLED" loading={live.acledAll?.loading} />
-        <KpiCard label="IRAN PROTESTS" value={String(countryStats.IR?.protests || 0)} change="Civil unrest" color="#eab308" feed="ACLED" loading={live.acledAll?.loading} />
+        <KpiCard label="IRAN PROTESTS" value={String(countryStats.IR?.protests || 0)} change="Protest" color="#eab308" feed="ACLED" loading={live.acledAll?.loading} />
       </div>
 
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", marginBottom:14, overflow:"hidden" }}>
