@@ -424,54 +424,119 @@ async function fetchGCCStrikes() {
 }
 
 // ─── ACLED ────────────────────────────────────────────────────────────────────
-async function fetchACLEDEvents(country) {
+const ACLED_COUNTRIES = ["Iran","Israel","Iraq","United Arab Emirates","Syria","Bahrain","Kuwait","Saudi Arabia","Qatar","Palestine","Jordan","Oman"];
+const SMALL_COUNTRIES_SET = new Set(["IL","PS","QA","BH"]);
+const COUNTRY_CENTROIDS = { IL:[31.5,35.0], PS:[31.9,35.2], QA:[25.28,51.53], BH:[26.22,50.59] };
+const UAE_EMIRATE_COORDS = {
+  "Abu Dhabi":[24.45,54.65],"Dubai":[25.20,55.27],"Sharjah":[25.34,55.41],
+  "Fujairah":[25.12,56.33],"Ras Al Khaimah":[25.79,55.98],"Ajman":[25.41,55.44],"Umm Al Quwain":[25.56,55.55],
+};
+const COUNTRY_TO_ISO = {"Iran":"IR","Israel":"IL","Iraq":"IQ","United Arab Emirates":"AE","Syria":"SY","Bahrain":"BH","Kuwait":"KW","Saudi Arabia":"SA","Qatar":"QA","Palestine":"PS","Jordan":"JO","Oman":"OM"};
+const ISO_TO_COUNTRY = Object.fromEntries(Object.entries(COUNTRY_TO_ISO).map(([k,v])=>[v,k]));
+const ISO_TO_FLAG = {IR:"🇮🇷",IL:"🇮🇱",IQ:"🇮🇶",AE:"🇦🇪",SY:"🇸🇾",BH:"🇧🇭",KW:"🇰🇼",SA:"🇸🇦",QA:"🇶🇦",PS:"🇵🇸",JO:"🇯🇴",OM:"🇴🇲"};
+const BUBBLE_COLORS = { red:"#ef4444", blue:"#3b82f6", yellow:"#eab308" };
+const COUNTRY_LABEL_POS = {
+  IR:[32.5,53.5],IQ:[33.3,43.5],SY:[35.0,38.5],JO:[31.5,36.5],
+  IL:[31.5,34.8],PS:[32.3,35.2],SA:[24.0,44.5],AE:[23.5,54.5],
+  QA:[25.5,51.3],KW:[29.8,47.5],BH:[26.4,50.3],OM:[21.5,57.0],
+};
+const COUNTRY_ORDER = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
+
+async function fetchAllACLED() {
   try {
-    const base = import.meta.env.VITE_SUPABASE_URL;
-    const key  = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const headers = {
-      "apikey": key,
-      "Authorization": `Bearer ${key}`,
-      "Prefer": "count=exact",
-    };
-    const params = new URLSearchParams({ select: "*", order: "event_date.desc" });
-    if (Array.isArray(country)) {
-      params.set("country", `in.(${country.map(c => `"${c}"`).join(",")})`);
-    } else {
-      params.set("country", `eq.${country}`);
+    let allEvents = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from('acled_events')
+        .select('event_id_cnty,event_date,event_type,sub_event_type,actor1,country,location,admin1,latitude,longitude,fatalities,notes,source')
+        .in('country', ACLED_COUNTRIES)
+        .order('event_date', { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (error) throw error;
+      allEvents = allEvents.concat(data || []);
+      if (!data || data.length < pageSize) break;
+      from += pageSize;
     }
-    const res = await fetch(`${base}/rest/v1/acled_events?${params}`, { headers });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const countStr = res.headers.get("Content-Range")?.split("/")[1];
-    const count = countStr ? parseInt(countStr, 10) : data.length;
-    return { events: data || [], count };
+    return { events: allEvents, count: allEvents.length };
   } catch (e) {
-    console.warn("[ACLED] fetch failed:", e?.message);
+    console.warn('[ACLED] fetch all failed:', e?.message);
     return null;
   }
 }
 
-function normalizeACLEDEvent(e) {
-  const fatalities = e.fatalities ?? 0;
-  return {
-    id: e.data_id ?? e.id ?? String(Math.random()),
-    date: e.event_date,
-    time: null,
-    type: e.event_type,
-    count: fatalities,
-    location: e.location,
-    lat: e.latitude != null ? Number(e.latitude) : null,
-    lng: e.longitude != null ? Number(e.longitude) : null,
-    severity: fatalities > 0 ? 'critical' : 'warning',
-    sev: fatalities > 0 ? 'critical' : 'warning',
-    fatalities,
-    notes: e.notes,
-    source: e.source,
-    actor1: e.actor1,
-    status: e.sub_event_type || e.event_type,
-    country: e.country,
-    locationKnown: e.latitude != null && e.longitude != null,
-  };
+function getEventColor(event) {
+  const iso = COUNTRY_TO_ISO[event.country];
+  if (iso === "IR") {
+    if (event.event_type === "Protests" || event.event_type === "Demonstrations") return "yellow";
+    return "blue";
+  }
+  return "red";
+}
+
+function getBubbleCoords(event) {
+  const iso = COUNTRY_TO_ISO[event.country];
+  if (SMALL_COUNTRIES_SET.has(iso)) return COUNTRY_CENTROIDS[iso];
+  if (iso === "AE" && event.admin1) {
+    const emirate = Object.keys(UAE_EMIRATE_COORDS).find(e => event.admin1.toLowerCase().includes(e.toLowerCase()));
+    if (emirate) return UAE_EMIRATE_COORDS[emirate];
+  }
+  if (event.latitude != null && event.longitude != null) return [Number(event.latitude), Number(event.longitude)];
+  return null;
+}
+
+function buildBubbleData(events) {
+  const buckets = {};
+  for (const e of events) {
+    const coords = getBubbleCoords(e);
+    if (!coords) continue;
+    const iso = COUNTRY_TO_ISO[e.country];
+    const precision = SMALL_COUNTRIES_SET.has(iso) ? 0 : 1;
+    const key = `${coords[0].toFixed(precision)},${coords[1].toFixed(precision)}`;
+    const color = getEventColor(e);
+    const bKey = `${key}:${color}`;
+    if (!buckets[bKey]) buckets[bKey] = { lat: coords[0], lng: coords[1], color, count: 0, country: e.country, iso };
+    buckets[bKey].count++;
+  }
+  return Object.values(buckets);
+}
+
+function buildCountryStats(events) {
+  const stats = {};
+  for (const e of events) {
+    const iso = COUNTRY_TO_ISO[e.country];
+    if (!iso) continue;
+    if (!stats[iso]) stats[iso] = { code:iso, name:e.country, flag:ISO_TO_FLAG[iso], events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
+    const s = stats[iso];
+    s.events++;
+    s.fatalities += e.fatalities || 0;
+    if (e.sub_event_type === "Air/drone strike") s.airDrone++;
+    else if (e.sub_event_type === "Shelling/artillery/missile attack") s.missile++;
+    else if (e.sub_event_type === "Disrupted weapons use") s.intercepts++;
+    if (e.event_type === "Battles") s.clashes++;
+    if (e.event_type === "Protests" || e.event_type === "Demonstrations") { if (iso === "IR") s.protests++; }
+    if (e.event_type !== "Protests" && e.event_type !== "Demonstrations" && e.sub_event_type !== "Disrupted weapons use") s.strikes++;
+  }
+  return stats;
+}
+
+function dynamicPopupHtml(cs) {
+  if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
+  return `<div>
+    <div style="font-size:12px;font-weight:700;color:#d8e6f5;margin-bottom:8px">${cs.flag} ${cs.name}</div>
+    <div style="display:flex;gap:16px;margin-bottom:8px">
+      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:18px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
+      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:18px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
+    </div>
+    <div style="border-top:1px solid rgba(39,50,72,0.4);padding-top:6px;font-size:9px;color:#a0b4c8;line-height:2.2">
+      Air/drone strikes: <b style="color:#d8e6f5">${cs.airDrone}</b><br/>
+      Missile/shelling: <b style="color:#d8e6f5">${cs.missile}</b><br/>
+      Intercepts: <b style="color:#22c55e">${cs.intercepts}</b><br/>
+      Armed clashes: <b style="color:#d8e6f5">${cs.clashes}</b><br/>
+      Protests: <b style="color:#eab308">${cs.protests}</b>
+    </div>
+  </div>`;
 }
 
 async function fetchKSAStrikes() {
