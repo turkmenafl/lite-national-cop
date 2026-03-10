@@ -1061,7 +1061,6 @@ const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("cumulative");
   const [layerFilter, setLayerFilter] = useState("MENA");
-  const [rightTab, setRightTab] = useState("MENA");
   const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
     const m = {}; COUNTRY_ORDER.forEach(c => m[c] = true); return m;
