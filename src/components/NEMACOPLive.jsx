@@ -553,6 +553,7 @@ function dynamicPopupHtml(cs, gccData) {
   let projSource = "ACLED";
 
   if (iso === "IR") {
+    incoming = null; // Iran is the attacker, never a target
     intercepted = cs.intercepts || 0;
     projNote = "Strikes by US/Israel coalition";
     projSource = "ACLED";
