@@ -1159,21 +1159,6 @@ const ScreenSituation = ({ live }) => {
           </div>
 
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
-            <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
-              {["MENA","KSA","IRAN"].map(t => {
-                const tabCol = t==="IRAN"?"#3b82f6":C.info;
-                return (
-                  <button key={t} onClick={()=>{setRightTab(t);if(t!=="MENA"){setHighlightedCountry(null);setMenaCountries(()=>{const m={};COUNTRY_ORDER.forEach(k=>m[k]=true);return m;});}}} style={{
-                    flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
-                    background:rightTab===t?"#192233":"transparent",
-                    borderBottom:rightTab===t?`2px solid ${tabCol}`:"2px solid transparent",
-                    color:rightTab===t?C.fg:C.muted,
-                    fontSize:10, fontWeight:rightTab===t?700:500,
-                    fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
-                  }}>{t}</button>
-                );
-              })}
-            </div>
 
             <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
               {rightTab === "MENA" && (
