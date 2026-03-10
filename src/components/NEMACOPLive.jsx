@@ -55,15 +55,15 @@ const C = {
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 const GCC_SEED = [
-  { code:"SA", name:"🇸🇦 KSA",     airspace:"RESTRICTED", strikes:19,   interceptPct:96, confidence:"CONFIRMED", source:"Saudi MoD spokesman",     note:"96% intercept. Ras Tanura degraded. Abqaiq near-miss Mar 4.", daily:[3,2,1,2,3,3,5] },
-  { code:"AE", name:"🇦🇪 UAE",     airspace:"RESTRICTED", strikes:12,   interceptPct:92, confidence:"EST",       source:"UAE MoD",                   note:"Jebel Ali + Dubai T3 targeted.", daily:[1,1,2,2,2,2,2] },
-  { code:"QA", name:"🇶🇦 Qatar",   airspace:"CLOSED",     strikes:8,    interceptPct:90, confidence:"EST",       source:"CTP-ISW / LWJ",             note:"Al Udeid 2 BM impacts. LNG suspended.", daily:[1,1,1,1,1,1,2] },
-  { code:"KW", name:"🇰🇼 Kuwait",  airspace:"RESTRICTED", strikes:6,    interceptPct:88, confidence:"EST",       source:"KUNA / US DoD",             note:"Ali Al Salem struck.", daily:[1,1,1,1,1,1,0] },
-  { code:"BH", name:"🇧🇭 Bahrain", airspace:"RESTRICTED", strikes:5,    interceptPct:85, confidence:"EST",       source:"NAVCENT / Alma Research",   note:"5th Fleet HQ area targeted.", daily:[1,1,1,1,1,0,0] },
-  { code:"OM", name:"🇴🇲 Oman",    airspace:"OPEN",       strikes:2,    interceptPct:50, confidence:"EST",       source:"ONA / Reuters",             note:"Duqm Port drone. Mediator status.", daily:[0,0,0,1,0,0,1] },
-  { code:"IL", name:"🇮🇱 Israel",  airspace:"RESTRICTED", strikes:15,   interceptPct:95, confidence:"EST",       source:"IDF / Reuters",             note:"Arrow/Iron Dome intercepts.", daily:[2,2,2,2,2,2,3] },
-  { code:"IQ", name:"🇮🇶 Iraq",    airspace:"RESTRICTED", strikes:10,   interceptPct:70, confidence:"EST",       source:"Iraqi MoD / CTP-ISW",      note:"US bases targeted.", daily:[1,1,2,1,2,1,2] },
-  { code:"JO", name:"🇯🇴 Jordan",  airspace:"RESTRICTED", strikes:3,    interceptPct:80, confidence:"EST",       source:"JAF / Reuters",             note:"Eastern border area.", daily:[0,0,1,0,1,0,1] },
+  { code:"SA", name:"🇸🇦 KSA",     airspace:"RESTRICTED", strikes:19,   interceptPct:95, confidence:"CONFIRMED", source:"Saudi MoD spokesman",     note:"96% intercept. Ras Tanura degraded. Abqaiq near-miss Mar 4.", daily:[3,2,1,2,3,3,5] },
+  { code:"AE", name:"🇦🇪 UAE",     airspace:"RESTRICTED", strikes:1276, interceptPct:92, confidence:"EST",       source:"UAE MoD",                   note:"Jebel Ali + Dubai T3 targeted.", daily:[182,182,182,182,182,182,184] },
+  { code:"QA", name:"🇶🇦 Qatar",   airspace:"CLOSED",     strikes:115,  interceptPct:90, confidence:"EST",       source:"CTP-ISW / LWJ",             note:"Al Udeid 2 BM impacts. LNG suspended.", daily:[16,16,16,16,17,17,17] },
+  { code:"KW", name:"🇰🇼 Kuwait",  airspace:"RESTRICTED", strikes:484,  interceptPct:88, confidence:"EST",       source:"KUNA / US DoD",             note:"Ali Al Salem struck.", daily:[69,69,69,69,69,69,70] },
+  { code:"BH", name:"🇧🇭 Bahrain", airspace:"RESTRICTED", strikes:198,  interceptPct:85, confidence:"EST",       source:"NAVCENT / Alma Research",   note:"5th Fleet HQ area targeted.", daily:[28,28,28,28,28,29,29] },
+  { code:"OM", name:"🇴🇲 Oman",    airspace:"OPEN",       strikes:4,    interceptPct:50, confidence:"EST",       source:"ONA / Reuters",             note:"Duqm Port drone. Mediator status.", daily:[0,0,0,1,1,1,1] },
+  { code:"IL", name:"🇮🇱 Israel",  airspace:"RESTRICTED", strikes:330,  interceptPct:100,confidence:"EST",       source:"IDF / Reuters",             note:"Arrow/Iron Dome intercepts.", daily:[47,47,47,47,47,47,48] },
+  { code:"IQ", name:"🇮🇶 Iraq",    airspace:"RESTRICTED", strikes:84,   interceptPct:2,  confidence:"EST",       source:"Iraqi MoD / CTP-ISW",      note:"US bases targeted.", daily:[12,12,12,12,12,12,12] },
+  { code:"JO", name:"🇯🇴 Jordan",  airspace:"RESTRICTED", strikes:62,   interceptPct:26, confidence:"EST",       source:"JAF / Reuters",             note:"Eastern border area.", daily:[9,9,9,9,9,9,8] },
 ];
 
 function makeSparklineSvg(daily, color) {
