@@ -535,8 +535,8 @@ function dynamicPopupHtml(cs, gccData) {
   const gccCountries = new Set(["SA","AE","KW","BH","QA","OM","IL","IQ","JO"]);
   const gccEntry = gccData?.[iso];
   const hasGcc = gccCountries.has(iso) && gccEntry;
+  const gccLoading = gccCountries.has(iso) && !gccData;
 
-  // Determine incoming / intercepted
   let incoming = "—";
   let intercepted = "—";
   let projNote = "";
@@ -554,45 +554,46 @@ function dynamicPopupHtml(cs, gccData) {
     intercepted = cs.intercepts || 0;
     projNote = "Collateral — not a target";
     projSource = "ACLED";
+  } else if (gccLoading) {
+    incoming = "…";
+    intercepted = "…";
+    projSource = "AI+WEB";
   } else if (hasGcc) {
     incoming = gccEntry.total_incoming ?? "—";
     intercepted = gccEntry.total_intercepted ?? "—";
     projNote = gccEntry.note || "";
     projSource = "AI+WEB";
   } else {
-    incoming = "—";
     intercepted = cs.intercepts || 0;
-    projSource = "ACLED";
   }
 
   const feedColor = projSource === "AI+WEB" ? "#22d3ee" : "#64748b";
   const feedBg = projSource === "AI+WEB" ? "rgba(34,211,238,0.1)" : "rgba(100,116,139,0.1)";
   const gccSrc = hasGcc ? gccEntry.source : "";
+  const pulse = gccLoading ? 'animation:pulse 1.5s ease-in-out infinite;' : '';
 
-  return `<div style="font-family:'JetBrains Mono',monospace">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+  return `<div style="font-family:'JetBrains Mono',monospace;min-width:260px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(39,50,72,0.5)">
       <span style="font-size:13px;font-weight:700;color:#d8e6f5">${cs.flag} ${cs.name}</span>
       <span style="font-size:7px;padding:1px 5px;border-radius:3px;background:${feedBg};color:${feedColor};letter-spacing:0.06em">${projSource}</span>
     </div>
-    <div style="display:flex;gap:16px;margin-bottom:8px">
-      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:18px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
-      <div><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:18px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;padding:8px 0;border-bottom:1px solid rgba(39,50,72,0.5)">
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:15px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:15px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">CLASHES</div><div style="font-size:15px;font-weight:800;color:${cs.clashes>0?'#d8e6f5':'#526175'}">${cs.clashes}</div></div>
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">PROTESTS</div><div style="font-size:15px;font-weight:800;color:${cs.protests>0?'#eab308':'#526175'}">${cs.protests}</div></div>
     </div>
-    <div style="display:flex;border:1px solid rgba(39,50,72,0.5);border-radius:4px;margin-bottom:8px;overflow:hidden">
-      <div style="flex:1;padding:6px 10px;text-align:center;border-right:1px solid rgba(39,50,72,0.5)">
-        <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:2px">PROJECTILES INCOMING</div>
-        <div style="font-size:16px;font-weight:800;color:${incoming==="—"?"#526175":"#ef4444"}">${typeof incoming==="number"?incoming.toLocaleString():incoming}</div>
+    <div style="display:flex;border:1px solid rgba(39,50,72,0.5);border-radius:4px;margin:8px 0;overflow:hidden">
+      <div style="flex:1;padding:8px 10px;text-align:center;border-right:1px solid rgba(39,50,72,0.5)">
+        <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:3px">PROJECTILES INCOMING</div>
+        <div style="font-size:18px;font-weight:800;color:${incoming==="—"||incoming==="…"?"#526175":"#ef4444"};${pulse}">${typeof incoming==="number"?incoming.toLocaleString():incoming}</div>
       </div>
-      <div style="flex:1;padding:6px 10px;text-align:center">
-        <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:2px">INTERCEPTED</div>
-        <div style="font-size:16px;font-weight:800;color:${intercepted==="—"||intercepted===0?"#526175":"#22c55e"}">${typeof intercepted==="number"?intercepted.toLocaleString():intercepted}</div>
+      <div style="flex:1;padding:8px 10px;text-align:center">
+        <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:3px">INTERCEPTED</div>
+        <div style="font-size:18px;font-weight:800;color:${intercepted==="—"||intercepted===0||intercepted==="…"?"#526175":"#22c55e"};${pulse}">${typeof intercepted==="number"?intercepted.toLocaleString():intercepted}</div>
       </div>
     </div>
-    <div style="border-top:1px solid rgba(39,50,72,0.4);padding-top:6px;font-size:9px;color:#a0b4c8;line-height:2.2">
-      Armed clashes: <b style="color:#d8e6f5">${cs.clashes}</b><br/>
-      Protests: <b style="color:#eab308">${cs.protests}</b>
-    </div>
-    ${projNote ? `<div style="margin-top:6px;font-size:8px;color:#7d8fa3;line-height:1.5">note: ${projNote}</div>` : ""}
+    ${projNote ? `<div style="font-size:8px;color:#7d8fa3;line-height:1.5">note: ${projNote}</div>` : ""}
     ${gccSrc ? `<div style="font-size:7px;color:#526175;margin-top:2px">source: ${gccSrc}</div>` : ""}
   </div>`;
 }
