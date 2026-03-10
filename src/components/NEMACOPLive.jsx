@@ -221,7 +221,7 @@ const CLUSTERS = [
       { id:"S5", name:"Missile attack", severity:"critical", status:"active",
         badge:"AI+WEB",
         detail:"Ballistic and cruise missile attacks ongoing. Multiple vectors. 96% intercept rate.",
-        liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>live.gcc.data?`KSA: ${live.gcc.data.SA?.intercept_pct||96}% intercept`:"96% intercept (seed)", color:()=>C.success }],
+        liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>{if(!live.gcc.data?.SA) return "96% intercept (seed)"; const sa=live.gcc.data.SA; const pct=sa.total_incoming>0?Math.round((sa.total_intercepted/sa.total_incoming)*100):(sa.intercept_pct||96); return `KSA: ${pct}% intercept`;}, color:()=>C.success }],
         sources:["ACLED (daily)","INSS","Saudi MoD via SPA"],
       },
     ],
