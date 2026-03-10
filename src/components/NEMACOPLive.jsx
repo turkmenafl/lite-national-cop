@@ -807,7 +807,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
     bubbleData.forEach(b => {
       if (menaCountries && !menaCountries[b.iso]) return;
       const col = BUBBLE_COLORS[b.color] || "#ef4444";
-      const radius = Math.max(4, Math.min(30, Math.sqrt(b.count / maxCount) * 30));
+      const radius = Math.max(3, Math.min(22, 3 + Math.sqrt(b.count) * 1.2));
       const circle = L.circleMarker([b.lat, b.lng], {
         radius, fillColor: col, fillOpacity: 0.45, color: col, opacity: 0.7, weight: 1.5,
       }).addTo(map);
