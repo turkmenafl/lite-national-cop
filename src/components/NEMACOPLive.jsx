@@ -816,11 +816,39 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
       const circle = L.circleMarker([b.lat, b.lng], {
         radius, fillColor: col, fillOpacity: 0.45, color: col, opacity: 0.7, weight: 1.5,
       }).addTo(map);
-      const parts = [`<b>${b.count} event${b.count!==1?"s":""}</b>`];
-      if (b.strikes > 0) parts.push(`💥 ${b.strikes} strike${b.strikes!==1?"s":""}`);
-      if (b.protests > 0) parts.push(`✊ ${b.protests} protest${b.protests!==1?"s":""}`);
-      if (b.fatalities > 0) parts.push(`☠ ${b.fatalities} fatalit${b.fatalities!==1?"ies":"y"}`);
-      circle.bindTooltip(parts.join("<br>"), { className:"cop-popup", direction:"top", offset:[0,-radius] });
+      // Hover tooltip (summary)
+      const tipParts = [`<b>${b.count} event${b.count!==1?"s":""}</b>`];
+      if (b.strikes > 0) tipParts.push(`💥 ${b.strikes} strike${b.strikes!==1?"s":""}`);
+      if (b.protests > 0) tipParts.push(`✊ ${b.protests} protest${b.protests!==1?"s":""}`);
+      if (b.fatalities > 0) tipParts.push(`☠ ${b.fatalities} fatalit${b.fatalities!==1?"ies":"y"}`);
+      circle.bindTooltip(tipParts.join("<br>"), { className:"cop-popup", direction:"top", offset:[0,-radius] });
+      // Click popup (detailed event list)
+      const maxShow = 8;
+      const sorted = [...b.events].sort((a,c) => (c.fatalities||0) - (a.fatalities||0));
+      const shown = sorted.slice(0, maxShow);
+      const popupLines = [
+        `<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#d8e6f5;max-width:320px;max-height:280px;overflow-y:auto">`,
+        `<div style="font-size:11px;font-weight:700;margin-bottom:6px;color:${col}">${ISO_TO_FLAG[b.iso]||""} ${b.country} — ${b.count} events</div>`,
+        `<div style="display:flex;gap:10px;margin-bottom:8px;color:#7d8fa3;font-size:8px">`,
+        b.strikes>0?`<span>💥 ${b.strikes} strikes</span>`:"",
+        b.protests>0?`<span>✊ ${b.protests} protests</span>`:"",
+        b.fatalities>0?`<span>☠ ${b.fatalities} fatalities</span>`:"",
+        `</div>`,
+        `<table style="width:100%;border-collapse:collapse;font-size:8px">`,
+        `<tr style="color:#526175;border-bottom:1px solid #1e2d42"><td style="padding:2px 4px">DATE</td><td style="padding:2px 4px">TYPE</td><td style="padding:2px 4px">LOC</td><td style="padding:2px 4px;text-align:right">☠</td></tr>`,
+        ...shown.map(ev => {
+          const date = ev.event_date ? ev.event_date.slice(5) : "—";
+          const type = (ev.sub_event_type || ev.event_type || "—").replace("Shelling/artillery/missile attack","Missile/arty").replace("Air/drone strike","Air/drone");
+          const loc = (ev.location || "—").slice(0,18);
+          const fat = ev.fatalities || 0;
+          const src = ev.source ? `<div style="color:#526175;font-size:7px;margin-top:1px">${(ev.source||"").slice(0,40)}</div>` : "";
+          return `<tr style="border-bottom:1px solid #111a2a"><td style="padding:3px 4px;color:#7d8fa3">${date}</td><td style="padding:3px 4px">${type}${src}</td><td style="padding:3px 4px;color:#7d8fa3">${loc}</td><td style="padding:3px 4px;text-align:right;color:${fat>0?"#ef4444":"#526175"}">${fat}</td></tr>`;
+        }),
+        `</table>`,
+        sorted.length > maxShow ? `<div style="color:#526175;font-size:8px;margin-top:4px;text-align:center">+ ${sorted.length - maxShow} more events</div>` : "",
+        `</div>`,
+      ];
+      circle.bindPopup(popupLines.join(""), { className:"cop-popup", maxWidth:340, autoPan:true });
       layersRef.current.push(circle);
     });
     // Country labels with event counts
