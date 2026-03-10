@@ -596,7 +596,6 @@ function dynamicPopupHtml(cs, gccData) {
     ${gccSrc ? `<div style="font-size:7px;color:#526175;margin-top:2px">source: ${gccSrc}</div>` : ""}
   </div>`;
 }
-}
 
 async function fetchKSAStrikes() {
   const prompt = `You are a conflict data analyst. Search for the latest verified reports of Iranian missile, drone, and cruise missile attacks against Saudi Arabia (KSA) during the Iran-GCC conflict, February 28 – March 2026.
