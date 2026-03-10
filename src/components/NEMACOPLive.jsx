@@ -368,14 +368,20 @@ async function fetchOilPriceAPI() {
   } catch { return null; }
 }
 
+const _cache = { gcc: { data: null, ts: 0 }, financial: { data: null, ts: 0 } };
+const CACHE_TTL = 6 * 60 * 60 * 1000;
+
 async function fetchFinancial() {
+  if (_cache.financial.data && Date.now() - _cache.financial.ts < CACHE_TTL) return _cache.financial.data;
   // Cache-only: reads from Supabase ai_cache populated by edge function.
   // NO fallback to direct Anthropic API — if cache empty, return last known values.
   try {
     const { data: row, error } = await supabase
       .from('ai_cache').select('data, updated_at').eq('key', 'financial').maybeSingle();
     if (!error && row?.data) {
-      return { ...row.data, updatedAt: row.updated_at, source: 'CACHED' };
+      const result = { ...row.data, updatedAt: row.updated_at, source: 'CACHED' };
+      _cache.financial.data = result; _cache.financial.ts = Date.now();
+      return result;
     }
   } catch(e) {
     console.warn('[fetchFinancial] cache read failed:', e?.message);
@@ -409,12 +415,17 @@ function cacheTimeAgo(isoStr) {
 }
 
 async function fetchGCCStrikes() {
+  if (_cache.gcc.data && Date.now() - _cache.gcc.ts < CACHE_TTL) return _cache.gcc.data;
   // Cache-only: reads from Supabase ai_cache populated by edge function.
   // NO fallback to direct Anthropic API — if cache empty, return GCC_SEED data.
   try {
     const { data: row, error } = await supabase
       .from('ai_cache').select('data, updated_at').eq('key', 'gcc_strikes').maybeSingle();
-    if (!error && row?.data) return { data: row.data, updatedAt: row.updated_at };
+    if (!error && row?.data) {
+      const result = { data: row.data, updatedAt: row.updated_at };
+      _cache.gcc.data = result; _cache.gcc.ts = Date.now();
+      return result;
+    }
   } catch(e) {
     console.warn('[GCCStrikes] cache read failed, using seed data:', e?.message);
   }
@@ -423,7 +434,9 @@ async function fetchGCCStrikes() {
   for (const s of GCC_SEED) {
     seedData[s.code] = { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
   }
-  return { data: seedData, updatedAt: null };
+  const result = { data: seedData, updatedAt: null };
+  _cache.gcc.data = result; _cache.gcc.ts = Date.now();
+  return result;
 }
 
 // ─── ACLED ────────────────────────────────────────────────────────────────────
