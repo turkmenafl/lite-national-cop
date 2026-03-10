@@ -1161,7 +1161,7 @@ const ScreenSituation = ({ live }) => {
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
 
             <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
-              {rightTab === "MENA" && (
+              {layerFilter === "MENA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MENA OVERVIEW</span>
@@ -1200,7 +1200,7 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {rightTab === "KSA" && (
+              {layerFilter === "KSA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
@@ -1235,7 +1235,7 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {rightTab === "IRAN" && (
+              {layerFilter === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6", letterSpacing:"0.08em" }}>IRAN EVENT LOG</span>
