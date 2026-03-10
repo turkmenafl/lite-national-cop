@@ -553,6 +553,7 @@ function dynamicPopupHtml(cs, gccData) {
   let projSource = "ACLED";
 
   if (iso === "IR") {
+    incoming = null; // Iran is the attacker, never a target
     intercepted = cs.intercepts || 0;
     projNote = "Strikes by US/Israel coalition";
     projSource = "ACLED";
@@ -1060,7 +1061,6 @@ const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("cumulative");
   const [layerFilter, setLayerFilter] = useState("MENA");
-  const [rightTab, setRightTab] = useState("MENA");
   const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
     const m = {}; COUNTRY_ORDER.forEach(c => m[c] = true); return m;
@@ -1159,24 +1159,9 @@ const ScreenSituation = ({ live }) => {
           </div>
 
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
-            <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
-              {["MENA","KSA","IRAN"].map(t => {
-                const tabCol = t==="IRAN"?"#3b82f6":C.info;
-                return (
-                  <button key={t} onClick={()=>{setRightTab(t);if(t!=="MENA"){setHighlightedCountry(null);setMenaCountries(()=>{const m={};COUNTRY_ORDER.forEach(k=>m[k]=true);return m;});}}} style={{
-                    flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
-                    background:rightTab===t?"#192233":"transparent",
-                    borderBottom:rightTab===t?`2px solid ${tabCol}`:"2px solid transparent",
-                    color:rightTab===t?C.fg:C.muted,
-                    fontSize:10, fontWeight:rightTab===t?700:500,
-                    fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
-                  }}>{t}</button>
-                );
-              })}
-            </div>
 
             <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
-              {rightTab === "MENA" && (
+              {layerFilter === "MENA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MENA OVERVIEW</span>
@@ -1215,7 +1200,7 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {rightTab === "KSA" && (
+              {layerFilter === "KSA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
@@ -1250,7 +1235,7 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {rightTab === "IRAN" && (
+              {layerFilter === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6", letterSpacing:"0.08em" }}>IRAN EVENT LOG</span>
