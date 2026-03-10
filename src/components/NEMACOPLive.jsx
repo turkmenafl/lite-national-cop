@@ -372,7 +372,7 @@ const _cache = { gcc: { data: null, ts: 0 }, financial: { data: null, ts: 0 } };
 const CACHE_TTL = 6 * 60 * 60 * 1000;
 
 async function fetchFinancial() {
-  if (_cache.financial.data && Date.now() - _cache.financial.ts < CACHE_TTL) return _cache.financial.data;
+  if (_cache.financial.data && Date.now() - _cache.financial.ts < CACHE_TTL) { console.log('[fetchFinancial] ⚡ in-memory cache hit'); return _cache.financial.data; }
   // Cache-only: reads from Supabase ai_cache populated by edge function.
   // NO fallback to direct Anthropic API — if cache empty, return last known values.
   try {
