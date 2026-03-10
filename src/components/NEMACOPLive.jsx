@@ -815,7 +815,11 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
       const circle = L.circleMarker([b.lat, b.lng], {
         radius, fillColor: col, fillOpacity: 0.45, color: col, opacity: 0.7, weight: 1.5,
       }).addTo(map);
-      circle.bindTooltip(`${b.count} event${b.count!==1?"s":""}`, { className:"cop-popup", direction:"top", offset:[0,-radius] });
+      const parts = [`<b>${b.count} event${b.count!==1?"s":""}</b>`];
+      if (b.strikes > 0) parts.push(`💥 ${b.strikes} strike${b.strikes!==1?"s":""}`);
+      if (b.protests > 0) parts.push(`✊ ${b.protests} protest${b.protests!==1?"s":""}`);
+      if (b.fatalities > 0) parts.push(`☠ ${b.fatalities} fatalit${b.fatalities!==1?"ies":"y"}`);
+      circle.bindTooltip(parts.join("<br>"), { className:"cop-popup", direction:"top", offset:[0,-radius] });
       layersRef.current.push(circle);
     });
     // Country labels with event counts
