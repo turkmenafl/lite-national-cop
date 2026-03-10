@@ -421,7 +421,7 @@ async function fetchGCCStrikes() {
   // Return GCC_SEED as static fallback (no API call)
   const seedData = {};
   for (const s of GCC_SEED) {
-    seedData[s.code] = { total: s.strikes, intercept_pct: s.interceptPct, confidence: s.confidence, source: s.source };
+    seedData[s.code] = { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
   }
   return { data: seedData, updatedAt: null };
 }
