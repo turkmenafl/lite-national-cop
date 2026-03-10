@@ -962,129 +962,53 @@ const GCC_DAILY = {
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("cumulative");
-  const [theaterView, setTheaterView] = useState("GCC");
-  const [expandedCountry, setExpandedCountry] = useState(null);
-  const [hoveredCountry, setHoveredCountry] = useState(null);
   const [layerFilter, setLayerFilter] = useState("MENA");
   const [rightTab, setRightTab] = useState("MENA");
   const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
-    const all = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","OM"];
-    const m = {};
-    all.forEach(c => m[c] = true);
-    return m;
+    const m = {}; COUNTRY_ORDER.forEach(c => m[c] = true); return m;
   });
-  const MENA_COUNTRY_LABELS = [
-    { code:"IR", label:"Iran" }, { code:"IL", label:"Israel" }, { code:"IQ", label:"Iraq" },
-    { code:"AE", label:"UAE" }, { code:"SY", label:"Syria" }, { code:"BH", label:"Bahrain" },
-    { code:"KW", label:"Kuwait" }, { code:"SA", label:"Saudi Arabia" }, { code:"QA", label:"Qatar" },
-    { code:"PS", label:"Palestine" }, { code:"JO", label:"Jordan" }, { code:"OM", label:"Oman" },
-  ];
-  const toggleMenaCountry = (code) => setMenaCountries(prev => ({ ...prev, [code]: !prev[code] }));
-
   const tabScrollRef = useRef(null);
   const scrollTabs = (dir) => { if (tabScrollRef.current) tabScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' }); };
 
   const isCumulative = activeDay === "cumulative";
-  const acledKsaNorm = live.acledKsa.events.length > 0
-    ? live.acledKsa.events.map(normalizeACLEDEvent)
-    : null;
-  const strikeData = acledKsaNorm || live.ksaStrikes?.data || STRIKES_KSA;
-  const filteredStrikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
+  const allAcledEvents = live.acledAll?.events || [];
+  const filteredAcled = isCumulative ? allAcledEvents : allAcledEvents.filter(e => e.event_date === activeDay);
+  const countryStats = buildCountryStats(allAcledEvents);
+  const filteredStats = buildCountryStats(filteredAcled);
+  const bubbleData = buildBubbleData(filteredAcled);
 
-  const getMarkers = () => {
-    const strikes = isCumulative ? strikeData : strikeData.filter(s => s.date === activeDay);
-    return strikes.map(s => ({ lat:s.lat, lng:s.lng, s:s.sev || s.severity, locationKnown: s.locationKnown !== false }));
-  };
+  const countrySummary = COUNTRY_ORDER.map(code => {
+    const s = filteredStats[code];
+    return s || { code, name: ISO_TO_COUNTRY[code]||code, flag: ISO_TO_FLAG[code]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
+  }).sort((a, b) => b.events - a.events);
 
-  // Build GCC theater data (all 6 countries) with per-day filtering
-  // Merges live.gcc.data from cache when available
-  const getGCCTheaterData = () => {
-    const ksaDayCount = isCumulative ? strikeData.length : strikeData.filter(s=>s.date===activeDay).length;
-    const ksaSeed = GCC_SEED.find(g=>g.code==="SA");
-    const liveGCC = live.gcc?.data;
-    const ksaLive = liveGCC?.SA;
-    const result = [{
-      ...ksaSeed,
-      strikes: isCumulative ? (ksaLive?.total ?? ksaSeed.strikes) : ksaDayCount,
-      ...(ksaLive ? {
-        interceptPct: ksaLive.intercept_pct ?? ksaSeed.interceptPct,
-        confidence: ksaLive.confidence ?? ksaSeed.confidence,
-        source: ksaLive.source ?? ksaSeed.source,
-        note: ksaLive.note ?? ksaSeed.note,
-      } : {}),
-    }];
-    Object.entries(GCC_DAILY).forEach(([code, data]) => {
-      const seed = GCC_SEED.find(g=>g.code===code);
-      if (!seed) return;
-      const liveItem = liveGCC?.[code];
-      const dayCount = isCumulative ? (liveItem?.total ?? data.total) : (data.perDay[activeDay] || 0);
-      result.push({
-        ...seed,
-        strikes: dayCount,
-        ...(liveItem ? {
-          interceptPct: liveItem.intercept_pct ?? data.interceptPct,
-          confidence: liveItem.confidence ?? seed.confidence,
-          source: liveItem.source ?? seed.source,
-          note: liveItem.note ?? seed.note,
-        } : {}),
-      });
-    });
-    return result;
-  };
-
-  const getGCCForDay = () => {
-    return Object.entries(GCC_DAILY).map(([code, data]) => {
-      const dayCount = isCumulative ? data.total : (data.perDay[activeDay] || 0);
-      return { code, name: code==="AE"?"🇦🇪 UAE":code==="QA"?"🇶🇦 Qatar":code==="KW"?"🇰🇼 Kuwait":code==="BH"?"🇧🇭 Bahrain":"🇴🇲 Oman", strikes:dayCount, interceptPct:data.interceptPct, note:data.note };
-    });
-  };
-
+  const ksaEvents = filteredAcled.filter(e => e.country === "Saudi Arabia");
+  const iranEvents = filteredAcled.filter(e => e.country === "Iran");
   const dateTabs = DATE_TABS;
-
-  const IRAN_EVENTS = IRAN_STRIKES.map((s,i) => {
-    const day = 7 - Math.floor(i/3);
-    return { id: s.id, date: `2026-03-0${day}`, time: `Mar 0${day} ${String(2+i*3).padStart(2,'0')}:${15+i*5}`, type: i%2===0?"Cruise Missile":"Drone (4x)", loc: s.name, status: "Hit — confirmed", sev: "critical" };
-  });
-  const IRAQ_EVENTS = IRAQ_SPILLOVER.map((s,i) => ({
-    id: s.id, date: `2026-03-0${7-i}`, time: `Mar 0${7-i} ${String(4+i*2).padStart(2,'0')}:30`,
-    type: "Ballistic Missile", loc: s.name, status: "Hit — debris confirmed", sev: "critical",
-  }));
-
-  const allIranEvents = live.acledIran.events.length > 0 ? live.acledIran.events.slice(0,25).map(normalizeACLEDEvent) : IRAN_EVENTS;
-  const filteredIranEvents = isCumulative ? allIranEvents : allIranEvents.filter(e => e.date === activeDay);
-
-  const menaSummaryFiltered = MENA_SUMMARY.map(c => {
-    if (isCumulative) return c;
-    if (c.code === "SA") return { ...c, events: filteredStrikes.length };
-    if (GCC_DAILY[c.code]) return { ...c, events: GCC_DAILY[c.code].perDay[activeDay] || 0 };
-    return c; // non-GCC: show cumulative when no per-day data
-  });
 
   return (
     <div>
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-        <KpiCard label="STRIKES KSA"  value={live.acledKsa?.count != null ? String(live.acledKsa.count) : "29"}  change="+3/24h"  color={C.critical} feed={live.acledKsa?.count != null ? "ACLED" : "CONFIRMED"} loading={live.acledKsa?.loading} />
-        <KpiCard label="INTERCEPTS"   value="96%"    note="Patriot/THAAD"           color={C.success}  feed="CONFIRMED" />
-        <KpiCard label="BRENT CRUDE"  value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
-        <KpiCard label="TASI"         value={live.tasi.value}  change={live.tasi.change}  color={C.warning} feed={live.tasi.source}  loading={live.tasi.loading} />
-        <KpiCard label="HORMUZ"       value="Day 7"  note="0 transits / 91 tankers"  color={C.critical} feed="STATIC" />
-        <KpiCard label="GDELT/24h"    value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
-        <KpiCard label="IRAN HIT SITES" value="90+" change="Op. Roaring Lion" color="#06b6d4" feed="STATIC" secondary="ACLED" secondaryColor="#06b6d4" />
-        <KpiCard label="THEATER ACTIVE" value="10" change="countries" color={C.success} feed="LIVE" secondary="LIVE" secondaryColor={C.success} />
+        <KpiCard label="ACLED EVENTS" value={String(live.acledAll?.count || 0)} change="all countries" color={C.critical} feed={live.acledAll?.count > 0 ? "ACLED" : "STATIC"} loading={live.acledAll?.loading} />
+        <KpiCard label="KSA STRIKES" value={String(countryStats.SA?.strikes || 0)} note="ACLED verified" color={C.critical} feed="ACLED" loading={live.acledAll?.loading} />
+        <KpiCard label="BRENT CRUDE" value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
+        <KpiCard label="TASI" value={live.tasi.value} change={live.tasi.change} color={C.warning} feed={live.tasi.source} loading={live.tasi.loading} />
+        <KpiCard label="HORMUZ" value="Day 7" note="0 transits / 91 tankers" color={C.critical} feed="STATIC" />
+        <KpiCard label="GDELT/24h" value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
+        <KpiCard label="IRAN STRIKES" value={String(countryStats.IR?.strikes || 0)} change="Coalition" color="#06b6d4" feed="ACLED" loading={live.acledAll?.loading} />
+        <KpiCard label="IRAN PROTESTS" value={String(countryStats.IR?.protests || 0)} change="Civil unrest" color="#eab308" feed="ACLED" loading={live.acledAll?.loading} />
       </div>
 
-      {/* ── Date-Tabbed Theater Section ── */}
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", marginBottom:14, overflow:"hidden" }}>
-        {/* Date tabs with horizontal scroll */}
+        {/* Date tabs */}
         <div style={{ display:"flex", alignItems:"stretch", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
           <button onClick={()=>scrollTabs(-1)} style={{ flexShrink:0, width:22, border:"none", background:"transparent", color:C.dim, cursor:"pointer", fontSize:16, lineHeight:1, padding:0 }}>‹</button>
           <div ref={tabScrollRef} className="tab-scroll" style={{ display:"flex", overflowX:"auto", flex:1, scrollbarWidth:"none", msOverflowStyle:"none" }}>
             {dateTabs.map(t => {
               const isActive = activeDay === t.id;
               const isToday = t.id === TODAY_ISO;
-              const dayStrikes = t.id==="cumulative" ? strikeData.length : strikeData.filter(s=>s.date===t.id).length;
-              const hasStrikes = dayStrikes > 0;
+              const dayCount = t.id === "cumulative" ? allAcledEvents.length : allAcledEvents.filter(e => e.event_date === t.id).length;
               return (
                 <button key={t.id} onClick={(e)=>{setActiveDay(t.id);setSelEvent(null);e.currentTarget.scrollIntoView({inline:'nearest',block:'nearest'});}} style={{
                   padding:"8px 14px", border:"none", cursor:"pointer", whiteSpace:"nowrap",
@@ -1096,7 +1020,7 @@ const ScreenSituation = ({ live }) => {
                 }}>
                   {t.id==="cumulative"?"⊞ ":""}{t.label}
                   {isToday && <span style={{ fontSize:7, color:C.info, letterSpacing:"0.05em", opacity:0.8 }}>TODAY</span>}
-                  {t.id !== "cumulative" && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?(hasStrikes?`${C.info}22`:`${C.dim}22`):(hasStrikes?`${C.dim}22`:"transparent"), color:isActive?(hasStrikes?C.info:C.muted):(hasStrikes?C.dim:C.dim), fontWeight:700 }}>{dayStrikes}</span>}
+                  {t.id !== "cumulative" && <span style={{ fontSize:9, padding:"2px 5px", borderRadius:3, background:isActive?(dayCount>0?`${C.info}22`:`${C.dim}22`):(dayCount>0?`${C.dim}22`:"transparent"), color:isActive?(dayCount>0?C.info:C.muted):(dayCount>0?C.dim:C.dim), fontWeight:700 }}>{dayCount}</span>}
                 </button>
               );
             })}
@@ -1106,16 +1030,20 @@ const ScreenSituation = ({ live }) => {
 
         {/* Map + Right Panel */}
         <div style={{ display:"flex", gap:0, alignItems:"stretch" }}>
-          {/* Left: Theater Map */}
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
               <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
-              <span style={{ fontSize:11, color:C.muted }}>{filteredStrikes.length} strike{filteredStrikes.length!==1?"s":""}</span>
+              <span style={{ fontSize:11, color:C.muted }}>{filteredAcled.length} event{filteredAcled.length!==1?"s":""}</span>
             </div>
-            {/* Layer filter bar — MENA · KSA · IRAN */}
             <div style={{ display:"flex", gap:4, marginBottom:8 }}>
               {["MENA","KSA","IRAN"].map(f => (
-                <button key={f} onClick={()=>setLayerFilter(f)} style={{
+                <button key={f} onClick={()=>{
+                  setLayerFilter(f);
+                  if (f==="MENA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=true); return m; });
+                  else if (f==="KSA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="SA")); return m; });
+                  else if (f==="IRAN") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="IR")); return m; });
+                  setHighlightedCountry(null);
+                }} style={{
                   padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.surfBorder}`,
                   borderRadius:3, cursor:"pointer",
                   background:layerFilter===f?(f==="IRAN"?"#06b6d422":`${C.info}22`):"transparent",
@@ -1125,17 +1053,20 @@ const ScreenSituation = ({ live }) => {
                 }}>{f}</button>
               ))}
             </div>
-            <LeafletTheaterMap filteredStrikes={filteredStrikes} getMarkers={getMarkers} theaterView={theaterView} gccMarkers={getGCCTheaterData()} layerFilter={layerFilter} menaCountries={menaCountries} />
+            <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} />
+            {live.acledAll?.count === 0 && !live.acledAll?.loading && (
+              <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
+                {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
+              </div>
+            )}
           </div>
 
-          {/* Right column — 3-tab panel */}
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
-            {/* Tab bar */}
             <div style={{ display:"flex", borderBottom:`1px solid ${C.surfBorder}`, background:"#0a1628" }}>
               {["MENA","KSA","IRAN"].map(t => {
                 const tabCol = t==="IRAN"?"#3b82f6":C.info;
                 return (
-                  <button key={t} onClick={()=>{setRightTab(t);if(t!=="MENA"){setHighlightedCountry(null);setMenaCountries(prev=>{const m={};Object.keys(prev).forEach(k=>m[k]=true);return m;});}}} style={{
+                  <button key={t} onClick={()=>{setRightTab(t);if(t!=="MENA"){setHighlightedCountry(null);setMenaCountries(()=>{const m={};COUNTRY_ORDER.forEach(k=>m[k]=true);return m;});}}} style={{
                     flex:1, padding:"8px 6px", border:"none", cursor:"pointer",
                     background:rightTab===t?"#192233":"transparent",
                     borderBottom:rightTab===t?`2px solid ${tabCol}`:"2px solid transparent",
@@ -1147,9 +1078,7 @@ const ScreenSituation = ({ live }) => {
               })}
             </div>
 
-            {/* Tab content */}
             <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
-              {/* MENA tab — country list */}
               {rightTab === "MENA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
@@ -1157,17 +1086,17 @@ const ScreenSituation = ({ live }) => {
                     <span style={{ fontSize:10, color:C.dim }}>{isCumulative?"CUMULATIVE":activeDay}</span>
                   </div>
                   <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-                    {menaSummaryFiltered.map(c => {
+                    {countrySummary.map(c => {
                       const evCol = c.events > 100 ? C.critical : c.events > 10 ? C.warning : c.events > 0 ? C.success : C.dim;
                       const isHl = highlightedCountry === c.code;
                       return (
                         <div key={c.code} onClick={() => {
                           if (isHl) {
                             setHighlightedCountry(null);
-                            setMenaCountries(prev => { const m = {}; Object.keys(prev).forEach(k => m[k] = true); return m; });
+                            setMenaCountries(() => { const m={}; COUNTRY_ORDER.forEach(k=>m[k]=true); return m; });
                           } else {
                             setHighlightedCountry(c.code);
-                            setMenaCountries(prev => { const m = {}; Object.keys(prev).forEach(k => m[k] = (k === c.code)); return m; });
+                            setMenaCountries(() => { const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k===c.code)); return m; });
                           }
                         }} style={{
                           padding:"6px 8px", borderRadius:3, cursor:"pointer",
@@ -1189,35 +1118,31 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {/* KSA tab — event log */}
               {rightTab === "KSA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{filteredStrikes.length} event{filteredStrikes.length!==1?"s":""}</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{ksaEvents.length} event{ksaEvents.length!==1?"s":""}</span>
                   </div>
-                  {filteredStrikes.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No confirmed events logged for {activeDay}</div>
+                  {ksaEvents.length === 0 ? (
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No events for {isCumulative?"this period":activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                      {filteredStrikes.map(e => {
-                        const sev = e.sev || e.severity;
-                        const col = sev==="critical"?C.critical:C.warning;
-                        const loc = e.loc || e.location;
-                        const timeLabel = e.time ?? e.date;
+                      {ksaEvents.slice(0, 50).map((e, idx) => {
+                        const col = (e.fatalities > 0) ? C.critical : C.warning;
                         return (
-                          <div key={e.id} onClick={()=>setSelEvent(selEvent===e.id?null:e.id)}
-                            style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===e.id?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
+                          <div key={e.event_id_cnty || idx} onClick={()=>setSelEvent(selEvent===(e.event_id_cnty||idx)?null:(e.event_id_cnty||idx))}
+                            style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:selEvent===(e.event_id_cnty||idx)?`${col}12`:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
                             <div style={{ display:"flex", justifyContent:"space-between" }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.type}</span>
-                              <span style={{ fontSize:10, color:C.dim }}>{timeLabel}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.sub_event_type || e.event_type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.event_date}</span>
                             </div>
-                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{loc}{e.locationKnown === false && <span style={{ fontSize:9, background:"#1e293b", color:"#6b7280", border:"1px solid #374151", borderRadius:2, padding:"1px 4px", marginLeft:6 }}>LOC UNVERIFIED</span>}</div>
-                            {selEvent===e.id && (
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location || e.admin1}</div>
+                            {selEvent===(e.event_id_cnty||idx) && (
                               <>
-                                {e.fatalities > 0 && <div style={{ fontSize:11, color:C.critical, marginTop:3 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
-                                {e.status && <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{e.status}</div>}
-                                {e.notes && <div style={{ fontSize:10, color:C.dim, marginTop:2, lineHeight:1.4 }}>{e.notes.slice(0,140)}{e.notes.length>140?"…":""}</div>}
+                                {e.fatalities > 0 && <div style={{ fontSize:11, color:C.critical, marginTop:3 }}>⚡ {e.fatalities} fatalit{e.fatalities!==1?"ies":"y"}</div>}
+                                {e.actor1 && <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>Actor: {e.actor1.slice(0,60)}</div>}
+                                {e.notes && <div style={{ fontSize:10, color:C.dim, marginTop:2, lineHeight:1.4 }}>{e.notes.slice(0,200)}{e.notes.length>200?"…":""}</div>}
                               </>
                             )}
                           </div>
@@ -1228,49 +1153,41 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {/* IRAN tab — event log */}
               {rightTab === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6", letterSpacing:"0.08em" }}>IRAN EVENT LOG</span>
-                    <span style={{ fontSize:10, color:C.dim }}>{filteredIranEvents.length} event{filteredIranEvents.length!==1?"s":""}</span>
+                    <span style={{ fontSize:10, color:C.dim }}>{iranEvents.length} event{iranEvents.length!==1?"s":""}</span>
                   </div>
-                  {filteredIranEvents.length === 0 ? (
-                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No events for {activeDay}</div>
+                  {iranEvents.length === 0 ? (
+                    <div style={{ padding:"12px 0", fontSize:11, color:C.dim, textAlign:"center" }}>No events for {isCumulative?"this period":activeDay}</div>
                   ) : (
                     <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                      {filteredIranEvents.map(e => (
-                        <div key={e.id} style={{ padding:"6px 8px", borderRadius:4, background:"rgba(59,130,246,0.06)", borderLeft:"2px solid #3b82f6" }}>
-                          <div style={{ display:"flex", justifyContent:"space-between" }}>
-                            <span style={{ fontSize:11, fontWeight:700, color:"#3b82f6" }}>{e.type}</span>
-                            <span style={{ fontSize:10, color:C.dim }}>{e.time ?? e.date}</span>
+                      {iranEvents.slice(0, 50).map((e, idx) => {
+                        const isProtest = e.event_type === "Protests" || e.event_type === "Demonstrations";
+                        const col = isProtest ? "#eab308" : "#3b82f6";
+                        return (
+                          <div key={e.event_id_cnty || idx} onClick={()=>setSelEvent(selEvent===(e.event_id_cnty||idx)?null:(e.event_id_cnty||idx))}
+                            style={{ padding:"6px 8px", borderRadius:4, cursor:"pointer", background:`${col}06`, borderLeft:`2px solid ${col}`, transition:"background 0.1s" }}>
+                            <div style={{ display:"flex", justifyContent:"space-between" }}>
+                              <span style={{ fontSize:11, fontWeight:700, color:col }}>{e.sub_event_type || e.event_type}</span>
+                              <span style={{ fontSize:10, color:C.dim }}>{e.event_date}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.location || e.admin1}</div>
+                            {selEvent===(e.event_id_cnty||idx) && (
+                              <>
+                                {e.fatalities > 0 && <div style={{ fontSize:11, color:C.critical, marginTop:3 }}>⚡ {e.fatalities} fatalit{e.fatalities!==1?"ies":"y"}</div>}
+                                {e.actor1 && <div style={{ fontSize:10, color:C.dim, marginTop:2 }}>Actor: {e.actor1.slice(0,60)}</div>}
+                                {e.notes && <div style={{ fontSize:10, color:C.dim, marginTop:2, lineHeight:1.4 }}>{e.notes.slice(0,200)}{e.notes.length>200?"…":""}</div>}
+                              </>
+                            )}
                           </div>
-                          <div style={{ fontSize:11, color:C.fg, marginTop:2 }}>{e.loc ?? e.location}</div>
-                          {e.fatalities > 0 && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>⚡ {e.fatalities} fatal{e.fatalities!==1?"ities":"ity"}</div>}
-                          {e.status && !e.fatalities && <div style={{ fontSize:10, color:C.critical, marginTop:2 }}>{e.status}</div>}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </>
               )}
-            </div>
-
-            {/* Theater Status panel */}
-            <div style={{ borderTop:`1px solid ${C.surfBorder}`, padding:"10px 14px", background:"rgba(255,255,255,0.02)" }}>
-              <div style={{ fontSize:10, fontWeight:700, color:C.dim, letterSpacing:"0.08em", marginBottom:6 }}>THEATER STATUS</div>
-              {[
-                { label:"Jordan airspace", value:"RESTRICTED", color:C.warning },
-                { label:"Syria spillover", value:"ACTIVE", color:C.warning },
-                { label:"Israel retaliating", value:"CONFIRMED", color:C.critical },
-                { label:"Protests in Iran", value:"49 events", color:"#a855f7" },
-                { label:"Red Sea corridor", value:"DEGRADED", color:C.warning },
-              ].map((s,i) => (
-                <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"3px 0", borderBottom:i<4?`1px solid ${C.surfBorder}30`:"none" }}>
-                  <span style={{ fontSize:10, color:C.muted }}>{s.label}</span>
-                  <span style={{ fontSize:10, padding:"2px 8px", borderRadius:3, background:`${s.color}14`, color:s.color, fontWeight:600 }}>{s.value}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
