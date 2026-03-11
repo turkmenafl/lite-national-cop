@@ -624,19 +624,123 @@ function buildCountryStats(events) {
 
 // ─── AI+WEB numbers: single source for country popup (projectiles in/out, note). Update here for client-facing display when cache is stale.
 const GCC_AI_WEB_NUMBERS = {
-  SA:  { total_incoming: 19,   total_intercepted: 18,   source: "Saudi MoD via SPA/Al Arabiya", confidence: "CONFIRMED", note: "96% intercept. Ras Tanura degraded. Abqaiq near-miss Mar 4." },
-  AE:  { total_incoming: 1276, total_intercepted: 1174, source: "UAE MoD",                 confidence: "EST",       note: "Interception: On 9 March 2026, UAE forces intercepted drones/missiles from Iranian forces. Jebel Ali + Dubai T3 targeted." },
-  KW:  { total_incoming: 484,  total_intercepted: 426,  source: "KUNA / US DoD",          confidence: "EST",       note: "Ali Al Salem struck." },
-  BH:  { total_incoming: 198,  total_intercepted: 168,  source: "NAVCENT / Alma Research", confidence: "EST",       note: "5th Fleet HQ area targeted." },
-  QA:  { total_incoming: 115,  total_intercepted: 104,  source: "CTP-ISW / LWJ",          confidence: "EST",       note: "Al Udeid 2 BM impacts. LNG suspended." },
-  OM:  { total_incoming: 4,    total_intercepted: 2,    source: "ONA / Reuters",           confidence: "EST",       note: "Duqm Port drone. Mediator status." },
-  IL:  { total_incoming: 330,  total_intercepted: 391,  source: "IDF / Reuters",           confidence: "EST",       note: "Arrow/Iron Dome intercepts." },
-  IQ:  { total_incoming: 84,   total_intercepted: 2,    source: "Iraqi MoD / CTP-ISW",    confidence: "EST",       note: "US bases targeted." },
-  JO:  { total_incoming: 62,   total_intercepted: 16,   source: "JAF / Reuters",          confidence: "EST",       note: "Eastern border area." },
-  SY:  { total_incoming: null, total_intercepted: null, source: "",                      confidence: "EST",       note: "Transit corridor — not a target." },
-  LB:  { total_incoming: null, total_intercepted: null, source: "",                      confidence: "EST",       note: "" },
-  YE:  { total_incoming: null, total_intercepted: null, source: "",                      confidence: "EST",       note: "" },
-  IR:  { total_incoming: null, total_intercepted: 0,    source: "CENTCOM/IDF (use verified only)", confidence: "EST", note: "Coalition strikes ON Iran. Do not use unverified thousands." },
+
+  // Saudi Arabia — MoD has not published cumulative totals; estimated from SPA event-by-event announcements
+  SA: {
+    total_incoming: 60,
+    total_intercepted: 55,
+    source: "Saudi MoD via SPA/Al Arabiya",
+    confidence: "EST",
+    note: "Cumulative estimate from individual MoD announcements — no official total published"
+  },
+
+  // UAE — UAE MoD official statement 2 Mar 2026
+  AE: {
+    total_incoming: 871,
+    total_intercepted: 814,
+    source: "UAE MoD",
+    confidence: "CONFIRMED",
+    note: "174 ballistic missiles, 689 drones, 8 cruise missiles tracked since 28 Feb"
+  },
+
+  // Qatar — Qatar MoD cumulative including 9-10 Mar wave
+  QA: {
+    total_incoming: 220,
+    total_intercepted: 196,
+    source: "Qatar MoD",
+    confidence: "EST",
+    note: "Includes 17 missiles and 6 drones intercepted in 9-10 Mar wave"
+  },
+
+  // Kuwait — Kuwaiti MoD confirmed totals
+  KW: {
+    total_incoming: 628,
+    total_intercepted: 380,
+    source: "Kuwaiti MoD",
+    confidence: "CONFIRMED",
+    note: "97 ballistic missiles and 283 drones intercepted per government statement"
+  },
+
+  // Bahrain — Bahrain Defence Force confirmed
+  BH: {
+    total_incoming: 282,
+    total_intercepted: 221,
+    source: "Bahrain Defence Force",
+    confidence: "CONFIRMED",
+    note: "78 missiles and 143 drones destroyed — Bapco refinery declared force majeure 9 Mar"
+  },
+
+  // Oman — neutral posture, minimal confirmed incidents
+  OM: {
+    total_incoming: 2,
+    total_intercepted: 0,
+    source: "Oman News Agency",
+    confidence: "EST",
+    note: "Neutral posture — no confirmed interceptions"
+  },
+
+  // Iran — coalition/US/Israeli strikes ON Iran
+  IR: {
+    total_incoming: null,
+    total_intercepted: null,
+    source: "CENTCOM/IDF",
+    confidence: "EST",
+    note: "US struck over 5000 targets in Iran since 28 Feb — verified count unavailable"
+  },
+
+  // Iraq — proxy launch sites and CENTCOM strikes
+  IQ: {
+    total_incoming: 12,
+    total_intercepted: 8,
+    source: "CENTCOM/Iraqi military",
+    confidence: "PARTIAL",
+    note: "Drones fired at Victoria Base Baghdad airport — coalition struck Kataib Hezbollah sites"
+  },
+
+  // Syria — transit corridor for Iranian proxies
+  SY: {
+    total_incoming: 0,
+    total_intercepted: 0,
+    source: "CENTCOM",
+    confidence: "EST",
+    note: "Transit corridor role — Israeli and US strikes on proxy infrastructure"
+  },
+
+  // Lebanon — Hezbollah launches and Israeli response
+  LB: {
+    total_incoming: 0,
+    total_intercepted: 0,
+    source: "Lebanon Health Ministry",
+    confidence: "EST",
+    note: "570 figure is Lebanese casualties not projectiles — Hezbollah engaging Israel"
+  },
+
+  // Yemen — Houthi launches toward GCC and shipping
+  YE: {
+    total_incoming: 0,
+    total_intercepted: 0,
+    source: "CENTCOM/UK MITO",
+    confidence: "EST",
+    note: "Houthi launches ongoing toward Red Sea shipping — no confirmed GCC territory strikes"
+  },
+
+  // Jordan — confirmed intercept corridor
+  JO: {
+    total_incoming: 119,
+    total_intercepted: 108,
+    source: "Jordan Armed Forces",
+    confidence: "CONFIRMED",
+    note: "Jordan targeted by 119 Iranian missiles and drones — 14 people injured"
+  },
+
+  // Israel — IDF confirmed figures
+  IL: {
+    total_incoming: 330,
+    total_intercepted: 310,
+    source: "IDF",
+    confidence: "EST",
+    note: "Iron Dome and Arrow systems engaged multiple Iranian ballistic missile waves"
+  }
 };
 const GCC_FALLBACK = Object.fromEntries(
   Object.entries(GCC_AI_WEB_NUMBERS).map(([k, v]) => [k, { total_incoming: v.total_incoming, total_intercepted: v.total_intercepted, note: v.note }])
