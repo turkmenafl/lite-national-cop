@@ -2294,7 +2294,7 @@ const ScreenAIBrief = ({ live }) => {
     try {
       const res = await fetch(ANTHROPIC_PROXY_URL, {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:400, system:ctx,
+        body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:4096, system:ctx,
           messages:[...msgs.map(m=>({role:m.role,content:m.content})),{role:"user",content:q}]
         })
       });
