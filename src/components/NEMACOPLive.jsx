@@ -954,13 +954,21 @@ const GCC_CAPITALS = {
   IL: [31.77, 35.22], JO: [31.95, 35.93], PS: [31.90, 35.20],
 };
 
-// v_theater_map dot styling: missile=red triangle, airstrike=orange circle, drone=yellow diamond; size by severity_tier
+// v_theater_map: shape by dot_type; color by semantics to match legend (Iranian Strike=red, Coalition=blue, Protest=yellow)
 const THEATER_DOT_STYLE = {
-  missile:  { color: '#ef4444', shape: 'triangle' },
-  airstrike: { color: '#f97316', shape: 'circle' },
-  drone:   { color: '#eab308', shape: 'diamond' },
+  missile:  { shape: 'triangle' },
+  airstrike: { shape: 'circle' },
+  drone:   { shape: 'diamond' },
 };
 const TIER_SIZE = { tier1: 12, tier2: 8, tier3: 5 };
+// Legend-aligned colors: same semantics as getEventColor (red=Iranian Strike, blue=Coalition, yellow=Protest)
+function getPreciseDotColor(row) {
+  const iso = row.country ? (COUNTRY_TO_ISO[row.country] || null) : null;
+  const et = (row.event_type || '').toLowerCase();
+  if (et.includes('protest') || et.includes('demonstration')) return '#eab308';
+  if (iso === 'IR') return '#3b82f6';
+  return '#ef4444';
+}
 
 // ─── LEAFLET THEATER MAP — precise event dots from v_theater_map or bubbles from ACLED ───────────────────
 const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, highlightedCountry, menaCountries, gccData, countrySummaryList }) => {
@@ -1067,7 +1075,7 @@ const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, high
         const style = THEATER_DOT_STYLE[dotType] || THEATER_DOT_STYLE.airstrike;
         const tier = (row.severity_tier || 'tier2').toLowerCase();
         const size = TIER_SIZE[tier] || TIER_SIZE.tier2;
-        const color = style.color;
+        const color = getPreciseDotColor(row);
         let html;
         if (style.shape === 'triangle') {
           html = `<div style="width:0;height:0;border-left:${size}px solid transparent;border-right:${size}px solid transparent;border-bottom:${size*1.8}px solid ${color};transform:translate(-${size}px,-${size}px);filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))"></div>`;
