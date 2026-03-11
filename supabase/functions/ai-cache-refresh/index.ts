@@ -80,17 +80,19 @@ For each country find:
 4. confidence — CONFIRMED (official MoD/CENTCOM/wire) or EST (think tank/synthesis)
 5. note — one sentence with key facts and latest date covered
 
-Countries: SA (Saudi Arabia), AE (UAE), QA (Qatar), KW (Kuwait), BH (Bahrain), OM (Oman), IL (Israel), IQ (Iraq), JO (Jordan)
+SPECIAL CASE — IR (Iran): interpret IR as cumulative coalition strikes ON Iran (US+Israel), not Iranian attacks. Set total_intercepted to 0 (assume no missile defense against US/Israel in this model).
+
+Countries: SA (Saudi Arabia), AE (UAE), QA (Qatar), KW (Kuwait), BH (Bahrain), OM (Oman), IL (Israel), IQ (Iraq), JO (Jordan), SY (Syria), LB (Lebanon), YE (Yemen), IR (Iran)
 
 Reply ONLY with valid JSON, no other text, using this structure with ZEROES as placeholders only — replace all zeroes with real searched numbers:
-{"SA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"AE":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"QA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"KW":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"BH":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"OM":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IL":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IQ":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"JO":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""}}`,
+{"SA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"AE":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"QA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"KW":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"BH":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"OM":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IL":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IQ":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"JO":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"SY":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"LB":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"YE":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IR":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""}}`,
     max_tokens: 1200,
     parse: (text) => {
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) return null;
       const raw = JSON.parse(m[0]);
       // Remap prompt keys to GCC_SEED codes used by the frontend
-      const KEY_MAP: Record<string, string> = { KSA:"SA", UAE:"AE", Kuwait:"KW", Bahrain:"BH", Qatar:"QA", Oman:"OM" };
+      const KEY_MAP: Record<string, string> = { KSA:"SA", UAE:"AE", Kuwait:"KW", Bahrain:"BH", Qatar:"QA", Oman:"OM", Syria:"SY", Lebanon:"LB", Yemen:"YE", Iran:"IR" };
       const normalized: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(raw)) {
         normalized[KEY_MAP[k] ?? k] = v;

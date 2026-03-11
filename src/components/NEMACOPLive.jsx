@@ -634,7 +634,7 @@ const GCC_FALLBACK = {
 function dynamicPopupHtml(cs, gccData, summaryRow) {
   if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
   const iso = cs.code;
-  const gccCountries = new Set(["SA","AE","KW","BH","QA","OM","IL","IQ","JO"]);
+  const gccCountries = new Set(["SA","AE","KW","BH","QA","OM","IL","IQ","JO","SY","LB","YE","IR"]);
   const gccLoading = gccCountries.has(iso) && !gccData;
 
   let incoming = "—";
@@ -643,10 +643,12 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
   let projSource = "ACLED";
 
   if (iso === "IR") {
-    incoming = null; // Iran is the attacker, never a target
-    intercepted = cs.intercepts || 0;
-    projNote = summaryRow?.latest_note || "Strikes by US/Israel coalition";
-    projSource = "ACLED";
+    // IR represents coalition strikes ON Iran (from gcc_strikes), not Iranian attacks
+    const live = gccData?.[iso];
+    incoming = live?.total_incoming ?? "—";
+    intercepted = 0;
+    projNote = summaryRow?.latest_note || live?.note || "Coalition strikes on Iran";
+    projSource = (live?.total_incoming != null) ? "AI+WEB" : "ACLED";
   } else if (iso === "SY") {
     intercepted = cs.intercepts || 0;
     projNote = summaryRow?.latest_note || "Transit corridor — not a target";
@@ -1173,6 +1175,10 @@ const ScreenSituation = ({ live }) => {
   const countryStats = buildCountryStats(allAcledEvents);
   const filteredStats = buildCountryStats(filteredAcled);
   const bubbleData = buildBubbleData(filteredAcled);
+  const isSeed = !live.gcc?.updatedAt;
+  const gccUpdatedAtLabel = !isSeed && live.gcc?.updatedAt
+    ? new Date(live.gcc.updatedAt).toLocaleString()
+    : null;
 
   const countrySummary = COUNTRY_ORDER.map(code => {
     const s = filteredStats[code];
@@ -1194,6 +1200,21 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="GDELT/24h" value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
         <KpiCard label="IRAN STRIKES" value={String(countryStats.IR?.strikes || 0)} change="Coalition" color="#06b6d4" feed="ACLED" loading={live.acledAll?.loading} />
         <KpiCard label="IRAN PROTESTS" value={String(countryStats.IR?.protests || 0)} change="Protest" color="#eab308" feed="ACLED" loading={live.acledAll?.loading} />
+        <div style={{ display:"flex", alignItems:"flex-end" }}>
+          <span style={{
+            fontSize:9,
+            padding:"3px 8px",
+            borderRadius:999,
+            background: isSeed ? "rgba(245,158,11,0.14)" : "rgba(34,197,94,0.14)",
+            color: isSeed ? "#f59e0b" : "#22c55e",
+            border: `1px solid ${isSeed ? "rgba(245,158,11,0.25)" : "rgba(34,197,94,0.25)"}`,
+            fontFamily:"'JetBrains Mono',monospace",
+            letterSpacing:"0.06em",
+            whiteSpace:"nowrap",
+          }}>
+            {isSeed ? "DATA: SEED — last AI: unknown" : `DATA: AI+WEB — ${gccUpdatedAtLabel}`}
+          </span>
+        </div>
       </div>
 
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", marginBottom:14, overflow:"hidden" }}>
@@ -1309,6 +1330,13 @@ const ScreenSituation = ({ live }) => {
                     {countrySummary.map(c => {
                       const evCol = c.events > 100 ? C.critical : c.events > 10 ? C.warning : c.events > 0 ? C.success : C.dim;
                       const isHl = highlightedCountry === c.code;
+                      const summaryRow = (live.countrySummary?.data && Array.isArray(live.countrySummary.data))
+                        ? (live.countrySummary.data.find(s => (s.country || '').toLowerCase() === (c.name || '').toLowerCase()) || null)
+                        : null;
+                      const topActor1 = summaryRow?.top_actor1 || null;
+                      const popExposed = summaryRow?.population_exposed != null ? Number(summaryRow.population_exposed) : null;
+                      const infraHits = summaryRow?.infra_hit_count != null ? Number(summaryRow.infra_hit_count) : null;
+                      const latestNote = summaryRow?.latest_note || null;
                       return (
                         <div key={c.code} onClick={() => {
                           if (isHl) {
@@ -1331,6 +1359,27 @@ const ScreenSituation = ({ live }) => {
                               <span style={{ fontSize:10, color:c.fatalities > 0 ? C.critical : C.dim }}>{c.fatalities} ☠</span>
                             </div>
                           </div>
+                          {(topActor1 || popExposed != null || infraHits != null || latestNote) && (
+                            <div style={{ marginTop:3, display:"flex", flexDirection:"column", gap:2 }}>
+                              {topActor1 && <div style={{ fontSize:9, color:C.dim, lineHeight:1.2 }}>⚔ {String(topActor1).slice(0, 60)}</div>}
+                              {popExposed != null && <div style={{ fontSize:9, color:C.dim, lineHeight:1.2 }}>👥 ~{popExposed.toLocaleString()}</div>}
+                              {infraHits != null && <div style={{ fontSize:9, color:C.dim, lineHeight:1.2 }}>🏭 {infraHits} infra</div>}
+                              {latestNote && (
+                                <div style={{
+                                  fontSize:9,
+                                  color:C.muted,
+                                  fontStyle:"italic",
+                                  lineHeight:1.2,
+                                  whiteSpace:"nowrap",
+                                  overflow:"hidden",
+                                  textOverflow:"ellipsis",
+                                  maxWidth:"100%",
+                                }}>
+                                  {String(latestNote).slice(0, 80)}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
