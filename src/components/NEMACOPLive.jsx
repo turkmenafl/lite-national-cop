@@ -477,21 +477,24 @@ const COUNTRY_ORDER = ["IR","IL","IQ","AE","SY","BH","KW","SA","QA","PS","JO","O
 
 async function fetchAllACLED() {
   try {
-    let allEvents = [];
-    let from = 0;
-    const pageSize = 1000;
-    while (true) {
-      const { data, error } = await supabase
-        .from('acled_events')
-        .select('event_id_cnty,event_date,event_type,sub_event_type,actor1,country,location,admin1,latitude,longitude,fatalities,notes,source')
-        .in('country', ACLED_COUNTRIES)
-        .order('event_date', { ascending: false })
-        .range(from, from + pageSize - 1);
-      if (error) throw error;
-      allEvents = allEvents.concat(data || []);
-      if (!data || data.length < pageSize) break;
-      from += pageSize;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!supabaseUrl || !anonKey) {
+      throw new Error('Missing VITE_SUPABASE_URL or anon key');
     }
+    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/acled_events?order=event_date.desc&limit=200`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const allEvents = Array.isArray(data) ? data : [];
     return { events: allEvents, count: allEvents.length };
   } catch (e) {
     console.warn('[ACLED] fetch all failed:', e?.message);
