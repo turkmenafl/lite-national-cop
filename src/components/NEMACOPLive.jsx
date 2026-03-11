@@ -502,6 +502,25 @@ async function fetchAllACLED() {
   }
 }
 
+async function fetchTheaterMap() {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!supabaseUrl || !anonKey) return [];
+    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/v_theater_map?order=event_date.desc&limit=500`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn('[v_theater_map] fetch failed:', e?.message);
+    return [];
+  }
+}
+
 function getEventColor(event) {
   const iso = COUNTRY_TO_ISO[event.country];
   if (iso === "IR") {
@@ -846,8 +865,16 @@ const GCC_CAPITALS = {
   IL: [31.77, 35.22], JO: [31.95, 35.93], PS: [31.90, 35.20],
 };
 
-// ─── LEAFLET THEATER MAP — proportional bubbles from ACLED ───────────────────
-const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, menaCountries, gccData }) => {
+// v_theater_map dot styling: missile=red triangle, airstrike=orange circle, drone=yellow diamond; size by severity_tier
+const THEATER_DOT_STYLE = {
+  missile:  { color: '#ef4444', shape: 'triangle' },
+  airstrike: { color: '#f97316', shape: 'circle' },
+  drone:   { color: '#eab308', shape: 'diamond' },
+};
+const TIER_SIZE = { tier1: 12, tier2: 8, tier3: 5 };
+
+// ─── LEAFLET THEATER MAP — precise event dots from v_theater_map or bubbles from ACLED ───────────────────
+const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, highlightedCountry, menaCountries, gccData }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
@@ -927,13 +954,48 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
       .then(r=>r.json()).then(data=>{ geoRef.current=data; if(mapRef.current) addPolygons(data); }).catch(()=>{});
   }, [countryStats, highlightedCountry, menaCountries, gccData]);
 
-  // Proportional bubbles + country labels
+  // Precise event dots from v_theater_map, or fallback to proportional bubbles
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
-    const maxCount = Math.max(1, ...bubbleData.map(b => b.count));
+    const dots = (theaterMapDots && Array.isArray(theaterMapDots) ? theaterMapDots : []) || [];
+    const usePreciseDots = dots.length > 0;
+
+    if (usePreciseDots) {
+      dots.forEach((row) => {
+        const lat = row.latitude != null ? Number(row.latitude) : null;
+        const lng = row.longitude != null ? Number(row.longitude) : null;
+        if (lat == null || lng == null) return;
+        const iso = row.country ? (COUNTRY_TO_ISO[row.country] || null) : null;
+        if (menaCountries && iso && !menaCountries[iso]) return;
+        const dotType = (row.dot_type || 'airstrike').toLowerCase();
+        const style = THEATER_DOT_STYLE[dotType] || THEATER_DOT_STYLE.airstrike;
+        const tier = (row.severity_tier || 'tier2').toLowerCase();
+        const size = TIER_SIZE[tier] || TIER_SIZE.tier2;
+        const color = style.color;
+        let html;
+        if (style.shape === 'triangle') {
+          html = `<div style="width:0;height:0;border-left:${size}px solid transparent;border-right:${size}px solid transparent;border-bottom:${size*1.8}px solid ${color};transform:translate(-${size}px,-${size}px);filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))"></div>`;
+        } else if (style.shape === 'diamond') {
+          const s = size;
+          html = `<div style="width:${s*2}px;height:${s*2}px;background:${color};transform:translate(-${s}px,-${s}px) rotate(45deg);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>`;
+        } else {
+          html = `<div style="width:${size*2}px;height:${size*2}px;border-radius:50%;background:${color};transform:translate(-${size}px,-${size}px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>`;
+        }
+        const marker = L.marker([lat, lng], {
+          icon: L.divIcon({ className: '', html, iconSize: [size * 2, size * 2], iconAnchor: [size, size] }),
+        }).addTo(map);
+        const date = row.event_date || '—';
+        const fat = row.fatalities != null ? row.fatalities : 0;
+        const tip = `${row.country || '—'} · ${dotType} · ${date}${fat > 0 ? ` · ☠ ${fat}` : ''}`;
+        marker.bindTooltip(tip, { className: 'cop-popup', direction: 'top' });
+        const popupContent = `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#d8e6f5;max-width:260px">${row.country || '—'} · ${dotType}<br/>${date}${fat > 0 ? ` · ☠ ${fat}` : ''}</div>`;
+        marker.bindPopup(popupContent, { className: 'cop-popup', maxWidth: 280 });
+        layersRef.current.push(marker);
+      });
+    } else {
     bubbleData.forEach(b => {
       if (menaCountries && !menaCountries[b.iso]) return;
       const col = BUBBLE_COLORS[b.color] || "#ef4444";
@@ -976,6 +1038,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
       circle.bindPopup(popupLines.join(""), { className:"cop-popup", maxWidth:340, autoPan:true });
       layersRef.current.push(circle);
     });
+    }
     // Country labels (no counts — details shown on click)
     Object.entries(COUNTRY_LABEL_POS).forEach(([iso, [lat, lng]]) => {
       if (menaCountries && !menaCountries[iso]) return;
@@ -989,7 +1052,7 @@ const LeafletTheaterMap = memo(({ bubbleData, countryStats, highlightedCountry, 
       }).addTo(map);
       layersRef.current.push(m);
     });
-  }, [bubbleData, countryStats, menaCountries]);
+  }, [bubbleData, theaterMapDots, countryStats, menaCountries]);
 
   return (
     <div style={{ background:"#060b17", borderRadius:4, overflow:"hidden", height:520, position:"relative" }}>
@@ -1224,7 +1287,7 @@ const ScreenSituation = ({ live }) => {
                     }}>{f}</button>
                   ))}
                 </div>
-                <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} />
+                <LeafletTheaterMap bubbleData={bubbleData} theaterMapDots={live.theaterMapDots?.data} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} />
                 {live.acledAll?.count === 0 && !live.acledAll?.loading && (
                   <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
                     {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
@@ -2214,6 +2277,7 @@ export default function NEMACOPLive() {
     ksaStrikes: { loading:false, error:null, data:null },
     ciStatus: { loading:false, error:null, data:null },
     acledAll: { loading:false, error:null, count:0, events:[], importing:false },
+    theaterMapDots: { loading:false, data:[] },
   });
 
   const importAttemptedRef = useRef(false);
@@ -2231,12 +2295,14 @@ export default function NEMACOPLive() {
       ksaStrikes:{...d.ksaStrikes,loading:true},
       ciStatus:{...d.ciStatus,loading:true},
       acledAll:{...d.acledAll,loading:true},
+      theaterMapDots:{...d.theaterMapDots,loading:true},
     }));
 
-    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes] = await Promise.allSettled([
+    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes, theaterMapRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
       fetchAllACLED(),
+      fetchTheaterMap(),
     ]);
 
     const cache = {};
@@ -2321,6 +2387,9 @@ export default function NEMACOPLive() {
       n.acledAll = acledData
         ? { loading:false, error:null, count:acledData.count, events:acledData.events, importing:false }
         : { loading:false, error:true, count:0, events:[], importing:false };
+
+      const theaterDots = theaterMapRes.status === "fulfilled" && Array.isArray(theaterMapRes.value) ? theaterMapRes.value : [];
+      n.theaterMapDots = { loading:false, data: theaterDots };
 
       return n;
     });
