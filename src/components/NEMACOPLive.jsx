@@ -448,10 +448,13 @@ async function fetchGCCStrikes() {
   } catch(e) {
     console.warn('[GCCStrikes] failed, using seed data:', e?.message);
   }
-  // Return GCC_SEED as static fallback
+  // Use GCC_AI_WEB_NUMBERS as fallback (single source for client-facing numbers)
   const seedData = {};
   for (const s of GCC_SEED) {
-    seedData[s.code] = { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
+    const curated = GCC_AI_WEB_NUMBERS[s.code];
+    seedData[s.code] = curated
+      ? { total_incoming: curated.total_incoming, total_intercepted: curated.total_intercepted, confidence: curated.confidence, source: curated.source, note: curated.note }
+      : { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
   }
   return { data: seedData, updatedAt: null };
 }
@@ -482,7 +485,7 @@ async function fetchAllACLED() {
     if (!supabaseUrl || !anonKey) {
       throw new Error('Missing VITE_SUPABASE_URL or anon key');
     }
-    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/acled_events?order=event_date.desc&limit=200`;
+    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/acled_events?order=event_date.desc&limit=500&t=${Date.now()}`;
     const res = await fetch(url, {
       method: 'GET',
       headers: {
@@ -507,7 +510,7 @@ async function fetchTheaterMap() {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     if (!supabaseUrl || !anonKey) return [];
-    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/v_theater_map?order=event_date.desc&limit=500`;
+    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/v_theater_map?order=event_date.desc&limit=500&t=${Date.now()}`;
     const res = await fetch(url, {
       method: 'GET',
       headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -619,17 +622,25 @@ function buildCountryStats(events) {
   return stats;
 }
 
-const GCC_FALLBACK = {
-  SA: { total_incoming: 19,   total_intercepted: 18 },
-  AE: { total_incoming: 1276, total_intercepted: 1174 },
-  KW: { total_incoming: 484,  total_intercepted: 426 },
-  BH: { total_incoming: 198,  total_intercepted: 168 },
-  QA: { total_incoming: 115,  total_intercepted: 104 },
-  OM: { total_incoming: 4,    total_intercepted: 2 },
-  IL: { total_incoming: 330,  total_intercepted: 391 },
-  IQ: { total_incoming: 84,   total_intercepted: 2 },
-  JO: { total_incoming: 62,   total_intercepted: 16 },
+// ─── AI+WEB numbers: single source for country popup (projectiles in/out, note). Update here for client-facing display when cache is stale.
+const GCC_AI_WEB_NUMBERS = {
+  SA:  { total_incoming: 19,   total_intercepted: 18,   source: "Saudi MoD via SPA/Al Arabiya", confidence: "CONFIRMED", note: "96% intercept. Ras Tanura degraded. Abqaiq near-miss Mar 4." },
+  AE:  { total_incoming: 1276, total_intercepted: 1174, source: "UAE MoD",                 confidence: "EST",       note: "Interception: On 9 March 2026, UAE forces intercepted drones/missiles from Iranian forces. Jebel Ali + Dubai T3 targeted." },
+  KW:  { total_incoming: 484,  total_intercepted: 426,  source: "KUNA / US DoD",          confidence: "EST",       note: "Ali Al Salem struck." },
+  BH:  { total_incoming: 198,  total_intercepted: 168,  source: "NAVCENT / Alma Research", confidence: "EST",       note: "5th Fleet HQ area targeted." },
+  QA:  { total_incoming: 115,  total_intercepted: 104,  source: "CTP-ISW / LWJ",          confidence: "EST",       note: "Al Udeid 2 BM impacts. LNG suspended." },
+  OM:  { total_incoming: 4,    total_intercepted: 2,    source: "ONA / Reuters",           confidence: "EST",       note: "Duqm Port drone. Mediator status." },
+  IL:  { total_incoming: 330,  total_intercepted: 391,  source: "IDF / Reuters",           confidence: "EST",       note: "Arrow/Iron Dome intercepts." },
+  IQ:  { total_incoming: 84,   total_intercepted: 2,    source: "Iraqi MoD / CTP-ISW",    confidence: "EST",       note: "US bases targeted." },
+  JO:  { total_incoming: 62,   total_intercepted: 16,   source: "JAF / Reuters",          confidence: "EST",       note: "Eastern border area." },
+  SY:  { total_incoming: null, total_intercepted: null, source: "",                      confidence: "EST",       note: "Transit corridor — not a target." },
+  LB:  { total_incoming: null, total_intercepted: null, source: "",                      confidence: "EST",       note: "" },
+  YE:  { total_incoming: null, total_intercepted: null, source: "",                      confidence: "EST",       note: "" },
+  IR:  { total_incoming: null, total_intercepted: 0,    source: "CENTCOM/IDF (use verified only)", confidence: "EST", note: "Coalition strikes ON Iran. Do not use unverified thousands." },
 };
+const GCC_FALLBACK = Object.fromEntries(
+  Object.entries(GCC_AI_WEB_NUMBERS).map(([k, v]) => [k, { total_incoming: v.total_incoming, total_intercepted: v.total_intercepted, note: v.note }])
+);
 
 function dynamicPopupHtml(cs, gccData, summaryRow) {
   if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
@@ -1262,9 +1273,13 @@ const ScreenSituation = ({ live }) => {
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
             {activeTheater === 'gcc_theater' && (
               <>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
                   <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
                   <span style={{ fontSize:11, color:C.muted }}>{filteredAcled.length} event{filteredAcled.length!==1?"s":""}</span>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, fontSize:9, color:C.dim }}>
+                  <span>Data through: {allAcledEvents.length ? (() => { const dates = allAcledEvents.map(e => e.event_date).filter(Boolean); return dates.length ? dates.sort().pop() : '—'; })() : '—'}</span>
+                  <span>Use ↻ REFRESH LIVE above for latest</span>
                 </div>
                 <div style={{ display:"flex", gap:4, marginBottom:8 }}>
                   {["MENA","KSA","IRAN"].map(f => (
@@ -2461,10 +2476,13 @@ export default function NEMACOPLive() {
       if (gccCache) {
         n.gcc = {data:gccCache, loading:false, error:false, updatedAt:gccUpdatedAt2};
       } else {
-        // No cache — build seed fallback so popup always has numbers
+        // No cache — use GCC_AI_WEB_NUMBERS so popup shows curated AI+WEB-style numbers
         const seedData = {};
         for (const s of GCC_SEED) {
-          seedData[s.code] = { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
+          const curated = GCC_AI_WEB_NUMBERS[s.code];
+          seedData[s.code] = curated
+            ? { total_incoming: curated.total_incoming, total_intercepted: curated.total_intercepted, confidence: curated.confidence, source: curated.source, note: curated.note }
+            : { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
         }
         n.gcc = {data:seedData, loading:false, error:false, updatedAt:null};
       }
