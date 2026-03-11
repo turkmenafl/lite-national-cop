@@ -639,7 +639,15 @@ const GCC_AI_WEB_NUMBERS = {
   IL: { incoming: 400,  intercepted: null, confidence: "EST",       source: "IDF — ~400 incoming est; intercept rate described as 'high' — no official cumulative published" },
 };
 const GCC_FALLBACK = Object.fromEntries(
-  Object.entries(GCC_AI_WEB_NUMBERS).map(([k, v]) => [k, { total_incoming: v.total_incoming, total_intercepted: v.total_intercepted, note: v.note }])
+  Object.entries(GCC_AI_WEB_NUMBERS).map(([k, v]) => [
+    k,
+    {
+      incoming: v.incoming,
+      intercepted: v.intercepted,
+      confidence: v.confidence,
+      source: v.source,
+    },
+  ])
 );
 
 function dynamicPopupHtml(cs, gccData, summaryRow) {
@@ -656,10 +664,11 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
   if (iso === "IR") {
     // IR represents coalition strikes ON Iran (from gcc_strikes), not Iranian attacks
     const live = gccData?.[iso];
-    incoming = live?.total_incoming ?? "—";
-    intercepted = 0;
-    projNote = summaryRow?.latest_note || live?.note || "Coalition strikes on Iran";
-    projSource = (live?.total_incoming != null) ? "AI+WEB" : "ACLED";
+    const fallback = GCC_FALLBACK[iso];
+    incoming = live?.incoming ?? fallback?.incoming ?? null;
+    intercepted = live?.intercepted ?? fallback?.intercepted ?? null;
+    projNote = summaryRow?.latest_note || live?.note || fallback?.source || "Coalition strikes on Iran";
+    projSource = live?.incoming != null ? "AI+WEB" : "SEED";
   } else if (iso === "SY") {
     intercepted = cs.intercepts || 0;
     projNote = summaryRow?.latest_note || "Transit corridor — not a target";
@@ -675,10 +684,10 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
   } else if (gccCountries.has(iso)) {
     const live = gccData?.[iso];
     const fallback = GCC_FALLBACK[iso];
-    incoming = live?.total_incoming ?? fallback?.total_incoming ?? null;
-    intercepted = live?.total_intercepted ?? fallback?.total_intercepted ?? null;
-    projNote = summaryRow?.latest_note || live?.note || fallback?.note || "";
-    projSource = (live?.total_incoming != null) ? "AI+WEB" : "SEED";
+    incoming = live?.incoming ?? fallback?.incoming ?? null;
+    intercepted = live?.intercepted ?? fallback?.intercepted ?? null;
+    projNote = summaryRow?.latest_note || live?.note || fallback?.source || "";
+    projSource = live?.incoming != null ? "AI+WEB" : "SEED";
   } else {
     intercepted = cs.intercepts || 0;
     projNote = summaryRow?.latest_note || "";
