@@ -67,7 +67,7 @@ serve(async (req) => {
     const { model, max_tokens, messages, system, tools, no_cache } = body;
 
     const anthropicBody: Record<string, unknown> = {
-      model: model || 'claude-sonnet-4-20250514',
+      model: model || 'claude-haiku-4-5-20251001',
       max_tokens: max_tokens || 800,
       messages,
     };
