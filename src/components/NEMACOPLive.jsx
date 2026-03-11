@@ -624,123 +624,19 @@ function buildCountryStats(events) {
 
 // ─── AI+WEB numbers: single source for country popup (projectiles in/out, note). Update here for client-facing display when cache is stale.
 const GCC_AI_WEB_NUMBERS = {
-
-  // Saudi Arabia — MoD has not published cumulative totals; estimated from SPA event-by-event announcements
-  SA: {
-    total_incoming: 60,
-    total_intercepted: 55,
-    source: "Saudi MoD via SPA/Al Arabiya",
-    confidence: "EST",
-    note: "Cumulative estimate from individual MoD announcements — no official total published"
-  },
-
-  // UAE — UAE MoD official statement 2 Mar 2026
-  AE: {
-    total_incoming: 871,
-    total_intercepted: 814,
-    source: "UAE MoD",
-    confidence: "CONFIRMED",
-    note: "174 ballistic missiles, 689 drones, 8 cruise missiles tracked since 28 Feb"
-  },
-
-  // Qatar — Qatar MoD cumulative including 9-10 Mar wave
-  QA: {
-    total_incoming: 220,
-    total_intercepted: 196,
-    source: "Qatar MoD",
-    confidence: "EST",
-    note: "Includes 17 missiles and 6 drones intercepted in 9-10 Mar wave"
-  },
-
-  // Kuwait — Kuwaiti MoD confirmed totals
-  KW: {
-    total_incoming: 628,
-    total_intercepted: 380,
-    source: "Kuwaiti MoD",
-    confidence: "CONFIRMED",
-    note: "97 ballistic missiles and 283 drones intercepted per government statement"
-  },
-
-  // Bahrain — Bahrain Defence Force confirmed
-  BH: {
-    total_incoming: 282,
-    total_intercepted: 221,
-    source: "Bahrain Defence Force",
-    confidence: "CONFIRMED",
-    note: "78 missiles and 143 drones destroyed — Bapco refinery declared force majeure 9 Mar"
-  },
-
-  // Oman — neutral posture, minimal confirmed incidents
-  OM: {
-    total_incoming: 2,
-    total_intercepted: 0,
-    source: "Oman News Agency",
-    confidence: "EST",
-    note: "Neutral posture — no confirmed interceptions"
-  },
-
-  // Iran — coalition/US/Israeli strikes ON Iran
-  IR: {
-    total_incoming: null,
-    total_intercepted: null,
-    source: "CENTCOM/IDF",
-    confidence: "EST",
-    note: "US struck over 5000 targets in Iran since 28 Feb — verified count unavailable"
-  },
-
-  // Iraq — proxy launch sites and CENTCOM strikes
-  IQ: {
-    total_incoming: 12,
-    total_intercepted: 8,
-    source: "CENTCOM/Iraqi military",
-    confidence: "PARTIAL",
-    note: "Drones fired at Victoria Base Baghdad airport — coalition struck Kataib Hezbollah sites"
-  },
-
-  // Syria — transit corridor for Iranian proxies
-  SY: {
-    total_incoming: 0,
-    total_intercepted: 0,
-    source: "CENTCOM",
-    confidence: "EST",
-    note: "Transit corridor role — Israeli and US strikes on proxy infrastructure"
-  },
-
-  // Lebanon — Hezbollah launches and Israeli response
-  LB: {
-    total_incoming: 0,
-    total_intercepted: 0,
-    source: "Lebanon Health Ministry",
-    confidence: "EST",
-    note: "570 figure is Lebanese casualties not projectiles — Hezbollah engaging Israel"
-  },
-
-  // Yemen — Houthi launches toward GCC and shipping
-  YE: {
-    total_incoming: 0,
-    total_intercepted: 0,
-    source: "CENTCOM/UK MITO",
-    confidence: "EST",
-    note: "Houthi launches ongoing toward Red Sea shipping — no confirmed GCC territory strikes"
-  },
-
-  // Jordan — confirmed intercept corridor
-  JO: {
-    total_incoming: 119,
-    total_intercepted: 108,
-    source: "Jordan Armed Forces",
-    confidence: "CONFIRMED",
-    note: "Jordan targeted by 119 Iranian missiles and drones — 14 people injured"
-  },
-
-  // Israel — IDF confirmed figures
-  IL: {
-    total_incoming: 330,
-    total_intercepted: 310,
-    source: "IDF",
-    confidence: "EST",
-    note: "Iron Dome and Arrow systems engaged multiple Iranian ballistic missile waves"
-  }
+  SA: { incoming: 300,  intercepted: 250,  confidence: "EST",      source: "Saudi MoD — no official cumulative; midpoint 250–350 est." },
+  AE: { incoming: 1745, intercepted: 1634, confidence: "CONFIRMED", source: "UAE MoD official statement — 174 BM + 889 drones + 682 cruise intercepted" },
+  QA: { incoming: 222,  intercepted: 198,  confidence: "CONFIRMED", source: "Qatar MoD official — 89% intercept rate" },
+  KW: { incoming: 628,  intercepted: null, confidence: "PARTIAL",   source: "Kuwaiti MoD — 628 detected incoming; intercept/penetration split not published" },
+  BH: { incoming: 283,  intercepted: 283,  confidence: "CONFIRMED", source: "Bahrain Defence Force — 78 missiles + 205 drones (>283 incoming, 283 confirmed intercepted)" },
+  OM: { incoming: 10,   intercepted: 3,    confidence: "PARTIAL",   source: "Oman News Agency — ~10+ incoming, ~3 intercepted" },
+  IR: { incoming: null, intercepted: null, confidence: "N/A",       source: "Coalition strikes on Iran: >5,000 CENTCOM + ~2,500 IDF. Row counts outbound from Iran — not applicable." },
+  IQ: { incoming: 200,  intercepted: null, confidence: "PARTIAL",   source: "Militia claims ~200+ incoming; intercept figures unverified" },
+  SY: { incoming: 0,    intercepted: 0,    confidence: "CONFIRMED", source: "CENTCOM — Syria = transit corridor only" },
+  LB: { incoming: 0,    intercepted: 0,    confidence: "PARTIAL",   source: "269 attack waves logged; no cumulative projectile count published" },
+  YE: { incoming: 0,    intercepted: 0,    confidence: "CONFIRMED", source: "CENTCOM/UK MITO — Houthis outbound only; no inbound to Yemen" },
+  JO: { incoming: 119,  intercepted: 108,  confidence: "CONFIRMED", source: "Jordan Armed Forces — 90.8% intercept rate" },
+  IL: { incoming: 400,  intercepted: null, confidence: "EST",       source: "IDF — ~400 incoming est; intercept rate described as 'high' — no official cumulative published" },
 };
 const GCC_FALLBACK = Object.fromEntries(
   Object.entries(GCC_AI_WEB_NUMBERS).map(([k, v]) => [k, { total_incoming: v.total_incoming, total_intercepted: v.total_intercepted, note: v.note }])
