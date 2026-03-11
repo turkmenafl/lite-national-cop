@@ -148,7 +148,7 @@ Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP
 
 async function callAnthropic(apiKey: string, prompt: string, maxTokens: number, system?: string): Promise<string> {
   const body: Record<string, unknown> = {
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: maxTokens,
     tools: [{ type: "web_search_20250305", name: "web_search" }],
     messages: [{ role: "user", content: prompt }],
