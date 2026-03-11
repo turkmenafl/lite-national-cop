@@ -245,13 +245,13 @@ serve(async (req) => {
 
   try {
     // Secret name in Supabase is "NATIONAL COP" (with space)
-    const ANTHROPIC_API_KEY = Deno.env.get('NATIONAL COP');
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!ANTHROPIC_API_KEY) {
-      console.error('[ai-cache-refresh] FATAL: "NATIONAL COP" secret is missing from Supabase Secrets. Add it under Project Settings → Edge Functions → Secrets.');
-      return new Response(JSON.stringify({ error: 'Missing ANTHROPIC_API_KEY — secret name must be "NATIONAL COP"' }), {
+      console.error('[ai-cache-refresh] FATAL: "ANTHROPIC_API_KEY" secret is missing from Supabase Secrets. Add it under Project Settings → Edge Functions → Secrets.');
+      return new Response(JSON.stringify({ error: 'Missing ANTHROPIC_API_KEY — secret name must be "ANTHROPIC_API_KEY"' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
