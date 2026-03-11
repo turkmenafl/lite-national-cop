@@ -521,6 +521,25 @@ async function fetchTheaterMap() {
   }
 }
 
+async function fetchInfraStrikes() {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!supabaseUrl || !anonKey) return [];
+    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/v_infra_strikes?order=event_date.desc`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn('[v_infra_strikes] fetch failed:', e?.message);
+    return [];
+  }
+}
+
 function getEventColor(event) {
   const iso = COUNTRY_TO_ISO[event.country];
   if (iso === "IR") {
@@ -1619,6 +1638,13 @@ const CI_KEY_MAP = {
 const ScreenInfra = ({ live }) => {
   const liveCI = live.ciStatus?.data;
   const [expandedSector, setExpandedSector] = useState(null);
+  const [selectedInfraRow, setSelectedInfraRow] = useState(null);
+  const infraRows = live.infraStrikes?.data || [];
+  const infraByType = infraRows.reduce((acc, r) => {
+    const t = r.infra_type || 'Other';
+    if (!acc[t]) acc[t] = []; acc[t].push(r); return acc;
+  }, {});
+  const infraTypesOrder = [...new Set(infraRows.map(r => r.infra_type || 'Other'))].sort();
   return (
   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
     {CI_SECTORS.map(s=>{
@@ -1742,6 +1768,76 @@ const ScreenInfra = ({ live }) => {
         </div>
       );
     })}
+
+    {/* CNI Registry — v_infra_strikes, grouped by infra_type, HIT/THWARTED badges, click row shows note_short */}
+    <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, boxShadow:"0 2px 12px rgba(0,0,0,0.18)", overflow:"hidden", display:"flex", minHeight:280 }}>
+      <div style={{ flex:1, overflow:"auto", padding:14 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+          <span style={{ fontSize:14, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>CNI REGISTRY</span>
+          {live.infraStrikes?.loading && <span className="cop-pulse" style={{ fontSize:10, color:C.info }}>Loading…</span>}
+        </div>
+        {infraRows.length === 0 && !live.infraStrikes?.loading && (
+          <div style={{ fontSize:11, color:C.dim, padding:20, textAlign:"center" }}>No infrastructure strike data</div>
+        )}
+        {infraTypesOrder.map(infraType => {
+          const rows = (infraByType[infraType] || []).sort((a, b) => (b.event_date || '').localeCompare(a.event_date || ''));
+          if (rows.length === 0) return null;
+          return (
+            <div key={infraType} style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.muted, letterSpacing:"0.06em", marginBottom:6 }}>{infraType}</div>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"'JetBrains Mono',monospace", fontSize:10 }}>
+                <thead>
+                  <tr style={{ borderBottom:`1px solid ${C.surfBorder}`, color:C.dim }}>
+                    <th style={{ textAlign:"left", padding:"6px 8px" }}>Conclusion</th>
+                    <th style={{ textAlign:"left", padding:"6px 8px" }}>Country</th>
+                    <th style={{ textAlign:"left", padding:"6px 8px" }}>Date</th>
+                    <th style={{ textAlign:"right", padding:"6px 8px" }}>☠</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => {
+                    const isHit = (row.infra_conclusion || '').toUpperCase().includes('HIT');
+                    const isThwarted = (row.infra_conclusion || '').toUpperCase().includes('THWARTED');
+                    const badgeCol = isHit ? C.critical : isThwarted ? '#f59e0b' : C.dim;
+                    const badgeLabel = isHit ? 'HIT' : isThwarted ? 'THWARTED' : (row.infra_conclusion || '—');
+                    const isSel = selectedInfraRow === row;
+                    return (
+                      <tr
+                        key={i}
+                        onClick={() => setSelectedInfraRow(isSel ? null : row)}
+                        style={{
+                          cursor:"pointer",
+                          background: isSel ? `${C.info}14` : "transparent",
+                          borderBottom:`1px solid ${C.surfBorder}30`,
+                        }}
+                      >
+                        <td style={{ padding:"6px 8px" }}>
+                          <span style={{ padding:"2px 6px", borderRadius:3, background:`${badgeCol}22`, color:badgeCol, fontWeight:600, fontSize:9 }}>{badgeLabel}</span>
+                        </td>
+                        <td style={{ padding:"6px 8px", color:C.fg }}>{row.country || '—'}</td>
+                        <td style={{ padding:"6px 8px", color:C.muted }}>{row.event_date || '—'}</td>
+                        <td style={{ padding:"6px 8px", textAlign:"right", color:row.fatalities > 0 ? C.critical : C.dim }}>{row.fatalities != null ? row.fatalities : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
+      </div>
+      {selectedInfraRow && (
+        <div style={{ width:280, borderLeft:`1px solid ${C.surfBorder}`, padding:14, background:"rgba(0,0,0,0.15)", overflowY:"auto" }}>
+          <div style={{ fontSize:10, color:C.dim, marginBottom:6 }}>NOTE</div>
+          <div style={{ fontSize:11, color:C.fg, lineHeight:1.5 }}>{selectedInfraRow.note_short || '—'}</div>
+          <div style={{ marginTop:10, fontSize:9, color:C.dim }}>
+            {selectedInfraRow.country} · {selectedInfraRow.event_date}
+            {selectedInfraRow.fatalities != null && selectedInfraRow.fatalities > 0 && ` · ☠ ${selectedInfraRow.fatalities}`}
+          </div>
+        </div>
+      )}
+    </div>
+
     {/* Source attribution */}
     <div style={{ marginTop:4, display:"flex", gap:5, flexWrap:"wrap", justifyContent:"center" }}>
       {[["#22c55e","AI+WEB"],["#22c55e","CONFIRMED"],["#f97316","EST"],["#f59e0b","GDELT"],["#3b82f6","IODA"],["#526175","STATIC"]].map(([c,l])=>(
@@ -2278,6 +2374,7 @@ export default function NEMACOPLive() {
     ciStatus: { loading:false, error:null, data:null },
     acledAll: { loading:false, error:null, count:0, events:[], importing:false },
     theaterMapDots: { loading:false, data:[] },
+    infraStrikes: { loading:false, data:[] },
   });
 
   const importAttemptedRef = useRef(false);
@@ -2296,13 +2393,15 @@ export default function NEMACOPLive() {
       ciStatus:{...d.ciStatus,loading:true},
       acledAll:{...d.acledAll,loading:true},
       theaterMapDots:{...d.theaterMapDots,loading:true},
+      infraStrikes:{...d.infraStrikes,loading:true},
     }));
 
-    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes, theaterMapRes] = await Promise.allSettled([
+    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes, theaterMapRes, infraStrikesRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
       fetchAllACLED(),
       fetchTheaterMap(),
+      fetchInfraStrikes(),
     ]);
 
     const cache = {};
@@ -2390,6 +2489,9 @@ export default function NEMACOPLive() {
 
       const theaterDots = theaterMapRes.status === "fulfilled" && Array.isArray(theaterMapRes.value) ? theaterMapRes.value : [];
       n.theaterMapDots = { loading:false, data: theaterDots };
+
+      const infraRows = infraStrikesRes.status === "fulfilled" && Array.isArray(infraStrikesRes.value) ? infraStrikesRes.value : [];
+      n.infraStrikes = { loading:false, data: infraRows };
 
       return n;
     });
