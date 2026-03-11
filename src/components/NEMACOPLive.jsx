@@ -2322,7 +2322,7 @@ const ScreenAIBrief = ({ live }) => {
       </div>
       <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:4, padding:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-          <span style={{ fontSize:12, fontWeight:"bold", color:C.fg }}>💬 MINISTER QUERY — NEMA AI</span>
+          <span style={{ fontSize:12, fontWeight:"bold", color:C.fg }}>💬 MINISTER QUERY — EMA AI</span>
           <FeedTag feed="LIVE" />
         </div>
         {msgs.length===0&&<div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
@@ -2333,12 +2333,12 @@ const ScreenAIBrief = ({ live }) => {
         <div ref={chatRef} style={{ maxHeight:220, overflowY:"auto", marginBottom:8, display:"flex", flexDirection:"column", gap:6 }}>
           {msgs.map((m,i)=>(
             <div key={i} style={{ padding:"6px 8px", borderRadius:3, background:m.role==="user"?"rgba(59,130,246,0.08)":"rgba(255,255,255,0.02)", borderLeft:`2px solid ${m.role==="user"?C.info:C.muted}` }}>
-              <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>{m.role==="user"?"MINISTER":"NEMA AI"}</div>
+              <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>{m.role==="user"?"MINISTER":"EMA AI"}</div>
               <div style={{ fontSize:12, color:C.fg, lineHeight:1.6, whiteSpace:"pre-wrap" }}>{m.content}</div>
             </div>
           ))}
           {chatLoading&&<div style={{ padding:"6px 8px", borderRadius:3, background:"rgba(255,255,255,0.02)", borderLeft:`2px solid ${C.muted}` }}>
-            <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>NEMA AI</div>
+            <div style={{ fontSize:10, color:C.dim, marginBottom:2 }}>EMA AI</div>
             <span className="cop-pulse" style={{ fontSize:12, color:C.muted }}>●●●</span>
           </div>}
         </div>
