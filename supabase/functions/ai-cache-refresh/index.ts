@@ -113,7 +113,7 @@ Reply ONLY with valid JSON array, no other text:
 Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Research. If fewer than 10 events confirmed, return what is verified. Do not fabricate events.`,
     max_tokens: 1200,
     parse: (text) => {
-      const m = text.match(/\[[\s\S]*\]/);
+      const m = text.match(/\[[\s\S]*?\]/);
       if (!m) return null;
       const arr = JSON.parse(m[0]);
       return Array.isArray(arr) && arr.length ? arr : null;
