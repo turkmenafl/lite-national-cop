@@ -289,7 +289,7 @@ const severityColor = severityScore<=40?"#22c55e":severityScore<=60?"#f59e0b":"#
 // ─── UI ATOMS ─────────────────────────────────────────────────────────────────
 const FeedTag = ({ feed, loading }) => {
   if (loading) return <span style={{ fontSize:10, padding:"3px 8px", borderRadius:4, background:"rgba(59,130,246,0.15)", color:C.info, letterSpacing:"0.04em" }} className="cop-pulse">●</span>;
-  const map = { "AI+WEB":[C.success,"AI+WEB"], LIVE:[C.success,"LIVE"], CONFIRMED:[C.success,"CONFIRMED"], EST:["#f97316","EST"], GDELT:[C.warning,"GDELT"], STATIC:[C.dim,"STATIC"], IODA:[C.info,"IODA"] };
+  const map = { "AI+WEB":[C.success,"AI+WEB"], "SEED":["#f97316","SEED"], LIVE:[C.success,"LIVE"], CONFIRMED:[C.success,"CONFIRMED"], EST:["#f97316","EST"], GDELT:[C.warning,"GDELT"], STATIC:[C.dim,"STATIC"], IODA:[C.info,"IODA"] };
   const [col, lbl] = map[feed] || [C.muted, feed];
   return <span style={{ fontSize:10, padding:"3px 8px", borderRadius:4, background:`${col}18`, color:col, letterSpacing:"0.04em", fontWeight:500 }}>{lbl}</span>;
 };
@@ -1155,7 +1155,7 @@ const GCCTheater = ({ gcc }) => {
           {gcc.error   && <span style={{ fontSize:7, color:C.warning }}>⚠ search failed — seed shown</span>}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <FeedTag feed={gcc.data?"AI+WEB":gcc.loading?"AI+WEB":"STATIC"} loading={gcc.loading}/>
+          <FeedTag feed={gcc.loading?"AI+WEB":(gcc.updatedAt != null?"AI+WEB":"SEED")} loading={gcc.loading}/>
           <span style={{ fontSize:9, color:C.muted }}>{expanded?"▾":"▸"}</span>
         </div>
       </div>
