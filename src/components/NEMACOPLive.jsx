@@ -2534,20 +2534,27 @@ export default function NEMACOPLive() {
       importAttemptedRef.current = true;
       try {
         setLive(d => ({...d, acledAll: {...d.acledAll, importing: true }}));
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const csvRes = await fetch('/data/acled.csv');
         if (!csvRes.ok) throw new Error('CSV not found');
         const csvText = await csvRes.text();
         const importRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/acled-import`, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
+          headers: {
+            'Content-Type': 'text/plain',
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+          },
           body: csvText,
         });
         if (!importRes.ok) throw new Error(`Import HTTP ${importRes.status}`);
         const result = await importRes.json();
-        console.log(`[ACLED] Auto-imported ${result.total} events`);
+        console.log(`[ACLED] ${result.message || 'Auto-imported'} ${result.total ?? 0} events`);
         const freshAcled = await fetchAllACLED();
         if (freshAcled) {
           setLive(d => ({...d, acledAll: { loading:false, error:null, count:freshAcled.count, events:freshAcled.events, importing:false }}));
+        } else {
+          setLive(d => ({...d, acledAll: {...d.acledAll, importing:false }}));
         }
       } catch (e) {
         console.warn('[ACLED] auto-import failed:', e.message);
