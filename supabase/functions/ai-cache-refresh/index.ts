@@ -322,9 +322,10 @@ serve(async (req) => {
           : rawParsed;
 
         if (parsed) {
-          const { error } = await supabase
+          const result = await supabase
             .from('ai_cache')
             .upsert({ key, data: parsed, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+          const error = result?.error;
 
           if (error) throw new Error(`DB upsert: ${error.message}`);
           results[key] = { success: true };
