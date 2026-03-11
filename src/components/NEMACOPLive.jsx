@@ -318,7 +318,7 @@ const KpiCard = ({ label, value, change, color, note, feed, loading, secondary, 
 // ─── FETCHERS ─────────────────────────────────────────────────────────────────
 async function fetchEIABrent() {
   try {
-    const EIA_KEY = process.env.REACT_APP_EIA_API_KEY;
+    const EIA_KEY = import.meta.env.VITE_EIA_KEY;
     if (!EIA_KEY) return null;
     const params = new URLSearchParams({
       api_key: EIA_KEY,
@@ -710,82 +710,6 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
     ${projNote ? `<div style="font-size:8px;color:#7d8fa3;line-height:1.5">note: ${projNote}</div>` : ""}
     ${gccSrc ? `<div style="font-size:7px;color:#526175;margin-top:2px">source: ${gccSrc}</div>` : ""}
   </div>`;
-}
-
-async function fetchKSAStrikes() {
-  const prompt = `You are a conflict data analyst. Search for the latest verified reports of Iranian missile, drone, and cruise missile attacks against Saudi Arabia (KSA) during the Iran-GCC conflict, February 28 – March 2026.
-Find the 10 most recent individual strike events against KSA. For each event return:
-- time: date and time (e.g. "Mar 06 02:15")
-- type: weapon type (e.g. "Ballistic Missile", "Drone (3x)", "Cruise Missile")
-- loc: target location (e.g. "Ras Tanura Oil Terminal")
-- status: outcome (e.g. "Intercepted", "Hit — minor damage", "All destroyed")
-- sev: severity — "critical" if energy/military infra hit or near-miss, "high" otherwise
-Reply ONLY with valid JSON array, no other text:
-[{"id":1,"time":"Mar 06 02:15","type":"Ballistic Missile","loc":"Abqaiq Processing vicinity","status":"Intercepted","sev":"critical"},{"id":2,"time":"Mar 05 23:40","type":"Drone (4x)","loc":"Yanbu Port","status":"Intercepted","sev":"high"}]
-Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Research. If fewer than 10 events confirmed, return what is verified. Do not fabricate events.`;
-  try {
-    const res = await fetch(ANTHROPIC_PROXY_URL, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514", max_tokens:1200,
-        tools:[{ type:"web_search_20250305", name:"web_search" }],
-        messages:[{ role:"user", content:prompt }]
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const data = await res.json();
-    const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
-    const m = text.match(/\[[\s\S]*\]/);
-    if (!m) throw new Error("No JSON array");
-    const events = JSON.parse(m[0]);
-    if (!Array.isArray(events) || !events.length) throw new Error("Empty array");
-    return events;
-  } catch(e) {
-    console.warn("[KSAStrikes] fallback:", e.message);
-    return null;
-  }
-}
-
-async function fetchCIStatus() {
-  const prompt = `You are a critical infrastructure analyst. Search for the current operational status of Saudi Arabia's key infrastructure sectors during the Iran-GCC conflict, March 2026.
-For each of the 6 sectors below, return the current status based on verified reporting:
-1. Oil & Gas — Aramco, Ras Tanura, Abqaiq, Yanbu refinery status
-2. Airports — RUH (Riyadh), DMM (Dammam), JED (Jeddah) capacity %
-3. Ports & Maritime — Jubail, Dammam, Jeddah, Yanbu port operations + Hormuz status
-4. Power Grid — SEC eastern province grid status
-5. Water / Desal — SWCC Jubail and Yanbu desalination plant status
-6. Telecom & Cyber — STC/Mobily network status, cyber threat level
-Reply ONLY with valid JSON, no other text:
-{"oilgas":{"status":"DEGRADED","pct":82,"note":"Ras Tanura 85% cap. Abqaiq near-miss Mar 4.","confidence":"EST"},"airports":{"status":"RESTRICTED","pct":60,"note":"RUH 42%. DMM 33%. JED 112% overflow.","confidence":"CONFIRMED"},"ports":{"status":"DISRUPTED","pct":45,"note":"Hormuz D7 — 0 transits. ~91 tankers holding.","confidence":"EST"},"power":{"status":"ELEVATED","pct":88,"note":"Eastern Province proximity threat.","confidence":"EST"},"water":{"status":"OPERATIONAL","pct":90,"note":"Jubail RO on elevated watch.","confidence":"EST"},"telecom":{"status":"ELEVATED","pct":73,"note":"APT33 activity. AWS Gulf degraded.","confidence":"EST"}}
-Status values: OPERATIONAL / ELEVATED / RESTRICTED / DEGRADED / DISRUPTED / CRITICAL / OFFLINE
-Confidence: CONFIRMED (official source) or EST (synthesised estimate)
-pct: operational capacity 0-100
-note: max 60 chars, specific and factual
-Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP-ISW.`;
-  try {
-    const res = await fetch(ANTHROPIC_PROXY_URL, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514", max_tokens:800,
-        tools:[{ type:"web_search_20250305", name:"web_search" }],
-        messages:[{ role:"user", content:prompt }]
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const data = await res.json();
-    const text = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("No JSON");
-    const d = JSON.parse(m[0]);
-    const required = ["oilgas","airports","ports","power","water","telecom"];
-    if (!required.every(k=>d[k]?.status)) throw new Error("Incomplete response");
-    return d;
-  } catch(e) {
-    console.warn("[CIStatus] fallback:", e.message);
-    return null;
-  }
 }
 
 // MENA country data now computed dynamically from ACLED via buildCountryStats()
