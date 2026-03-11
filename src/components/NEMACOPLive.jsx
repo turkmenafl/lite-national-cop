@@ -2277,7 +2277,7 @@ const ScreenAIBrief = ({ live }) => {
     try {
       const res = await fetch(ANTHROPIC_PROXY_URL, {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:600, system:ctx,
+        body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:600, system:ctx,
           messages:[{ role:"user", content:"Generate 200-word executive brief. Format: BOTTOM LINE UP FRONT (2 sentences). CRITICAL GAPS (3 bullets). DECISIONS REQUIRED IN 24H (2 bullets). Use hard numbers." }]
         })
       });
@@ -2294,7 +2294,7 @@ const ScreenAIBrief = ({ live }) => {
     try {
       const res = await fetch(ANTHROPIC_PROXY_URL, {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:400, system:ctx,
+        body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:400, system:ctx,
           messages:[...msgs.map(m=>({role:m.role,content:m.content})),{role:"user",content:q}]
         })
       });
