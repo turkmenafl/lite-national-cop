@@ -540,6 +540,25 @@ async function fetchInfraStrikes() {
   }
 }
 
+async function fetchCountrySummary() {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!supabaseUrl || !anonKey) return [];
+    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/v_country_summary`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn('[v_country_summary] fetch failed:', e?.message);
+    return [];
+  }
+}
+
 function getEventColor(event) {
   const iso = COUNTRY_TO_ISO[event.country];
   if (iso === "IR") {
@@ -612,7 +631,7 @@ const GCC_FALLBACK = {
   JO: { total_incoming: 62,   total_intercepted: 16 },
 };
 
-function dynamicPopupHtml(cs, gccData) {
+function dynamicPopupHtml(cs, gccData, summaryRow) {
   if (!cs) return '<div style="font-size:11px;color:#7d8fa3">No data</div>';
   const iso = cs.code;
   const gccCountries = new Set(["SA","AE","KW","BH","QA","OM","IL","IQ","JO"]);
@@ -626,15 +645,15 @@ function dynamicPopupHtml(cs, gccData) {
   if (iso === "IR") {
     incoming = null; // Iran is the attacker, never a target
     intercepted = cs.intercepts || 0;
-    projNote = "Strikes by US/Israel coalition";
+    projNote = summaryRow?.latest_note || "Strikes by US/Israel coalition";
     projSource = "ACLED";
   } else if (iso === "SY") {
     intercepted = cs.intercepts || 0;
-    projNote = "Transit corridor — not a target";
+    projNote = summaryRow?.latest_note || "Transit corridor — not a target";
     projSource = "ACLED";
   } else if (iso === "PS") {
     intercepted = cs.intercepts || 0;
-    projNote = "Collateral — not a target";
+    projNote = summaryRow?.latest_note || "Collateral — not a target";
     projSource = "ACLED";
   } else if (gccLoading) {
     incoming = "…";
@@ -645,11 +664,11 @@ function dynamicPopupHtml(cs, gccData) {
     const fallback = GCC_FALLBACK[iso];
     incoming = live?.total_incoming ?? fallback?.total_incoming ?? null;
     intercepted = live?.total_intercepted ?? fallback?.total_intercepted ?? null;
-    const usingFallback = (live?.total_incoming == null) && fallback;
-    projNote = live?.note || fallback?.note || "";
+    projNote = summaryRow?.latest_note || live?.note || fallback?.note || "";
     projSource = (live?.total_incoming != null) ? "AI+WEB" : "SEED";
   } else {
     intercepted = cs.intercepts || 0;
+    projNote = summaryRow?.latest_note || "";
   }
 
   const feedColor = projSource === "AI+WEB" ? "#22d3ee" : projSource === "SEED" ? "#f97316" : "#64748b";
@@ -657,17 +676,27 @@ function dynamicPopupHtml(cs, gccData) {
   const gccSrc = gccData?.[iso]?.source || "";
   const pulse = gccLoading ? 'animation:pulse 1.5s ease-in-out infinite;' : '';
 
+  const totalFatalities = summaryRow?.total_fatalities != null ? summaryRow.total_fatalities : cs.fatalities;
+  const popExposed = summaryRow?.population_exposed != null ? summaryRow.population_exposed : null;
+  const infraHit = summaryRow?.infra_hit_count != null ? summaryRow.infra_hit_count : null;
+  const topActor = summaryRow?.top_actor1 || null;
+
   return `<div style="font-family:'JetBrains Mono',monospace;min-width:260px">
     <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(39,50,72,0.5)">
       <span style="font-size:13px;font-weight:700;color:#d8e6f5">${cs.flag} ${cs.name}</span>
       <span style="font-size:7px;padding:1px 5px;border-radius:3px;background:${feedBg};color:${feedColor};letter-spacing:0.06em">${projSource}</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;padding:8px 0;border-bottom:1px solid rgba(39,50,72,0.5)">
-      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:15px;font-weight:800;color:#ef4444">${cs.events.toLocaleString()}</div></div>
-      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:15px;font-weight:800;color:${cs.fatalities>0?'#ef4444':'#526175'}">${cs.fatalities}</div></div>
-      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">CLASHES</div><div style="font-size:15px;font-weight:800;color:${cs.clashes>0?'#d8e6f5':'#526175'}">${cs.clashes}</div></div>
-      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">PROTESTS</div><div style="font-size:15px;font-weight:800;color:${cs.protests>0?'#eab308':'#526175'}">${cs.protests}</div></div>
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">EVENTS</div><div style="font-size:15px;font-weight:800;color:#ef4444">${(cs.events||0).toLocaleString()}</div></div>
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">FATALITIES</div><div style="font-size:15px;font-weight:800;color:${totalFatalities>0?'#ef4444':'#526175'}">${totalFatalities!=null?totalFatalities:'—'}</div></div>
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">CLASHES</div><div style="font-size:15px;font-weight:800;color:${(cs.clashes||0)>0?'#d8e6f5':'#526175'}">${cs.clashes||0}</div></div>
+      <div style="text-align:center"><div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em">PROTESTS</div><div style="font-size:15px;font-weight:800;color:${(cs.protests||0)>0?'#eab308':'#526175'}">${cs.protests||0}</div></div>
     </div>
+    ${popExposed != null || infraHit != null || topActor ? `<div style="font-size:8px;color:#7d8fa3;line-height:1.5;padding:6px 0;border-bottom:1px solid rgba(39,50,72,0.5)">
+      ${popExposed != null ? `<div>Population exposed: ${Number(popExposed).toLocaleString()}</div>` : ''}
+      ${infraHit != null ? `<div>Infra hits: ${infraHit}</div>` : ''}
+      ${topActor ? `<div>Top actor: ${String(topActor).slice(0,50)}</div>` : ''}
+    </div>` : ''}
     <div style="display:flex;border:1px solid rgba(39,50,72,0.5);border-radius:4px;margin:8px 0;overflow:hidden">
       <div style="flex:1;padding:8px 10px;text-align:center;border-right:1px solid rgba(39,50,72,0.5)">
         <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:3px">PROJECTILES INCOMING</div>
@@ -893,7 +922,7 @@ const THEATER_DOT_STYLE = {
 const TIER_SIZE = { tier1: 12, tier2: 8, tier3: 5 };
 
 // ─── LEAFLET THEATER MAP — precise event dots from v_theater_map or bubbles from ACLED ───────────────────
-const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, highlightedCountry, menaCountries, gccData }) => {
+const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, highlightedCountry, menaCountries, gccData, countrySummaryList }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const layersRef = useRef([]);
@@ -954,12 +983,16 @@ const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, high
             lyr.on('mouseout', () => lyr.setStyle({ fillOpacity:isHl?0.3:0.15, color:isHl?"#ffffff":"rgba(255,255,255,0.5)", opacity:isHl?0.6:0.3, weight:isHl?1.5:1 }));
             lyr.on('click', () => {
               const cs = countryStats?.[iso2];
+              const countryName = ISO_TO_COUNTRY[iso2] || iso2;
+              const summaryRow = (countrySummaryList && Array.isArray(countrySummaryList))
+                ? countrySummaryList.find(s => (s.country || '').toLowerCase() === countryName.toLowerCase()) || null
+                : null;
               const center = mapRef.current.getSize().divideBy(2);
               const latLng = mapRef.current.containerPointToLatLng(center);
-              const popupData = cs || { code:iso2, name:ISO_TO_COUNTRY[iso2]||iso2, flag:ISO_TO_FLAG[iso2]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
+              const popupData = cs || { code:iso2, name:countryName, flag:ISO_TO_FLAG[iso2]||"", events:0, fatalities:0, airDrone:0, missile:0, intercepts:0, clashes:0, protests:0, strikes:0 };
               L.popup({ className:"cop-popup", maxWidth:280, closeButton:true })
                 .setLatLng(latLng)
-                .setContent(dynamicPopupHtml(popupData, gccData))
+                .setContent(dynamicPopupHtml(popupData, gccData, summaryRow))
                 .openOn(mapRef.current);
             });
           },
@@ -971,7 +1004,7 @@ const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, high
     if (geoRef.current) addPolygons(geoRef.current);
     else fetch("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
       .then(r=>r.json()).then(data=>{ geoRef.current=data; if(mapRef.current) addPolygons(data); }).catch(()=>{});
-  }, [countryStats, highlightedCountry, menaCountries, gccData]);
+  }, [countryStats, highlightedCountry, menaCountries, gccData, countrySummaryList]);
 
   // Precise event dots from v_theater_map, or fallback to proportional bubbles
   useEffect(() => {
@@ -1306,7 +1339,7 @@ const ScreenSituation = ({ live }) => {
                     }}>{f}</button>
                   ))}
                 </div>
-                <LeafletTheaterMap bubbleData={bubbleData} theaterMapDots={live.theaterMapDots?.data} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} />
+                <LeafletTheaterMap bubbleData={bubbleData} theaterMapDots={live.theaterMapDots?.data} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} countrySummaryList={live.countrySummary?.data} />
                 {live.acledAll?.count === 0 && !live.acledAll?.loading && (
                   <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
                     {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
@@ -2375,6 +2408,7 @@ export default function NEMACOPLive() {
     acledAll: { loading:false, error:null, count:0, events:[], importing:false },
     theaterMapDots: { loading:false, data:[] },
     infraStrikes: { loading:false, data:[] },
+    countrySummary: { loading:false, data:[] },
   });
 
   const importAttemptedRef = useRef(false);
@@ -2394,14 +2428,16 @@ export default function NEMACOPLive() {
       acledAll:{...d.acledAll,loading:true},
       theaterMapDots:{...d.theaterMapDots,loading:true},
       infraStrikes:{...d.infraStrikes,loading:true},
+      countrySummary:{...d.countrySummary,loading:true},
     }));
 
-    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes, theaterMapRes, infraStrikesRes] = await Promise.allSettled([
+    const [eia, opa, gdelt, ioda, pw, cacheRes, acledRes, theaterMapRes, infraStrikesRes, countrySummaryRes] = await Promise.allSettled([
       fetchEIABrent(), fetchOilPriceAPI(), fetchGdelt(), fetchIoda(), fetchPortWatch(),
       supabase.from('ai_cache').select('key, data, updated_at'),
       fetchAllACLED(),
       fetchTheaterMap(),
       fetchInfraStrikes(),
+      fetchCountrySummary(),
     ]);
 
     const cache = {};
@@ -2492,6 +2528,9 @@ export default function NEMACOPLive() {
 
       const infraRows = infraStrikesRes.status === "fulfilled" && Array.isArray(infraStrikesRes.value) ? infraStrikesRes.value : [];
       n.infraStrikes = { loading:false, data: infraRows };
+
+      const summaryRows = countrySummaryRes.status === "fulfilled" && Array.isArray(countrySummaryRes.value) ? countrySummaryRes.value : [];
+      n.countrySummary = { loading:false, data: summaryRows };
 
       return n;
     });
