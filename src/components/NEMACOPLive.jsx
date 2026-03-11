@@ -1114,9 +1114,12 @@ const GCC_DAILY = {
 };
 
 // ─── SCREEN 1: SITUATION ──────────────────────────────────────────────────────
+const THEATER_TABS = [{ id: 'gcc_theater', label: 'GCC Theater' }, { id: 'airspace', label: 'Airspace' }, { id: 'maritime', label: 'Maritime' }];
+
 const ScreenSituation = ({ live }) => {
   const [selEvent, setSelEvent] = useState(null);
   const [activeDay, setActiveDay] = useState("cumulative");
+  const [activeTheater, setActiveTheater] = useState('gcc_theater');
   const [layerFilter, setLayerFilter] = useState("MENA");
   const [highlightedCountry, setHighlightedCountry] = useState(null);
   const [menaCountries, setMenaCountries] = useState(() => {
@@ -1182,35 +1185,74 @@ const ScreenSituation = ({ live }) => {
           <button onClick={()=>scrollTabs(1)} style={{ flexShrink:0, width:22, border:"none", background:"transparent", color:C.dim, cursor:"pointer", fontSize:16, lineHeight:1, padding:0 }}>›</button>
         </div>
 
-        {/* Map + Right Panel */}
+        {/* Theater tabs: single activeTheater drives both left and right panels */}
+        <div style={{ display:"flex", gap:4, marginBottom:8, padding:"0 4px", borderBottom:`1px solid ${C.surfBorder}` }}>
+          {THEATER_TABS.map(t => (
+            <button key={t.id} onClick={() => setActiveTheater(t.id)} style={{
+              padding:"8px 14px", border:"none", borderBottom: activeTheater === t.id ? `2px solid ${C.info}` : "2px solid transparent",
+              background: activeTheater === t.id ? "#192233" : "transparent", cursor:"pointer",
+              color: activeTheater === t.id ? C.fg : C.muted, fontSize:11, fontWeight: activeTheater === t.id ? 700 : 500,
+              fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.06em",
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {/* Map + Right Panel — both driven by activeTheater */}
         <div style={{ display:"flex", gap:0, alignItems:"stretch" }}>
           <div style={{ flex:1.3, padding:14, borderRight:`1px solid ${C.surfBorder}` }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
-              <span style={{ fontSize:11, color:C.muted }}>{filteredAcled.length} event{filteredAcled.length!==1?"s":""}</span>
-            </div>
-            <div style={{ display:"flex", gap:4, marginBottom:8 }}>
-              {["MENA","KSA","IRAN"].map(f => (
-                <button key={f} onClick={()=>{
-                  setLayerFilter(f);
-                  if (f==="MENA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=true); return m; });
-                  else if (f==="KSA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="SA")); return m; });
-                  else if (f==="IRAN") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="IR")); return m; });
-                  setHighlightedCountry(null);
-                }} style={{
-                  padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.surfBorder}`,
-                  borderRadius:3, cursor:"pointer",
-                  background:layerFilter===f?(f==="IRAN"?"#06b6d422":`${C.info}22`):"transparent",
-                  color:layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.dim,
-                  fontSize:10, fontWeight:layerFilter===f?700:500,
-                  fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
-                }}>{f}</button>
-              ))}
-            </div>
-            <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} />
-            {live.acledAll?.count === 0 && !live.acledAll?.loading && (
-              <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
-                {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
+            {activeTheater === 'gcc_theater' && (
+              <>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>THEATER MAP{!isCumulative?` · ${activeDay}`:""}</span>
+                  <span style={{ fontSize:11, color:C.muted }}>{filteredAcled.length} event{filteredAcled.length!==1?"s":""}</span>
+                </div>
+                <div style={{ display:"flex", gap:4, marginBottom:8 }}>
+                  {["MENA","KSA","IRAN"].map(f => (
+                    <button key={f} onClick={()=>{
+                      setLayerFilter(f);
+                      if (f==="MENA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=true); return m; });
+                      else if (f==="KSA") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="SA")); return m; });
+                      else if (f==="IRAN") setMenaCountries(()=>{ const m={}; COUNTRY_ORDER.forEach(k=>m[k]=(k==="IR")); return m; });
+                      setHighlightedCountry(null);
+                    }} style={{
+                      padding:"4px 10px", border:`1px solid ${layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.surfBorder}`,
+                      borderRadius:3, cursor:"pointer",
+                      background:layerFilter===f?(f==="IRAN"?"#06b6d422":`${C.info}22`):"transparent",
+                      color:layerFilter===f?(f==="IRAN"?"#06b6d4":C.info):C.dim,
+                      fontSize:10, fontWeight:layerFilter===f?700:500,
+                      fontFamily:"'JetBrains Mono',monospace", letterSpacing:"0.04em",
+                    }}>{f}</button>
+                  ))}
+                </div>
+                <LeafletTheaterMap bubbleData={bubbleData} countryStats={filteredStats} highlightedCountry={highlightedCountry} menaCountries={menaCountries} gccData={live.gcc?.data} />
+                {live.acledAll?.count === 0 && !live.acledAll?.loading && (
+                  <div style={{ textAlign:"center", padding:"8px", fontSize:10, color:C.warning }}>
+                    {live.acledAll?.importing ? "⏳ Importing ACLED data…" : "⚠ Loading ACLED data…"}
+                  </div>
+                )}
+              </>
+            )}
+            {activeTheater === 'airspace' && (
+              <div style={{ padding:12 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em", marginBottom:10 }}>AIRSPACE</div>
+                {[{l:"KSA",s:"RESTRICTED"},{l:"Qatar",s:"CLOSED"},{l:"UAE",s:"RESTRICTED"},{l:"Kuwait",s:"RESTRICTED"},{l:"Bahrain",s:"RESTRICTED"},{l:"Oman",s:"OPEN"}].map(a=>(
+                  <div key={a.l} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
+                    <span style={{ fontSize:12, color:C.fg }}>{a.l}</span><StatusBadge s={a.s}/>
+                  </div>
+                ))}
+              </div>
+            )}
+            {activeTheater === 'maritime' && (
+              <div style={{ padding:12 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em", marginBottom:10 }}>MARITIME CHOKEPOINTS</div>
+                {[{l:"Strait of Hormuz",s:"CLOSED",n:"0/35 transits. ~91 tankers holding."},{l:"Bab al-Mandeb",s:"RESTRICTED",n:"28/35 transits. Houthi quiet."},{l:"Suez Canal",s:"OPERATIONAL",n:"No disruption."}].map(m=>(
+                  <div key={m.l} style={{ padding:"6px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                      <span style={{ fontSize:12, color:C.fg, fontWeight:"bold" }}>{m.l}</span><StatusBadge s={m.s}/>
+                    </div>
+                    <span style={{ fontSize:11, color:C.muted }}>{m.n}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1218,7 +1260,7 @@ const ScreenSituation = ({ live }) => {
           <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>
 
             <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
-              {layerFilter === "MENA" && (
+              {activeTheater === 'gcc_theater' && layerFilter === "MENA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MENA OVERVIEW</span>
@@ -1257,7 +1299,7 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {layerFilter === "KSA" && (
+              {activeTheater === 'gcc_theater' && layerFilter === "KSA" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>KSA EVENT LOG</span>
@@ -1292,7 +1334,7 @@ const ScreenSituation = ({ live }) => {
                 </>
               )}
 
-              {layerFilter === "IRAN" && (
+              {activeTheater === 'gcc_theater' && layerFilter === "IRAN" && (
                 <>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                     <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6", letterSpacing:"0.08em" }}>IRAN EVENT LOG</span>
@@ -1327,36 +1369,37 @@ const ScreenSituation = ({ live }) => {
                   )}
                 </>
               )}
+              {activeTheater === 'airspace' && (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>AIRSPACE STATUS</span>
+                    <FeedTag feed="STATIC" />
+                  </div>
+                  {[{l:"KSA",s:"RESTRICTED"},{l:"Qatar",s:"CLOSED"},{l:"UAE",s:"RESTRICTED"},{l:"Kuwait",s:"RESTRICTED"},{l:"Bahrain",s:"RESTRICTED"},{l:"Oman",s:"OPEN"}].map(a=>(
+                    <div key={a.l} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
+                      <span style={{ fontSize:12, color:C.fg }}>{a.l}</span><StatusBadge s={a.s}/>
+                    </div>
+                  ))}
+                </>
+              )}
+              {activeTheater === 'maritime' && (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MARITIME CHOKEPOINTS</span>
+                    <FeedTag feed="STATIC" />
+                  </div>
+                  {[{l:"Strait of Hormuz",s:"CLOSED",n:"0/35 transits. ~91 tankers holding."},{l:"Bab al-Mandeb",s:"RESTRICTED",n:"28/35 transits. Houthi quiet."},{l:"Suez Canal",s:"OPERATIONAL",n:"No disruption."}].map(m=>(
+                    <div key={m.l} style={{ padding:"6px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                        <span style={{ fontSize:12, color:C.fg, fontWeight:"bold" }}>{m.l}</span><StatusBadge s={m.s}/>
+                      </div>
+                      <span style={{ fontSize:11, color:C.muted }}>{m.n}</span>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
-        </div>
-      </div>
-      {/* GCC Theater banner removed — info available in MENA THEATER map view */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-        <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:13, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>AIRSPACE</span>
-            <FeedTag feed="STATIC" />
-          </div>
-          {[{l:"KSA",s:"RESTRICTED"},{l:"Qatar",s:"CLOSED"},{l:"UAE",s:"RESTRICTED"},{l:"Kuwait",s:"RESTRICTED"},{l:"Bahrain",s:"RESTRICTED"},{l:"Oman",s:"OPEN"}].map(a=>(
-            <div key={a.l} style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
-              <span style={{ fontSize:12, color:C.fg }}>{a.l}</span><StatusBadge s={a.s}/>
-            </div>
-          ))}
-        </div>
-        <div style={{ background:C.surface, border:`1px solid ${C.surfBorder}`, borderRadius:6, padding:14, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ fontSize:13, fontWeight:700, color:C.fg, letterSpacing:"0.08em" }}>MARITIME CHOKEPOINTS</span>
-            <FeedTag feed="STATIC" />
-          </div>
-          {[{l:"Strait of Hormuz",s:"CLOSED",n:"0/35 transits. ~91 tankers holding."},{l:"Bab al-Mandeb",s:"RESTRICTED",n:"28/35 transits. Houthi quiet."},{l:"Suez Canal",s:"OPERATIONAL",n:"No disruption."}].map(m=>(
-            <div key={m.l} style={{ padding:"5px 0", borderBottom:`1px solid ${C.surfBorder}30` }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                <span style={{ fontSize:12, color:C.fg, fontWeight:"bold" }}>{m.l}</span><StatusBadge s={m.s}/>
-              </div>
-              <span style={{ fontSize:11, color:C.muted }}>{m.n}</span>
-            </div>
-          ))}
         </div>
       </div>
 
