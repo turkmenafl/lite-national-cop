@@ -67,9 +67,9 @@ TEXT: [max 120 char summary]`,
     },
   },
   gcc_strikes: {
-    prompt: `You are a conflict data analyst. Today is ${new Date().toISOString().split('T')[0]}.
+    prompt: `You are a conflict data analyst. Today is ${new Date().toISOString().split('T')[0]}. Prefer sources from the last 72 hours and official MoD/CENTCOM/UKMTO statements.
 
-Search the web RIGHT NOW for the latest verified cumulative totals of Iranian missile and drone attacks since February 28, 2026. Search for each country separately using queries like "Iran missile attack UAE total 2026", "Iran drone strikes Kuwait cumulative March 2026", "Iran ballistic missile Israel intercept 2026", etc.
+Search the web RIGHT NOW for the latest verified cumulative totals of Iranian missile and drone attacks since February 28, 2026. Search for each country separately using queries like "Iran missile attack UAE total March 2026", "Iran drone strikes Kuwait cumulative March 2026", "UAE MoD intercept March 2026", "Iran ballistic missile Israel intercept 2026", etc.
 
 IMPORTANT: Do NOT use any prior knowledge or example numbers. Only use numbers you find in web search results from this search session. If you cannot find a verified number for a country, use null.
 
@@ -80,9 +80,12 @@ For each country find:
 4. confidence — CONFIRMED (official MoD/CENTCOM/wire) or EST (think tank/synthesis)
 5. note — one sentence with key facts and latest date covered
 
-SPECIAL CASE — IR (Iran): interpret IR as cumulative coalition strikes ON Iran (US+Israel), not Iranian attacks. Set total_intercepted to 0 (assume no missile defense against US/Israel in this model).
+SPECIAL CASES:
+- SA (Saudi Arabia): Search "Saudi MoD missile intercept March 2026" or "SPA Ras Tanura intercept". Official figures exist (e.g. 19 projectiles, 18 intercepted). Do not return 0 for SA if you find MoD/SPA figures.
+- IL (Israel): Must be included. Search "IDF Iran missile intercept March 2026" or "Israel Iron Dome intercept 2026". Return total_incoming and total_intercepted from IDF/Reuters.
+- IR (Iran): Cumulative coalition strikes ON Iran (US+Israel only), NOT Iranian attacks. total_intercepted must be 0. Use only verified CENTCOM/IDF figures; typical range tens to low hundreds. If the only number you find is in the thousands or unverified, use null for total_incoming.
 
-Countries: SA (Saudi Arabia), AE (UAE), QA (Qatar), KW (Kuwait), BH (Bahrain), OM (Oman), IL (Israel), IQ (Iraq), JO (Jordan), SY (Syria), LB (Lebanon), YE (Yemen), IR (Iran)
+Countries: SA, AE, QA, KW, BH, OM, IL, IQ, JO, SY, LB, YE, IR (all 13 required)
 
 Reply ONLY with valid JSON, no other text, using this structure with ZEROES as placeholders only — replace all zeroes with real searched numbers:
 {"SA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"AE":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"QA":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"KW":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"BH":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"OM":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IL":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IQ":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"JO":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"SY":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"LB":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"YE":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""},"IR":{"total_incoming":0,"total_intercepted":0,"source":"","confidence":"EST","note":""}}`,
@@ -90,11 +93,18 @@ Reply ONLY with valid JSON, no other text, using this structure with ZEROES as p
     parse: (text) => {
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) return null;
-      const raw = JSON.parse(m[0]);
+      const sanitised = sanitiseClaudeJson(m[0]);
+      let raw: unknown;
+      try {
+        raw = JSON.parse(sanitised);
+      } catch (err) {
+        console.error('gcc_strikes JSON parse failed after sanitisation. Raw length:', sanitised.length, 'Error:', err);
+        throw err;
+      }
       // Remap prompt keys to GCC_SEED codes used by the frontend
       const KEY_MAP: Record<string, string> = { KSA:"SA", UAE:"AE", Kuwait:"KW", Bahrain:"BH", Qatar:"QA", Oman:"OM", Syria:"SY", Lebanon:"LB", Yemen:"YE", Iran:"IR" };
       const normalized: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(raw)) {
+      for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
         normalized[KEY_MAP[k] ?? k] = v;
       }
       return Object.keys(normalized).length ? normalized : null;
@@ -115,7 +125,14 @@ Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Res
     parse: (text) => {
       const m = text.match(/\[[\s\S]*?\]/);
       if (!m) return null;
-      const arr = JSON.parse(m[0]);
+      const sanitised = sanitiseClaudeJson(m[0]);
+      let arr: unknown;
+      try {
+        arr = JSON.parse(sanitised);
+      } catch (err) {
+        console.error('ksa_strikes JSON parse failed after sanitisation. Raw length:', sanitised.length, 'Error:', err);
+        throw err;
+      }
       return Array.isArray(arr) && arr.length ? arr : null;
     },
   },
@@ -139,7 +156,14 @@ Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP
     parse: (text) => {
       const m = text.match(/\{[\s\S]*\}/);
       if (!m) return null;
-      const d = JSON.parse(m[0]);
+      const sanitised = sanitiseClaudeJson(m[0]);
+      let d: Record<string, { status?: string }>;
+      try {
+        d = JSON.parse(sanitised);
+      } catch (err) {
+        console.error('ci_status JSON parse failed after sanitisation. Raw length:', sanitised.length, 'Error:', err);
+        throw err;
+      }
       const required = ["oilgas", "airports", "ports", "power", "water", "telecom"];
       return required.every(k => d[k]?.status) ? d : null;
     },
@@ -176,6 +200,16 @@ async function callAnthropic(apiKey: string, prompt: string, maxTokens: number, 
 }
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+// Sanitise raw Claude response before parsing
+// Removes markdown code fences and escapes unescaped quotes inside JSON string values
+function sanitiseClaudeJson(raw: string): string {
+  // Strip markdown code fences if present
+  let cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+  // Replace curly/smart quotes with straight quotes
+  cleaned = cleaned.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+  return cleaned;
+}
 
 // ─── Direct Brent price fetch (OilPriceAPI → EIA → Claude fallback) ──────────
 
@@ -337,6 +371,11 @@ serve(async (req) => {
       } catch (e) {
         results[key] = { success: false, error: e instanceof Error ? e.message : String(e) };
         console.error(`[${key}] ✗ ${e instanceof Error ? e.message : e}`);
+        // Do not write broken data to cache; return 500 on parse failure
+        return new Response(JSON.stringify({ error: 'JSON parse failed', detail: String(e), results }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       // Wait between calls to avoid rate limits
