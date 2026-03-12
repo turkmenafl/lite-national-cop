@@ -3,7 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
 import { STRIKES_KSA } from '../data/strikes';
-import { GCC_STRIKE_DATA } from '@/data/GCC_STRIKE_DATA_v2';
+import { GCC_STRIKE_DATA } from '@/data/GCC_STRIKE_DATA_v2.js';
 import { getScenarioContext, getScenarioDayCount } from '../context/scenarioContext';
 
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
