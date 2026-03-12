@@ -647,14 +647,13 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
   let projSource = "ACLED";
 
   if (iso === "IR") {
-    // IR represents coalition strikes ON Iran (from gcc_strikes), not Iranian attacks
+    // IR = coalition strikes ON Iran. Popup projectile row uses v2 only — cache never overrides.
     const live = gccData?.[iso];
     const fallback = GCC_FALLBACK[iso];
-    // v2: always prefer display strings (avoid false precision from cache numerics)
-    incoming = fallback?.displayIncoming ?? live?.displayIncoming ?? (live?.incoming ?? fallback?.incoming ?? live?.total_incoming) ?? null;
-    intercepted = fallback?.displayIntercepted ?? live?.displayIntercepted ?? (live?.intercepted ?? fallback?.intercepted ?? live?.total_intercepted) ?? null;
+    incoming = fallback?.displayIncoming ?? (fallback?.incoming != null ? (typeof fallback.incoming === "number" ? String(fallback.incoming) : fallback.incoming) : null) ?? "—";
+    intercepted = fallback?.displayIntercepted ?? (fallback?.intercepted != null ? (typeof fallback.intercepted === "number" ? String(fallback.intercepted) : fallback.intercepted) : null) ?? "—";
     projNote = summaryRow?.latest_note || live?.note || fallback?.note || fallback?.source || "Coalition strikes on Iran";
-    projSource = live?.incoming != null || live?.displayIncoming != null ? "AI+WEB" : "SEED";
+    projSource = live?.incoming != null || live?.displayIncoming != null || live?.total_incoming != null ? "AI+WEB" : "SEED";
   } else if (iso === "SY") {
     const fallback = GCC_FALLBACK[iso];
     incoming = fallback?.displayIncoming ?? fallback?.incoming ?? 0;
@@ -672,11 +671,11 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
   } else if (gccCountries.has(iso)) {
     const live = gccData?.[iso];
     const fallback = GCC_FALLBACK[iso];
-    // v2: always prefer display strings (avoid false precision from cache numerics)
-    incoming = fallback?.displayIncoming ?? live?.displayIncoming ?? (live?.incoming ?? fallback?.incoming ?? live?.total_incoming) ?? null;
-    intercepted = fallback?.displayIntercepted ?? live?.displayIntercepted ?? (live?.intercepted ?? fallback?.intercepted ?? live?.total_intercepted) ?? null;
+    // Popup projectile row: v2 only. Cache/live never used for display — stops old numbers showing.
+    incoming = fallback?.displayIncoming ?? (fallback?.incoming != null ? (typeof fallback.incoming === "number" ? String(fallback.incoming) : fallback.incoming) : null) ?? "—";
+    intercepted = fallback?.displayIntercepted ?? (fallback?.intercepted != null ? (typeof fallback.intercepted === "number" ? String(fallback.intercepted) : fallback.intercepted) : null) ?? "—";
     projNote = summaryRow?.latest_note || live?.note || fallback?.note || fallback?.source || "";
-    projSource = live?.incoming != null || live?.displayIncoming != null ? "AI+WEB" : "SEED";
+    projSource = live?.incoming != null || live?.displayIncoming != null || live?.total_incoming != null ? "AI+WEB" : "SEED";
   } else {
     intercepted = cs.intercepts || 0;
     projNote = summaryRow?.latest_note || "";
