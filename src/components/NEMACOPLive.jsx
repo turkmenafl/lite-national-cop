@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
 import { STRIKES_KSA } from '../data/strikes';
+import { GCC_STRIKE_DATA } from '@/data/GCC_STRIKE_DATA_v2';
 import { getScenarioContext, getScenarioDayCount } from '../context/scenarioContext';
 
 const ANTHROPIC_PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/anthropic-proxy`;
@@ -221,7 +222,7 @@ const CLUSTERS = [
       { id:"S5", name:"Missile attack", severity:"critical", status:"active",
         badge:"AI+WEB",
         detail:"Ballistic and cruise missile attacks ongoing. Multiple vectors. 96% intercept rate.",
-        liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>{if(!live.gcc.data?.SA) return "96% intercept (seed)"; const sa=live.gcc.data.SA; const pct=sa.total_incoming>0?Math.round((sa.total_intercepted/sa.total_incoming)*100):(sa.intercept_pct||96); return `KSA: ${pct}% intercept`;}, color:()=>C.success }],
+        liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>{if(!live.gcc.data?.SA) return "KSA: range (seed)"; const sa=live.gcc.data.SA; if(sa.displayIncoming&&sa.displayIntercepted) return `KSA: ${sa.displayIncoming} / ${sa.displayIntercepted}`; const inc=sa.incoming??sa.total_incoming; const int=sa.intercepted??sa.total_intercepted; if(typeof inc==="number"&&inc>0&&typeof int==="number") return `KSA: ${Math.round((int/inc)*100)}% intercept`; return "KSA: range (seed)";}, color:()=>C.success }],
         sources:["ACLED (daily)","INSS","Saudi MoD via SPA"],
       },
     ],
@@ -448,15 +449,8 @@ async function fetchGCCStrikes() {
   } catch(e) {
     console.warn('[GCCStrikes] failed, using seed data:', e?.message);
   }
-  // Use GCC_AI_WEB_NUMBERS as fallback (single source for client-facing numbers)
-  const seedData = {};
-  for (const s of GCC_SEED) {
-    const curated = GCC_AI_WEB_NUMBERS[s.code];
-    seedData[s.code] = curated
-      ? { total_incoming: curated.total_incoming, total_intercepted: curated.total_intercepted, confidence: curated.confidence, source: curated.source, note: curated.note }
-      : { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
-  }
-  return { data: seedData, updatedAt: null };
+  // AI_WEB v2: use GCC_FALLBACK (displayIncoming/displayIntercepted) when no cache
+  return { data: { ...GCC_FALLBACK }, updatedAt: null };
 }
 
 // ─── ACLED ────────────────────────────────────────────────────────────────────
@@ -622,30 +616,21 @@ function buildCountryStats(events) {
   return stats;
 }
 
-// ─── AI+WEB numbers: single source for country popup (projectiles in/out, note). Update here for client-facing display when cache is stale.
-const GCC_AI_WEB_NUMBERS = {
-  SA: { incoming: 300,  intercepted: 250,  confidence: "EST",      source: "Saudi MoD — no official cumulative; midpoint 250–350 est." },
-  AE: { incoming: 1745, intercepted: 1634, confidence: "CONFIRMED", source: "UAE MoD official statement — 174 BM + 889 drones + 682 cruise intercepted" },
-  QA: { incoming: 222,  intercepted: 198,  confidence: "CONFIRMED", source: "Qatar MoD official — 89% intercept rate" },
-  KW: { incoming: 628,  intercepted: null, confidence: "PARTIAL",   source: "Kuwaiti MoD — 628 detected incoming; intercept/penetration split not published" },
-  BH: { incoming: 283,  intercepted: 283,  confidence: "CONFIRMED", source: "Bahrain Defence Force — 78 missiles + 205 drones (>283 incoming, 283 confirmed intercepted)" },
-  OM: { incoming: 10,   intercepted: 3,    confidence: "PARTIAL",   source: "Oman News Agency — ~10+ incoming, ~3 intercepted" },
-  IR: { incoming: null, intercepted: null, confidence: "N/A",       source: "Coalition strikes on Iran: >5,000 CENTCOM + ~2,500 IDF. Row counts outbound from Iran — not applicable." },
-  IQ: { incoming: 200,  intercepted: null, confidence: "PARTIAL",   source: "Militia claims ~200+ incoming; intercept figures unverified" },
-  SY: { incoming: 0,    intercepted: 0,    confidence: "CONFIRMED", source: "CENTCOM — Syria = transit corridor only" },
-  LB: { incoming: 0,    intercepted: 0,    confidence: "PARTIAL",   source: "269 attack waves logged; no cumulative projectile count published" },
-  YE: { incoming: 0,    intercepted: 0,    confidence: "CONFIRMED", source: "CENTCOM/UK MITO — Houthis outbound only; no inbound to Yemen" },
-  JO: { incoming: 119,  intercepted: 108,  confidence: "CONFIRMED", source: "Jordan Armed Forces — 90.8% intercept rate" },
-  IL: { incoming: 400,  intercepted: null, confidence: "EST",       source: "IDF — ~400 incoming est; intercept rate described as 'high' — no official cumulative published" },
-};
+// ─── AI_WEB strike data (v2): display strings mandatory; popup uses displayIncoming/displayIntercepted only.
 const GCC_FALLBACK = Object.fromEntries(
-  Object.entries(GCC_AI_WEB_NUMBERS).map(([k, v]) => [
-    k,
+  GCC_STRIKE_DATA.map((row) => [
+    row.code,
     {
-      incoming: v.incoming,
-      intercepted: v.intercepted,
-      confidence: v.confidence,
-      source: v.source,
+      incoming: row.incoming,
+      intercepted: row.intercepted,
+      displayIncoming: row.displayIncoming,
+      displayIntercepted: row.displayIntercepted,
+      confidence: row.confidence,
+      source: row.source,
+      note: row.note,
+      tooltip: row.tooltip,
+      estimateRange: row.estimateRange,
+      interceptPct: row.interceptPct,
     },
   ])
 );
@@ -665,14 +650,17 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
     // IR represents coalition strikes ON Iran (from gcc_strikes), not Iranian attacks
     const live = gccData?.[iso];
     const fallback = GCC_FALLBACK[iso];
-    incoming = live?.incoming ?? fallback?.incoming ?? null;
-    intercepted = live?.intercepted ?? fallback?.intercepted ?? null;
-    projNote = summaryRow?.latest_note || live?.note || fallback?.source || "Coalition strikes on Iran";
-    projSource = live?.incoming != null ? "AI+WEB" : "SEED";
+    // v2: always prefer display strings (avoid false precision from cache numerics)
+    incoming = fallback?.displayIncoming ?? live?.displayIncoming ?? (live?.incoming ?? fallback?.incoming ?? live?.total_incoming) ?? null;
+    intercepted = fallback?.displayIntercepted ?? live?.displayIntercepted ?? (live?.intercepted ?? fallback?.intercepted ?? live?.total_intercepted) ?? null;
+    projNote = summaryRow?.latest_note || live?.note || fallback?.note || fallback?.source || "Coalition strikes on Iran";
+    projSource = live?.incoming != null || live?.displayIncoming != null ? "AI+WEB" : "SEED";
   } else if (iso === "SY") {
-    intercepted = cs.intercepts || 0;
-    projNote = summaryRow?.latest_note || "Transit corridor — not a target";
-    projSource = "ACLED";
+    const fallback = GCC_FALLBACK[iso];
+    incoming = fallback?.displayIncoming ?? fallback?.incoming ?? 0;
+    intercepted = fallback?.displayIntercepted ?? fallback?.intercepted ?? "N/A";
+    projNote = summaryRow?.latest_note || fallback?.note || "Transit corridor — not a target";
+    projSource = "SEED";
   } else if (iso === "PS") {
     intercepted = cs.intercepts || 0;
     projNote = summaryRow?.latest_note || "Collateral — not a target";
@@ -684,10 +672,11 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
   } else if (gccCountries.has(iso)) {
     const live = gccData?.[iso];
     const fallback = GCC_FALLBACK[iso];
-    incoming = live?.incoming ?? fallback?.incoming ?? null;
-    intercepted = live?.intercepted ?? fallback?.intercepted ?? null;
-    projNote = summaryRow?.latest_note || live?.note || fallback?.source || "";
-    projSource = live?.incoming != null ? "AI+WEB" : "SEED";
+    // v2: always prefer display strings (avoid false precision from cache numerics)
+    incoming = fallback?.displayIncoming ?? live?.displayIncoming ?? (live?.incoming ?? fallback?.incoming ?? live?.total_incoming) ?? null;
+    intercepted = fallback?.displayIntercepted ?? live?.displayIntercepted ?? (live?.intercepted ?? fallback?.intercepted ?? live?.total_intercepted) ?? null;
+    projNote = summaryRow?.latest_note || live?.note || fallback?.note || fallback?.source || "";
+    projSource = live?.incoming != null || live?.displayIncoming != null ? "AI+WEB" : "SEED";
   } else {
     intercepted = cs.intercepts || 0;
     projNote = summaryRow?.latest_note || "";
@@ -695,7 +684,8 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
 
   const feedColor = projSource === "AI+WEB" ? "#22d3ee" : projSource === "SEED" ? "#f97316" : "#64748b";
   const feedBg = projSource === "AI+WEB" ? "rgba(34,211,238,0.1)" : projSource === "SEED" ? "rgba(249,115,22,0.1)" : "rgba(100,116,139,0.1)";
-  const gccSrc = gccData?.[iso]?.source || "";
+  const fallbackForSrc = GCC_FALLBACK[iso];
+  const gccSrc = gccData?.[iso]?.source || fallbackForSrc?.source || "";
   const pulse = gccLoading ? 'animation:pulse 1.5s ease-in-out infinite;' : '';
 
   const totalFatalities = summaryRow?.total_fatalities != null ? summaryRow.total_fatalities : cs.fatalities;
@@ -722,11 +712,11 @@ function dynamicPopupHtml(cs, gccData, summaryRow) {
     <div style="display:flex;border:1px solid rgba(39,50,72,0.5);border-radius:4px;margin:8px 0;overflow:hidden">
       <div style="flex:1;padding:8px 10px;text-align:center;border-right:1px solid rgba(39,50,72,0.5)">
         <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:3px">PROJECTILES INCOMING</div>
-        <div style="font-size:18px;font-weight:800;color:${incoming==="—"||incoming==="…"||incoming===null?"#526175":"#ef4444"};${pulse}">${incoming===null?"—":typeof incoming==="number"?incoming.toLocaleString():incoming}</div>
+        <div style="font-size:18px;font-weight:800;color:${incoming==="—"||incoming==="…"||incoming===null||incoming===undefined?"#526175":"#ef4444"};${pulse}">${incoming===null||incoming===undefined?"—":typeof incoming==="number"?incoming.toLocaleString():incoming}</div>
       </div>
       <div style="flex:1;padding:8px 10px;text-align:center">
         <div style="font-size:7px;color:#7d8fa3;letter-spacing:0.06em;margin-bottom:3px">INTERCEPTED</div>
-        <div style="font-size:18px;font-weight:800;color:${intercepted==="—"||intercepted===0||intercepted==="…"||intercepted===null?"#526175":"#22c55e"};${pulse}">${intercepted===null?"—":typeof intercepted==="number"?intercepted.toLocaleString():intercepted}</div>
+        <div style="font-size:18px;font-weight:800;color:${intercepted==="—"||intercepted==="N/A"||intercepted===0||intercepted==="…"||intercepted===null?"#526175":"#22c55e"};${pulse}">${intercepted===null||intercepted===undefined?"—":typeof intercepted==="number"?intercepted.toLocaleString():intercepted}</div>
       </div>
     </div>
     ${projNote ? `<div style="font-size:8px;color:#7d8fa3;line-height:1.5">note: ${projNote}</div>` : ""}
@@ -1093,10 +1083,13 @@ const GCCTheater = ({ gcc }) => {
   const states = GCC_SEED.map(s=>{
     if (!gcc.data?.[s.code]) return s;
     const live = gcc.data[s.code];
-    const incoming = live.total_incoming ?? live.total ?? s.strikes;
-    const intercepted = live.total_intercepted ?? (live.intercept_pct != null ? Math.round(incoming * live.intercept_pct / 100) : Math.round(incoming * s.interceptPct / 100));
-    const interceptPct = incoming > 0 ? Math.round((intercepted / incoming) * 100) : s.interceptPct;
-    return { ...s, strikes: incoming, interceptPct, confidence: live.confidence ?? s.confidence, source: live.source ?? s.source, note: live.note ?? s.note };
+    const rawIncoming = live.incoming ?? live.total_incoming ?? live.total;
+    const incomingNum = typeof rawIncoming === "number" ? rawIncoming : null;
+    const rawIntercepted = live.intercepted ?? live.total_intercepted;
+    const interceptedNum = typeof rawIntercepted === "number" ? rawIntercepted : (incomingNum != null && (live.intercept_pct != null || live.interceptPct != null) ? Math.round(incomingNum * (live.intercept_pct ?? live.interceptPct ?? 0) / 100) : null);
+    const strikes = incomingNum ?? live.estimateRange?.incomingLow ?? live.estimateRange?.incomingHigh ?? s.strikes;
+    const interceptPct = (incomingNum != null && incomingNum > 0 && interceptedNum != null) ? Math.round((interceptedNum / incomingNum) * 100) : (live.interceptPct ?? live.intercept_pct ?? s.interceptPct);
+    return { ...s, strikes, interceptPct, confidence: live.confidence ?? s.confidence, source: live.source ?? s.source, note: live.note ?? s.note, displayIncoming: live.displayIncoming, displayIntercepted: live.displayIntercepted };
   });
   const maxStrikes = Math.max(...states.map(s=>s.strikes));
   return (
@@ -2405,7 +2398,7 @@ export default function NEMACOPLive() {
     tasi:  { value:"10,290", change:"−3.9% wk",  source:"STATIC", loading:false },
     gdelt: { value:20, articles:[], source:"STATIC", loading:false },
     ioda:  { value:null, source:"IODA", loading:false },
-    gcc:   { data: (() => { const d={}; for(const s of GCC_SEED) d[s.code]={total_incoming:s.strikes,total_intercepted:Math.round(s.strikes*s.interceptPct/100),confidence:s.confidence,source:s.source,note:s.note}; return d; })(), loading:false, error:false, updatedAt:null },
+    gcc:   { data: { ...GCC_FALLBACK }, loading: false, error: false, updatedAt: null },
     portwatch: { loading:false, error:null, data:null },
     ukmto:     { loading:false, error:null, data:null },
     ksaStrikes: { loading:false, error:null, data:null },
@@ -2493,15 +2486,8 @@ export default function NEMACOPLive() {
       if (gccCache) {
         n.gcc = {data:gccCache, loading:false, error:false, updatedAt:gccUpdatedAt2};
       } else {
-        // No cache — use GCC_AI_WEB_NUMBERS so popup shows curated AI+WEB-style numbers
-        const seedData = {};
-        for (const s of GCC_SEED) {
-          const curated = GCC_AI_WEB_NUMBERS[s.code];
-          seedData[s.code] = curated
-            ? { total_incoming: curated.total_incoming, total_intercepted: curated.total_intercepted, confidence: curated.confidence, source: curated.source, note: curated.note }
-            : { total_incoming: s.strikes, total_intercepted: Math.round(s.strikes * s.interceptPct / 100), confidence: s.confidence, source: s.source, note: s.note };
-        }
-        n.gcc = {data:seedData, loading:false, error:false, updatedAt:null};
+        // No cache — use AI_WEB v2 (GCC_FALLBACK) so popup shows displayIncoming/displayIntercepted
+        n.gcc = { data: { ...GCC_FALLBACK }, loading: false, error: false, updatedAt: null };
       }
 
       n.portwatch = { loading:false, error:pw.status==="rejected"?pw.reason?.message:null, data:pw.status==="fulfilled"?pw.value:null };
