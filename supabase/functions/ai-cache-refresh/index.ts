@@ -99,7 +99,7 @@ Reply ONLY with valid JSON, no other text, using this structure with ZEROES as p
         raw = JSON.parse(sanitised);
       } catch (err) {
         console.error('gcc_strikes JSON parse failed after sanitisation. Raw length:', sanitised.length, 'Error:', err);
-        throw err;
+        return null;
       }
       // Remap prompt keys to GCC_SEED codes used by the frontend
       const KEY_MAP: Record<string, string> = { KSA:"SA", UAE:"AE", Kuwait:"KW", Bahrain:"BH", Qatar:"QA", Oman:"OM", Syria:"SY", Lebanon:"LB", Yemen:"YE", Iran:"IR" };
@@ -131,7 +131,7 @@ Prioritise sources: Saudi MoD statements via SPA, Reuters, AP, CTP-ISW, Alma Res
         arr = JSON.parse(sanitised);
       } catch (err) {
         console.error('ksa_strikes JSON parse failed after sanitisation. Raw length:', sanitised.length, 'Error:', err);
-        throw err;
+        return null;
       }
       return Array.isArray(arr) && arr.length ? arr : null;
     },
@@ -162,7 +162,7 @@ Prioritise: Saudi MoD/Aramco/GACA/SEC/SWCC official statements, Reuters, AP, CTP
         d = JSON.parse(sanitised);
       } catch (err) {
         console.error('ci_status JSON parse failed after sanitisation. Raw length:', sanitised.length, 'Error:', err);
-        throw err;
+        return null;
       }
       const required = ["oilgas", "airports", "ports", "power", "water", "telecom"];
       return required.every(k => d[k]?.status) ? d : null;
@@ -371,11 +371,6 @@ serve(async (req) => {
       } catch (e) {
         results[key] = { success: false, error: e instanceof Error ? e.message : String(e) };
         console.error(`[${key}] ✗ ${e instanceof Error ? e.message : e}`);
-        // Do not write broken data to cache; return 500 on parse failure
-        return new Response(JSON.stringify({ error: 'JSON parse failed', detail: String(e), results }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
       }
 
       // Wait between calls to avoid rate limits
