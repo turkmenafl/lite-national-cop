@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "fetch-gcc-numbers": "node scripts/fetch-gcc-ai-web-numbers.mjs",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
