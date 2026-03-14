@@ -132,32 +132,32 @@ const CI_SECTORS = [
     ]},
 ];
 
-// Risk Clusters — badges STATIC per handover decision (live signals appear inline as evidence only)
+// Macro Threats — badges STATIC per handover decision (live signals appear inline as evidence only)
 const CLUSTERS = [
   {
-    id:"nat", label:"T1 · Natural", icon:"🌊", color:"#22c55e", status:"CLEAR", risks:1, active:0, elevated:0,
+    id:"nat", label:"T1 · Environmental Hazards", icon:"🌊", color:"#22c55e", status:"CLEAR", risks:1, active:0, elevated:0,
     agencies:["PME","Civil Defense","SWCC","Aramco"],
     decisions:[],
     riskItems:[{
-      id:"N11", name:"Marine oil spill / coastal contamination", severity:"medium", status:"monitoring",
+      id:"N11", name:"Coastal Contamination & Oil Spill", severity:"medium", status:"monitoring",
       badge:"STATIC",
       detail:"Ras Tanura shrapnel damage increases spill risk. Containment booms on standby. Desal intake vulnerability monitored.",
       liveSignals:[], sources:["ACLED+SPA (trigger)","NASA FIRMS (3h)","PortWatch (tanker)","GDELT (news)"],
     }],
   },
   {
-    id:"hlth", label:"T2 · Health", icon:"🏥", color:"#f59e0b", status:"ELEVATED", risks:1, active:0, elevated:1,
+    id:"hlth", label:"T2 · Public Health", icon:"🏥", color:"#f59e0b", status:"ELEVATED", risks:1, active:0, elevated:1,
     agencies:["MoH","Red Crescent"],
     decisions:[{ title:"Hospital surge protocol activation", window:"72h", severity:"medium" }],
     riskItems:[{
-      id:"H1", name:"Human disease outbreak", severity:"high", status:"elevated",
+      id:"H1", name:"Disease Outbreak & Medical Supply Shortage", severity:"high", status:"elevated",
       badge:"STATIC",
       detail:"Gulf port closures reduce pharmaceutical imports. Medical supply reserve at 55% (30 days). Monitoring for conflict-related disease vectors.",
       liveSignals:[], sources:["ProMED-mail (real-time)","WHO DON (daily)","Saudi MoH via SPA"],
     }],
   },
   {
-    id:"infra", label:"T3 · Infrastructure", icon:"⬡", color:"#ef4444", status:"CRITICAL", risks:5, active:2, elevated:1,
+    id:"infra", label:"T3 · Critical Infrastructure", icon:"⬡", color:"#ef4444", status:"CRITICAL", risks:5, active:2, elevated:1,
     agencies:["SEC","SWCC","Civil Defense","GACA","Ports Authority","CITC"],
     decisions:[
       { title:"Deploy containment booms — Jubail Desal intake", window:"6h",  severity:"critical" },
@@ -165,28 +165,28 @@ const CLUSTERS = [
       { title:"Cloud migration from AWS Gulf",                   window:"72h", severity:"medium" },
     ],
     riskItems:[
-      { id:"I1", name:"CNI failure [age/human error]", severity:"high", status:"monitoring",
+      { id:"I1", name:"Utility & Network Degradation", severity:"high", status:"monitoring",
         badge:"IODA",
         detail:"Monitoring KSA internet for non-strike disruptions. STC/Mobily/SEC service status tracked.",
         liveSignals:[{ label:"IODA KSA BGP", key:"ioda", render:(live)=>live.ioda.value!==null?`${live.ioda.value}% baseline`:"N/A", color:(live)=>live.ioda.value!==null&&live.ioda.value<80?C.critical:C.success }],
         sources:["IODA (real-time)","Downdetector (STC/Mobily)"],
       },
-      { id:"I5", name:"Industrial fire", severity:"medium", status:"monitoring",
+      { id:"I5", name:"Industrial Fire & Explosion", severity:"medium", status:"monitoring",
         badge:"STATIC",
         detail:"Monitoring industrial zones for non-strike fires. FIRMS satellite feeds checked against CI coordinates.",
         liveSignals:[], sources:["NASA FIRMS (3h) — CORS-blocked in artifact"],
       },
-      { id:"I6", name:"Transportation incidents", severity:"high", status:"active",
+      { id:"I6", name:"Transport Network Disruption", severity:"high", status:"active",
         badge:"STATIC",
         detail:"Port and airport disruption from military ops. DMM 33%, RUH 42%. Eastern ports restricted.",
         liveSignals:[], sources:["PortWatch (weekly)","Flightradar24 (real-time)","NOTAM feeds"],
       },
-      { id:"I7", name:"Food supply disruption", severity:"high", status:"elevated",
+      { id:"I7", name:"Food Supply Shortage", severity:"high", status:"elevated",
         badge:"STATIC",
         detail:"Gulf port closures reducing food imports. Wheat reserves 45 days. Jeddah port compensating (+18%).",
         liveSignals:[], sources:["PortWatch (weekly)","Yahoo Finance ZW=F"],
       },
-      { id:"I8", name:"Fuel & gas supply disruption", severity:"critical", status:"active",
+      { id:"I8", name:"Fuel & Energy Supply Disruption", severity:"critical", status:"active",
         badge:"AI+WEB",
         detail:"Hormuz closure Day 7. KSA production disrupted by infrastructure damage.",
         liveSignals:[{ label:"Brent Crude", key:"brent", render:(live)=>live.brent.value, color:()=>C.warning }],
@@ -195,31 +195,31 @@ const CLUSTERS = [
     ],
   },
   {
-    id:"sec", label:"T4 · Security", icon:"⊕", color:"#ef4444", status:"CRITICAL", risks:4, active:3, elevated:1,
+    id:"sec", label:"T4 · National Security", icon:"⊕", color:"#ef4444", status:"CRITICAL", risks:4, active:3, elevated:1,
     agencies:["MoD","SANG","Border Guard","NCA","State Security"],
     decisions:[
       { title:"Abqaiq perimeter reinforcement",              window:"24h", severity:"high" },
       { title:"Activate Houthi contingency (Red Sea route)", window:"48h", severity:"high" },
     ],
     riskItems:[
-      { id:"S1", name:"Physical attack on CNI", severity:"critical", status:"active",
+      { id:"S1", name:"Attack on Critical Infrastructure", severity:"critical", status:"active",
         badge:"AI+WEB",
         detail:"19 strikes Day 1-7. 96% intercept rate. Targeting military bases and oil infrastructure.",
         liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>live.gcc.data?`KSA: ${live.gcc.data.SA?.total||19} strikes`:`19 strikes (seed)`, color:()=>C.critical }],
         sources:["ACLED (daily)","LiveuaMap (real-time)","Saudi MoD via SPA"],
       },
-      { id:"S2", name:"UAV attacks", severity:"critical", status:"active",
+      { id:"S2", name:"Drone & UAV Strike", severity:"critical", status:"active",
         badge:"AI+WEB",
         detail:"Coordinated drone waves. Ras Tanura and DQ targeted.",
         liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>live.gcc.data?`✓ sourced`:"seed", color:(live)=>live.gcc.data?C.success:C.dim }],
         sources:["ACLED (drone)","Alma","Saudi MoD via SPA"],
       },
-      { id:"S3", name:"Maritime & air route restrictions", severity:"high", status:"elevated",
+      { id:"S3", name:"Sea & Air Route Closure", severity:"high", status:"elevated",
         badge:"STATIC",
         detail:"Hormuz closed Day 7. Bab al-Mandeb at 80% baseline. Houthi quiet but risk remains.",
         liveSignals:[], sources:["PortWatch (weekly)","gCaptain (real-time)","NOTAM feeds","UK MITO"],
       },
-      { id:"S5", name:"Missile attack", severity:"critical", status:"active",
+      { id:"S5", name:"Ballistic & Cruise Missile Strike", severity:"critical", status:"active",
         badge:"AI+WEB",
         detail:"Ballistic and cruise missile attacks ongoing. Multiple vectors. 96% intercept rate.",
         liveSignals:[{ label:"GCC strikes", key:"gcc", render:(live)=>{if(!live.gcc.data?.SA) return "KSA: range (seed)"; const sa=live.gcc.data.SA; if(sa.displayIncoming&&sa.displayIntercepted) return `KSA: ${sa.displayIncoming} / ${sa.displayIntercepted}`; const inc=sa.incoming??sa.total_incoming; const int=sa.intercepted??sa.total_intercepted; if(typeof inc==="number"&&inc>0&&typeof int==="number") return `KSA: ${Math.round((int/inc)*100)}% intercept`; return "KSA: range (seed)";}, color:()=>C.success }],
@@ -228,19 +228,19 @@ const CLUSTERS = [
     ],
   },
   {
-    id:"socio", label:"T5 · Socioeconomic", icon:"◈", color:"#ef4444", status:"CRITICAL", risks:3, active:2, elevated:1,
+    id:"socio", label:"T5 · Economic", icon:"◈", color:"#ef4444", status:"CRITICAL", risks:3, active:2, elevated:1,
     agencies:["MoFA","SAMA","MoC","SAGO"],
     decisions:[
       { title:"Corrective media messaging — 'Saudi strikes imminent' narrative", window:"12h", severity:"high" },
       { title:"Fuel reserve release policy confirmation",                         window:"48h", severity:"medium" },
     ],
     riskItems:[
-      { id:"E1", name:"Import/export disruption", severity:"critical", status:"active",
+      { id:"E1", name:"Trade & Port Disruption", severity:"critical", status:"active",
         badge:"STATIC",
         detail:"Hormuz closure Day 7. Gulf-side ports -60%. Jeddah compensating partially. ~$4.3B revenue lost.",
         liveSignals:[], sources:["PortWatch (weekly) — CORS-blocked","gCaptain (real-time)"],
       },
-      { id:"E2", name:"Financial system crises", severity:"high", status:"elevated",
+      { id:"E2", name:"Financial Market Instability", severity:"high", status:"elevated",
         badge:"AI+WEB",
         detail:"TASI volatile. Brent at $98+. SAR peg stable but monitoring capital flows.",
         liveSignals:[
@@ -249,7 +249,7 @@ const CLUSTERS = [
         ],
         sources:["Yahoo Finance (AI+WEB)","SAMA"],
       },
-      { id:"E3", name:"Media & disinformation", severity:"high", status:"active",
+      { id:"E3", name:"Disinformation & Narrative Threat", severity:"high", status:"active",
         badge:"GDELT",
         detail:"False narratives spreading — 'Saudi strikes imminent'. Iranian state media amplifying. Requires corrective messaging within 12h.",
         liveSignals:[{ label:"GDELT/24h", key:"gdelt", render:(live)=>live.gdelt.loading?"…":`${live.gdelt.value} articles`, color:(live)=>live.gdelt.value>15?C.critical:C.warning }],
@@ -1527,7 +1527,7 @@ const ScreenSituation = ({ live }) => {
   );
 };
 
-// ─── SCREEN 2: RISK CLUSTERS ──────────────────────────────────────────────────
+// ─── SCREEN 2: MACRO THREATS ──────────────────────────────────────────────────
 const ClusterRiskItem = ({ r, live }) => {
   const [open, setOpen] = useState(false);
   const sevColor = (s) => s==="critical"?C.critical:s==="high"?C.warning:s==="medium"?C.info:C.success;
@@ -2571,7 +2571,7 @@ export default function NEMACOPLive() {
 
   const TABS = [
     { label:"SITUATION",              icon:"◉" },
-    { label:"RISK CLUSTERS",          icon:"⬡" },
+    { label:"MACRO THREATS",          icon:"⬡" },
     { label:"CRITICAL INFRASTRUCTURE",icon:"⚙" },
     { label:"IMPACT",                 icon:"◈" },
     { label:"SCENARIOS",              icon:"⚠" },
