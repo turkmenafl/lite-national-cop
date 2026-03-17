@@ -104,7 +104,7 @@ const CI_SECTORS = [
       { name:"King Fahd Intl (DMM)",      tier:"T2", score:70, status:"RESTRICTED",  note:"Eastern Province exposure. 33% baseline." },
       { name:"King Abdulaziz Intl (JED)", tier:"T2", score:73, status:"OPERATIONAL", note:"Least affected. Redirected traffic hub. 112% baseline." },
     ]},
-  { name:"Ports & Maritime", icon:"⚓", status:"DISRUPTED",   tier:"T1", pct:45, feed:"STATIC", sourceTag:"PORTWATCH+UKMTO", note:"Hormuz D7 — 0 transits. ~91 tankers holding.", source:"PortWatch + UKMTO + Reuters",
+  { name:"Ports & Maritime", icon:"⚓", status:"DISRUPTED",   tier:"T1", pct:45, feed:"STATIC", sourceTag:"PORTWATCH+UKMTO", note:"Hormuz D18 — 0 transits. ~91 tankers holding.", source:"PortWatch + UKMTO + Reuters",
     assets:[
       { name:"Ras Tanura Oil Port",       tier:"T1", score:82, status:"DEGRADED",    note:"Reduced throughput. Tanker queue forming. -78%." },
       { name:"Jeddah Islamic Port",       tier:"T2", score:74, status:"OPERATIONAL", note:"Red Sea route active. +18% from Hormuz diversion." },
@@ -188,7 +188,7 @@ const CLUSTERS = [
       },
       { id:"I8", name:"Fuel & Energy Supply Disruption", severity:"critical", status:"active",
         badge:"AI+WEB",
-        detail:"Hormuz closure Day 7. KSA production disrupted by infrastructure damage.",
+        detail:"Hormuz closure Day 18. KSA production disrupted by infrastructure damage.",
         liveSignals:[{ label:"Brent Crude", key:"brent", render:(live)=>live.brent.value, color:()=>C.warning }],
         sources:["Yahoo Finance BZ=F (AI+WEB)","PortWatch","EIA"],
       },
@@ -216,7 +216,7 @@ const CLUSTERS = [
       },
       { id:"S3", name:"Sea & Air Route Closure", severity:"high", status:"elevated",
         badge:"STATIC",
-        detail:"Hormuz closed Day 7. Bab al-Mandeb at 80% baseline. Houthi quiet but risk remains.",
+        detail:"Hormuz closed Day 18. Bab al-Mandeb at 80% baseline. Houthi quiet but risk remains.",
         liveSignals:[], sources:["PortWatch (weekly)","gCaptain (real-time)","NOTAM feeds","UK MITO"],
       },
       { id:"S5", name:"Ballistic & Cruise Missile Strike", severity:"critical", status:"active",
@@ -237,7 +237,7 @@ const CLUSTERS = [
     riskItems:[
       { id:"E1", name:"Trade & Port Disruption", severity:"critical", status:"active",
         badge:"STATIC",
-        detail:"Hormuz closure Day 7. Gulf-side ports -60%. Jeddah compensating partially. ~$4.3B revenue lost.",
+        detail:"Hormuz closure Day 18. Gulf-side ports -60%. Jeddah compensating partially. ~$4.3B revenue lost.",
         liveSignals:[], sources:["PortWatch (weekly) — CORS-blocked","gCaptain (real-time)"],
       },
       { id:"E2", name:"Financial Market Instability", severity:"high", status:"elevated",
@@ -895,7 +895,7 @@ const LeafletTheaterMap = memo(({ bubbleData, theaterMapDots, countryStats, high
     }).catch(()=>{});
     // Hormuz closure marker
     L.polyline([[26.6,56.3],[27.2,56.3]],{color:"#ef4444",weight:2,dashArray:"5,3"}).addTo(map);
-    L.marker([27.0,56.4],{icon:L.divIcon({className:"",html:'<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D7</div>',iconSize:[0,0],iconAnchor:[-5,8]})}).addTo(map);
+    L.marker([27.0,56.4],{icon:L.divIcon({className:"",html:'<div style="color:#ef4444;font-size:11px;font-family:JetBrains Mono,monospace;font-weight:700;white-space:nowrap">⛔ HORMUZ D18</div>',iconSize:[0,0],iconAnchor:[-5,8]})}).addTo(map);
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
@@ -1216,7 +1216,7 @@ const ScreenSituation = ({ live }) => {
         <KpiCard label="KSA STRIKES" value={String(countryStats.SA?.strikes || 0)} note="ACLED verified" color={C.critical} feed="ACLED" loading={live.acledAll?.loading} />
         <KpiCard label="BRENT CRUDE" value={live.brent.value} change={live.brent.change} color={C.warning} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
         <KpiCard label="TASI" value={live.tasi.value} change={live.tasi.change} color={C.warning} feed={live.tasi.source} loading={live.tasi.loading} />
-        <KpiCard label="HORMUZ" value="Day 7" note="0 transits / 91 tankers" color={C.critical} feed="STATIC" />
+        <KpiCard label="HORMUZ" value="Day 18" note="0 transits / 91 tankers" color={C.critical} feed="STATIC" />
         <KpiCard label="GDELT/24h" value={live.gdelt.loading?"…":`${live.gdelt.value}`} note="conflict articles" color={live.gdelt.value>15?C.critical:C.warning} feed="GDELT" loading={live.gdelt.loading} />
         <KpiCard label="IRAN STRIKES" value={String(countryStats.IR?.strikes || 0)} change="Coalition" color="#06b6d4" feed="ACLED" loading={live.acledAll?.loading} />
         <KpiCard label="IRAN PROTESTS" value={String(countryStats.IR?.protests || 0)} change="Protest" color="#eab308" feed="ACLED" loading={live.acledAll?.loading} />
@@ -2051,7 +2051,7 @@ const ScreenEconomic = ({ live }) => (
     <div style={{ display:"flex", gap:6, marginBottom:12 }}>
       <KpiCard label="BRENT CRUDE" value={live.brent.value} change={live.brent.change} color={C.critical} feed={live.brent.source} loading={live.brent.loading} secondary={live.brent.secondary} secondaryColor={C.warning} />
       <KpiCard label="TASI INDEX"  value={live.tasi.value}  change={live.tasi.change}  color={C.critical} feed={live.tasi.source}  loading={live.tasi.loading} />
-      <KpiCard label="DAILY COST"  value="$4.2B" note="Hormuz Day 7"      color={C.critical} feed="STATIC" />
+      <KpiCard label="DAILY COST"  value="$4.2B" note="Hormuz Day 18"      color={C.critical} feed="STATIC" />
       <KpiCard label="CUMULATIVE"  value="~$29B" note="7 days (est)"      color={C.critical} feed="STATIC" />
       <KpiCard label="SAR/USD PEG" value="3.75"  note="Stable · SAMA"     color={C.success}  feed="STATIC" />
     </div>
@@ -2236,7 +2236,7 @@ const ScreenScenarios = () => {
     <div>
       {/* Scenario probability cards */}
       <div style={{ marginBottom:12 }}>
-        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>SCENARIO PROBABILITIES — Day 7</div>
+        <div style={{ fontSize:13, fontWeight:"bold", color:C.fg, marginBottom:8 }}>SCENARIO PROBABILITIES — Day 18</div>
         <div style={{ display:"flex", gap:8 }}>
           {SCENARIOS.map((s,i)=>(
             <div key={i} style={{ flex:1, padding:12, borderRadius:"0 0 4px 4px", background:`${s.color}06`, border:`1px solid ${s.color}22`, borderTop:`3px solid ${s.color}` }}>
@@ -2604,7 +2604,7 @@ export default function NEMACOPLive() {
             </div>
           </div>
           <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-            {[["HORMUZ","CLOSED D7",C.critical],["KSA AIRSPACE","RESTRICTED",C.warning],["CIVIL DEFENSE","ACTIVATED",C.success],["THREAT","CRITICAL",C.critical],["IRAN INTERIOR","CONTESTED",C.warning]].map(([l,v,c])=>(
+            {[["HORMUZ","CLOSED D18",C.critical],["KSA AIRSPACE","RESTRICTED",C.warning],["CIVIL DEFENSE","ACTIVATED",C.success],["THREAT","CRITICAL",C.critical],["IRAN INTERIOR","CONTESTED",C.warning]].map(([l,v,c])=>(
               <div key={l} style={{textAlign:"center"}}>
                 <div style={{fontSize:10,color:C.dim,letterSpacing:"0.06em",marginBottom:3}}>{l}</div>
                 <span style={{fontSize:11,padding:"3px 10px",borderRadius:4,background:`${c}14`,color:c,border:`1px solid ${c}28`,fontWeight:600}}>{v}</span>
