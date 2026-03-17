@@ -504,7 +504,7 @@ async function fetchTheaterMap() {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     if (!supabaseUrl || !anonKey) return [];
-    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/v_theater_map?order=event_date.desc&limit=500`;
+    const url = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/v_theater_map?order=event_date.desc&limit=1000`;
     const res = await fetch(url, {
       method: 'GET',
       headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, Accept: 'application/json', 'Content-Type': 'application/json' },
