@@ -135,7 +135,7 @@ const CI_SECTORS = [
 // Macro Threats — badges STATIC per handover decision (live signals appear inline as evidence only)
 const CLUSTERS = [
   {
-    id:"nat", label:"T1 · Environmental Hazards", icon:"🌊", color:"#22c55e", status:"CLEAR", risks:1, active:0, elevated:0,
+    id:"nat", label:"Environmental Hazards", icon:"🌊", color:"#22c55e", status:"CLEAR", risks:1, active:0, elevated:0,
     agencies:["PME","Civil Defense","SWCC","Aramco"],
     decisions:[],
     riskItems:[{
@@ -146,7 +146,7 @@ const CLUSTERS = [
     }],
   },
   {
-    id:"hlth", label:"T2 · Public Health", icon:"🏥", color:"#f59e0b", status:"ELEVATED", risks:1, active:0, elevated:1,
+    id:"hlth", label:"Public Health", icon:"🏥", color:"#f59e0b", status:"ELEVATED", risks:1, active:0, elevated:1,
     agencies:["MoH","Red Crescent"],
     decisions:[{ title:"Hospital surge protocol activation", window:"72h", severity:"medium" }],
     riskItems:[{
@@ -157,7 +157,7 @@ const CLUSTERS = [
     }],
   },
   {
-    id:"infra", label:"T3 · Critical Infrastructure", icon:"⬡", color:"#ef4444", status:"CRITICAL", risks:5, active:2, elevated:1,
+    id:"infra", label:"Critical Infrastructure", icon:"⬡", color:"#ef4444", status:"CRITICAL", risks:5, active:2, elevated:1,
     agencies:["SEC","SWCC","Civil Defense","GACA","Ports Authority","CITC"],
     decisions:[
       { title:"Deploy containment booms — Jubail Desal intake", window:"6h",  severity:"critical" },
@@ -195,7 +195,7 @@ const CLUSTERS = [
     ],
   },
   {
-    id:"sec", label:"T4 · National Security", icon:"⊕", color:"#ef4444", status:"CRITICAL", risks:4, active:3, elevated:1,
+    id:"sec", label:"National Security", icon:"⊕", color:"#ef4444", status:"CRITICAL", risks:4, active:3, elevated:1,
     agencies:["MoD","SANG","Border Guard","NCA","State Security"],
     decisions:[
       { title:"Abqaiq perimeter reinforcement",              window:"24h", severity:"high" },
@@ -228,7 +228,7 @@ const CLUSTERS = [
     ],
   },
   {
-    id:"socio", label:"T5 · Economic", icon:"◈", color:"#ef4444", status:"CRITICAL", risks:3, active:2, elevated:1,
+    id:"socio", label:"Economic", icon:"◈", color:"#ef4444", status:"CRITICAL", risks:3, active:2, elevated:1,
     agencies:["MoFA","SAMA","MoC","SAGO"],
     decisions:[
       { title:"Corrective media messaging — 'Saudi strikes imminent' narrative", window:"12h", severity:"high" },
